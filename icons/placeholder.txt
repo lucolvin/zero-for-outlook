@@ -1,0 +1,8 @@
+// Add your icon PNGs (16x16, 32x32, 48x48, 128x128) into this folder:
+// - icon-16.png
+// - icon-32.png
+// - icon-48.png
+// - icon-128.png
+
+
+

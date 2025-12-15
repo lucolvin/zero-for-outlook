@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Outlook Web Keyboard Shortcuts – Settings</title>
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <main class="oz-container">
+      <header class="oz-header">
+        <div class="oz-icon-circle">
+          <span class="oz-icon-letter">OZ</span>
+        </div>
+        <div>
+          <h1>Outlook Web Keyboard Shortcuts</h1>
+          <p class="oz-subtitle">
+            Customize keyboard shortcuts for Outlook on the web. Start by setting a shortcut for
+            <strong>Undo archive</strong>.
+          </p>
+        </div>
+      </header>
+
+      <section class="oz-card">
+        <h2>Undo Archive Shortcut</h2>
+        <p class="oz-help">
+          Click in the box below, then press the key combination you want to use (for example
+          <kbd>Ctrl</kbd> + <kbd>Z</kbd> or <kbd>Alt</kbd> + <kbd>U</kbd>).
+        </p>
+
+        <div class="oz-shortcut-row">
+          <label for="undoShortcut" class="oz-label">Shortcut</label>
+          <input
+            id="undoShortcut"
+            type="text"
+            class="oz-shortcut-input"
+            autocomplete="off"
+            spellcheck="false"
+            placeholder="Press keys…"
+          />
+          <button id="clearUndo" class="oz-button oz-button-ghost" type="button">Clear</button>
+        </div>
+
+        <p id="status" class="oz-status" role="status" aria-live="polite"></p>
+      </section>
+
+      <section class="oz-card">
+        <h2>How it works</h2>
+        <ul class="oz-list">
+          <li>
+            <strong>Where it runs</strong>: Only on Outlook web pages
+            (<code>outlook.live.com</code>, <code>outlook.office.com</code>, <code>outlook.office365.com</code>).
+          </li>
+          <li>
+            <strong>What it does</strong>: Listens for your shortcut and clicks the
+            <em>Undo</em> button that appears after you archive or move an email.
+          </li>
+          <li>
+            <strong>Typing safety</strong>: Shortcuts are ignored while you are typing in an input, text area, or
+            editable field so they do not interfere with composing emails.
+          </li>
+        </ul>
+      </section>
+
+      <footer class="oz-footer">
+        <span>Version 0.1.0</span>
+        <span>Made for Firefox &amp; Chrome · Outlook Zero</span>
+      </footer>
+    </main>
+
+    <script src="options.js"></script>
+  </body>
+</html>
+
+
+

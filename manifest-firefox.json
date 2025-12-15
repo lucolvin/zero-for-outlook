@@ -1,0 +1,46 @@
+{
+  "manifest_version": 2,
+  "name": "Outlook Web Keyboard Shortcuts",
+  "description": "Add customizable keyboard shortcuts to Outlook on the web, starting with an undo-archive shortcut.",
+  "version": "0.1.0",
+  "permissions": [
+    "storage",
+    "https://outlook.live.com/*",
+    "https://outlook.office.com/*",
+    "https://outlook.office365.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://outlook.live.com/*",
+        "https://outlook.office.com/*",
+        "https://outlook.office365.com/*"
+      ],
+      "js": [
+        "contentScript.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "background": {
+    "scripts": [
+      "background.js"
+    ],
+    "persistent": false
+  },
+  "browser_action": {
+    "default_title": "Outlook Web Keyboard Shortcuts"
+  },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "outlook-zero@example.com",
+      "strict_min_version": "109.0"
+    }
+  }
+}
+
+
