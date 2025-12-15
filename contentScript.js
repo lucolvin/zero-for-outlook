@@ -13,21 +13,27 @@
   };
 
   let undoShortcut = { ...DEFAULT_UNDO_SHORTCUT };
+  let vimEnabled = true;
 
   function loadSettings() {
     try {
       browserApi.storage.sync.get(
-        { undoShortcut: DEFAULT_UNDO_SHORTCUT },
+        { undoShortcut: DEFAULT_UNDO_SHORTCUT, vimEnabled: true },
         (items) => {
           if (browserApi.runtime && browserApi.runtime.lastError) {
             // Fail silently; use defaults
             return;
           }
-          if (items && items.undoShortcut) {
-            undoShortcut = {
-              ...DEFAULT_UNDO_SHORTCUT,
-              ...items.undoShortcut
-            };
+          if (items) {
+            if (items.undoShortcut) {
+              undoShortcut = {
+                ...DEFAULT_UNDO_SHORTCUT,
+                ...items.undoShortcut
+              };
+            }
+            if (typeof items.vimEnabled === "boolean") {
+              vimEnabled = items.vimEnabled;
+            }
           }
         }
       );
@@ -88,6 +94,78 @@
     button.click();
   }
 
+  function getMessageRows() {
+    // Outlook's message list is typically rendered as a grid or listbox of rows/options
+    const container =
+      document.querySelector('[role="grid"]') ||
+      document.querySelector('[role="listbox"]') ||
+      document.querySelector('[role="treegrid"]');
+    if (!container) return [];
+    return Array.from(
+      container.querySelectorAll('[role="row"], [role="option"]')
+    );
+  }
+
+  function getCurrentRowIndex(rows) {
+    if (!rows || !rows.length) return -1;
+    const active = document.activeElement;
+    let fallbackIndex = -1;
+
+    for (let i = 0; i < rows.length; i += 1) {
+      const row = rows[i];
+      if (!row) continue;
+      const el = /** @type {HTMLElement} */ (row);
+
+      // Selected via ARIA
+      if (el.getAttribute("aria-selected") === "true") {
+        return i;
+      }
+
+      // Selected via data attribute (common in React grids)
+      if (el.getAttribute("data-is-selected") === "true") {
+        fallbackIndex = i;
+      }
+
+      // Selected via CSS class
+      if (el.classList && (el.classList.contains("is-selected") || el.classList.contains("selected"))) {
+        fallbackIndex = i;
+      }
+
+      // Focused element is inside this row
+      if (active && el.contains(active)) {
+        fallbackIndex = i;
+      }
+    }
+
+    return fallbackIndex;
+  }
+
+  function moveSelection(direction) {
+    const rows = getMessageRows();
+    if (!rows.length) return;
+
+    let index = getCurrentRowIndex(rows);
+    if (index === -1) {
+      index = direction === "down" ? 0 : rows.length - 1;
+    } else if (direction === "down") {
+      index = Math.min(rows.length - 1, index + 1);
+    } else {
+      index = Math.max(0, index - 1);
+    }
+
+    const targetRow = /** @type {HTMLElement} */ (rows[index]);
+    if (!targetRow) return;
+
+    // Click to let Outlook update selection and preview, and focus for keyboard consistency
+    targetRow.click();
+    if (typeof targetRow.focus === "function") {
+      targetRow.focus();
+    }
+    if (typeof targetRow.scrollIntoView === "function") {
+      targetRow.scrollIntoView({ block: "nearest" });
+    }
+  }
+
   function onKeyDown(event) {
     try {
       // Ignore if user is typing in an input/textarea/contentEditable
@@ -95,9 +173,31 @@
         return;
       }
 
-      if (!undoShortcut) return;
+      const key = (event.key || "").toLowerCase();
 
-      if (shortcutMatches(event, undoShortcut)) {
+      // Vim-style navigation: j = down, k = up (no modifiers)
+      if (
+        vimEnabled &&
+        !event.ctrlKey &&
+        !event.altKey &&
+        !event.shiftKey &&
+        !event.metaKey
+      ) {
+        if (key === "j") {
+          event.preventDefault();
+          event.stopPropagation();
+          moveSelection("down");
+          return;
+        }
+        if (key === "k") {
+          event.preventDefault();
+          event.stopPropagation();
+          moveSelection("up");
+          return;
+        }
+      }
+
+      if (undoShortcut && shortcutMatches(event, undoShortcut)) {
         event.preventDefault();
         event.stopPropagation();
         triggerUndo();
@@ -121,6 +221,9 @@
           ...DEFAULT_UNDO_SHORTCUT,
           ...changes.undoShortcut.newValue
         };
+      }
+      if (changes.vimEnabled && typeof changes.vimEnabled.newValue === "boolean") {
+        vimEnabled = changes.vimEnabled.newValue;
       }
     });
   } catch (e) {

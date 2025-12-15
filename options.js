@@ -14,6 +14,7 @@
   const shortcutInput = document.getElementById("undoShortcut");
   const statusEl = document.getElementById("status");
   const clearBtn = document.getElementById("clearUndo");
+  const vimToggle = document.getElementById("vimEnabled");
 
   function formatShortcut(shortcut) {
     if (!shortcut || !shortcut.key) return "Not set";
@@ -35,6 +36,20 @@
     setTimeout(() => {
       statusEl.classList.remove("oz-status-visible");
     }, 2000);
+  }
+
+  function saveVimEnabled(enabled) {
+    try {
+      browserApi.storage.sync.set({ vimEnabled: enabled }, () => {
+        if (browserApi.runtime && browserApi.runtime.lastError) {
+          setStatus("Could not update vim setting (storage error).");
+          return;
+        }
+        setStatus(enabled ? "Vim navigation enabled." : "Vim navigation disabled.");
+      });
+    } catch (e) {
+      setStatus("Could not update vim setting.");
+    }
   }
 
   function saveShortcut(shortcut) {
@@ -85,14 +100,22 @@
   function restoreOptions() {
     try {
       browserApi.storage.sync.get(
-        { undoShortcut: DEFAULT_UNDO_SHORTCUT },
+        { undoShortcut: DEFAULT_UNDO_SHORTCUT, vimEnabled: true },
         (items) => {
           if (browserApi.runtime && browserApi.runtime.lastError) {
             shortcutInput.value = formatShortcut(DEFAULT_UNDO_SHORTCUT);
             return;
           }
-          const shortcut = items.undoShortcut || DEFAULT_UNDO_SHORTCUT;
+          const shortcut = (items && items.undoShortcut) || DEFAULT_UNDO_SHORTCUT;
           shortcutInput.value = formatShortcut(shortcut);
+
+          if (vimToggle) {
+            const enabled =
+              items && typeof items.vimEnabled === "boolean"
+                ? items.vimEnabled
+                : true;
+            vimToggle.checked = enabled;
+          }
         }
       );
     } catch (e) {
@@ -121,6 +144,13 @@
 
   if (clearBtn) {
     clearBtn.addEventListener("click", clearShortcut);
+  }
+
+  if (vimToggle) {
+    vimToggle.addEventListener("change", (e) => {
+      const target = /** @type {HTMLInputElement} */ (e.target);
+      saveVimEnabled(!!target.checked);
+    });
   }
 
   document.addEventListener("DOMContentLoaded", restoreOptions);

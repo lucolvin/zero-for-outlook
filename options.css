@@ -149,6 +149,24 @@ h1 {
   opacity: 1;
 }
 
+.oz-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  font-size: 0.9rem;
+  color: #374151;
+}
+
+.oz-toggle-input {
+  width: 16px;
+  height: 16px;
+}
+
+.oz-toggle-label {
+  flex: 1;
+}
+
 .oz-list {
   margin: 0;
   padding-left: 18px;
