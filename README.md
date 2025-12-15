@@ -13,6 +13,11 @@ The first shortcut supported is **Undo archive**, which clicks the transient **U
     - `https://outlook.office.com/*`
     - `https://outlook.office365.com/*`
 
+- **Vim-style navigation (j / k)**
+  - When enabled, lets you move up and down the message list with **j** (down) and **k** (up), similar to Vim and many email clients.
+  - Only works when focus is on the message list and you are _not_ typing in an input, textarea, or rich-text editor, so it will not interfere with composing emails.
+  - Default is **on**, but you can toggle it from the extension’s options page (see **Vim-style navigation** toggle).
+
 - **Settings / options page**
   - Lets you capture a keyboard shortcut by pressing the keys directly.
   - Shows brief information on how the extension behaves and on which domains it runs.
@@ -22,6 +27,8 @@ The first shortcut supported is **Undo archive**, which clicks the transient **U
 - **`manifest.json`**: WebExtension manifest (MV3) for Chrome and Firefox.
 - **`contentScript.js`**: Injected into Outlook web; listens for the configured shortcut and clicks the **Undo** button.
 - **`options.html` / `options.js` / `options.css`**: Options page UI and logic; stores the shortcut in `storage.sync`.
+
+The same code structure is duplicated for both the Chrome and Firefox versions of the extension.
 
 ### Loading in Chrome (Developer Mode)
 
