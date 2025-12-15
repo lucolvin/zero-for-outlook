@@ -14,6 +14,8 @@
 
   let undoShortcut = { ...DEFAULT_UNDO_SHORTCUT };
   let vimEnabled = true;
+  /** @type {"auto" | "sidebar"} */
+  let vimContext = "auto";
 
   function loadSettings() {
     try {
@@ -166,16 +168,206 @@
     }
   }
 
+  function getNavItems() {
+    // Try to find primary navigation elements (folders / sidebars) in the *left* rail.
+    // We explicitly prefer folder / tree navigation over the top app bar tabs.
+    const selectors = [
+      // Folder tree / left navigation items
+      'nav [role="treeitem"]',
+      'nav [role="menuitem"]',
+      '[role="tree"] [role="treeitem"]',
+      '[role="menubar"] [role="menuitem"]',
+      // Common Outlook-specific data attributes/classes (best effort)
+      '[data-is-selected]',
+      '.is-selected',
+      '.selected'
+    ];
+
+    const cutoff = window.innerWidth * 0.3;
+    let items = [];
+
+    for (const selector of selectors) {
+      const found = Array.from(document.querySelectorAll(selector));
+      // Restrict to elements that are visually in the left ~30% of the viewport,
+      // so we don't accidentally grab the top horizontal app bar.
+      items = found.filter((el) => {
+        try {
+          const rect = el.getBoundingClientRect();
+          return rect.left >= 0 && rect.left < cutoff;
+        } catch {
+          return false;
+        }
+      });
+      if (items.length) break;
+    }
+
+    if (!items.length) {
+      // Fallback: anything that looks like a nav item in the left 30% of the viewport
+      const maybeItems = Array.from(
+        document.querySelectorAll(
+          // Prefer tree / menu / tab items but still keep them in the left region
+          '[role="treeitem"], [role="menuitem"], [role="tab"]'
+        )
+      );
+      items = maybeItems.filter((el) => {
+        try {
+          const rect = el.getBoundingClientRect();
+          return rect.left >= 0 && rect.left < cutoff;
+        } catch {
+          return false;
+        }
+      });
+    }
+
+    return items;
+  }
+
+  function getCurrentNavIndex(items) {
+    if (!items || !items.length) return -1;
+    const active = document.activeElement;
+    let fallbackIndex = -1;
+
+    for (let i = 0; i < items.length; i += 1) {
+      const el = /** @type {HTMLElement} */ (items[i]);
+      if (!el) continue;
+
+      if (el.getAttribute("aria-selected") === "true") {
+        return i;
+      }
+      if (el.getAttribute("data-is-selected") === "true") {
+        fallbackIndex = i;
+      }
+      if (el.classList && (el.classList.contains("is-selected") || el.classList.contains("selected"))) {
+        fallbackIndex = i;
+      }
+      if (active && el.contains(active)) {
+        fallbackIndex = i;
+      }
+    }
+
+    return fallbackIndex;
+  }
+
+  function moveHorizontal(direction) {
+    const items = getNavItems();
+    if (!items.length) return;
+
+    let index = getCurrentNavIndex(items);
+    if (index === -1) {
+      index = direction === "right" ? 0 : items.length - 1;
+    } else if (direction === "right") {
+      index = Math.min(items.length - 1, index + 1);
+    } else {
+      index = Math.max(0, index - 1);
+    }
+
+    const target = /** @type {HTMLElement} */ (items[index]);
+    if (!target) return;
+
+    target.click();
+    if (typeof target.focus === "function") {
+      target.focus();
+    }
+    if (typeof target.scrollIntoView === "function") {
+      target.scrollIntoView({ block: "nearest" });
+    }
+  }
+
+  function moveNavVertical(direction) {
+    const items = getNavItems();
+    if (!items.length) return;
+
+    let index = getCurrentNavIndex(items);
+    if (index === -1) {
+      index = direction === "down" ? 0 : items.length - 1;
+    } else if (direction === "down") {
+      index = Math.min(items.length - 1, index + 1);
+    } else {
+      index = Math.max(0, index - 1);
+    }
+
+    const target = /** @type {HTMLElement} */ (items[index]);
+    if (!target) return;
+
+    target.click();
+    if (typeof target.focus === "function") {
+      target.focus();
+    }
+    if (typeof target.scrollIntoView === "function") {
+      target.scrollIntoView({ block: "nearest" });
+    }
+  }
+
+  function focusSidebar() {
+    const items = getNavItems();
+    if (!items.length) return;
+
+    let index = getCurrentNavIndex(items);
+    if (index === -1) {
+      index = 0;
+    }
+
+    const target = /** @type {HTMLElement} */ (items[index]);
+    if (!target) return;
+
+    target.click();
+    if (typeof target.focus === "function") {
+      target.focus();
+    }
+    if (typeof target.scrollIntoView === "function") {
+      target.scrollIntoView({ block: "nearest" });
+    }
+    // Keep j / k bound to the sidebar even if Outlook tries to steal focus.
+    vimContext = "sidebar";
+  }
+
+  function focusMessageListFromSidebar() {
+    const rows = getMessageRows();
+    if (!rows.length) {
+      vimContext = "auto";
+      return;
+    }
+
+    let index = getCurrentRowIndex(rows);
+    if (index === -1) {
+      index = 0;
+    }
+
+    const targetRow = /** @type {HTMLElement} */ (rows[index]);
+    if (!targetRow) {
+      vimContext = "auto";
+      return;
+    }
+
+    targetRow.click();
+    if (typeof targetRow.focus === "function") {
+      targetRow.focus();
+    }
+    if (typeof targetRow.scrollIntoView === "function") {
+      targetRow.scrollIntoView({ block: "nearest" });
+    }
+
+    // Back to default behavior: j / k control the message list.
+    vimContext = "auto";
+  }
+
   function onKeyDown(event) {
     try {
       // Ignore if user is typing in an input/textarea/contentEditable
       if (isEditableElement(event.target)) {
+        // When typing, fall back to default context.
+        vimContext = "auto";
         return;
       }
 
       const key = (event.key || "").toLowerCase();
 
-      // Vim-style navigation: j = down, k = up (no modifiers)
+      // Vim-style navigation (no modifiers):
+      // - j / k: move vertically within current context
+      //   * message list in default "auto" context
+      //   * sidebar while vimContext === "sidebar" (even if Outlook steals DOM focus)
+      // - h: focus / pin the sidebar (vimContext = "sidebar")
+      // - l: if in sidebar context, move into the message list and reset context
       if (
         vimEnabled &&
         !event.ctrlKey &&
@@ -186,13 +378,37 @@
         if (key === "j") {
           event.preventDefault();
           event.stopPropagation();
-          moveSelection("down");
+          if (vimContext === "sidebar") {
+            moveNavVertical("down");
+          } else {
+            moveSelection("down");
+          }
           return;
         }
         if (key === "k") {
           event.preventDefault();
           event.stopPropagation();
-          moveSelection("up");
+          if (vimContext === "sidebar") {
+            moveNavVertical("up");
+          } else {
+            moveSelection("up");
+          }
+          return;
+        }
+        if (key === "h") {
+          event.preventDefault();
+          event.stopPropagation();
+          focusSidebar();
+          return;
+        }
+        if (key === "l") {
+          event.preventDefault();
+          event.stopPropagation();
+          if (vimContext === "sidebar") {
+            focusMessageListFromSidebar();
+          } else {
+            focusSidebar();
+          }
           return;
         }
       }

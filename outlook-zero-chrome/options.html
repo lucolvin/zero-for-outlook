@@ -45,16 +45,33 @@
       <section class="oz-card">
         <h2>Vim-style navigation</h2>
         <p class="oz-help">
-          Toggle vim-style navigation to move up and down the message list using
-          <kbd>j</kbd> and <kbd>k</kbd>.
+          Toggle vim-style navigation to move efficiently between folders and messages using
+          <kbd>h</kbd>, <kbd>j</kbd>, <kbd>k</kbd>, and <kbd>l</kbd>.
         </p>
 
         <label class="oz-toggle">
           <input id="vimEnabled" type="checkbox" class="oz-toggle-input" />
           <span class="oz-toggle-label">
-            Enable vim-style navigation with <kbd>j</kbd> / <kbd>k</kbd> in the message list
+            Enable vim-style navigation with <kbd>h</kbd>, <kbd>j</kbd>, <kbd>k</kbd>, <kbd>l</kbd>
           </span>
         </label>
+
+        <ul class="oz-list" style="margin-top: 0.75rem;">
+          <li>
+            <strong>Sidebar</strong>:
+            <kbd>h</kbd> (or <kbd>l</kbd> from the message list) focuses and “pins” the sidebar.
+            While pinned, <kbd>j</kbd> / <kbd>k</kbd> move up and down folders in the sidebar.
+          </li>
+          <li>
+            <strong>Message list</strong>:
+            Press <kbd>l</kbd> from the pinned sidebar to move into the message list; then
+            <kbd>j</kbd> / <kbd>k</kbd> move between messages.
+          </li>
+          <li>
+            <strong>Safe by default</strong>:
+            All vim keys are ignored while you are typing in an input, textarea, or editor.
+          </li>
+        </ul>
       </section>
 
       <section class="oz-card">
@@ -73,6 +90,27 @@
           <li>
             <strong>Typing safety</strong>: Shortcuts are ignored while you are typing in an input, text area, or
             editable field so they do not interfere with composing emails.
+          </li>
+        </ul>
+      </section>
+
+      <section class="oz-card">
+        <h2>Privacy</h2>
+        <p class="oz-help">
+          Zero for Outlook never collects, stores, or sends any of your email content or browsing data.
+        </p>
+        <ul class="oz-list">
+          <li>
+            <strong>No tracking</strong>: The extension does not include analytics, telemetry, or any external
+            network requests.
+          </li>
+          <li>
+            <strong>Local-only settings</strong>: Your shortcut and vim toggle are stored only using the browser’s
+            extension storage and are used locally to handle key presses.
+          </li>
+          <li>
+            <strong>Minimal permissions</strong>: It runs only on Outlook web domains and just simulates clicks for
+            the Undo button and navigation elements.
           </li>
         </ul>
       </section>

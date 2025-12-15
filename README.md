@@ -13,14 +13,23 @@ The first shortcut supported is **Undo archive**, which clicks the transient **U
     - `https://outlook.office.com/*`
     - `https://outlook.office365.com/*`
 
-- **Vim-style navigation (j / k)**
-  - When enabled, lets you move up and down the message list with **j** (down) and **k** (up), similar to Vim and many email clients.
-  - Only works when focus is on the message list and you are _not_ typing in an input, textarea, or rich-text editor, so it will not interfere with composing emails.
+- **Vim-style navigation (h / j / k / l)**
+  - When enabled, gives you a Vim-like flow for switching folders and messages:
+    - **`h`** (or `l` from the message list) focuses and “pins” the left sidebar/folder list.
+    - While pinned, **`j`** / **`k`** move up and down items in the sidebar.
+    - Press **`l`** from the sidebar to move into the message list; then **`j`** / **`k`** move between messages.
+  - All vim keys are ignored while you are typing in an input, textarea, or rich-text editor, so they do not interfere with composing emails.
   - Default is **on**, but you can toggle it from the extension’s options page (see **Vim-style navigation** toggle).
 
 - **Settings / options page**
   - Lets you capture a keyboard shortcut by pressing the keys directly.
-  - Shows brief information on how the extension behaves and on which domains it runs.
+  - Shows brief information on how the extension behaves, on which domains it runs, and how vim-style navigation works.
+
+### Privacy / data collection
+
+- The extension **never collects or sends any email content or browsing data**.
+- There is **no analytics or telemetry** and no external network requests from the extension code.
+- The only data stored is your chosen shortcut and whether vim navigation is enabled, kept in the browser’s extension storage and used locally to handle key presses.
 
 ### Files overview
 
