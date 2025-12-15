@@ -1,4 +1,4 @@
-## Outlook Web Keyboard Shortcuts (Firefox & Chrome Extension)
+## Zero for Outlook (Firefox & Chrome Extension)
 
 This extension adds configurable keyboard shortcuts to Outlook on the web.  
 The first shortcut supported is **Undo archive**, which clicks the transient **Undo** button that appears after you archive or move a message.
