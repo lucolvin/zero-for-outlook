@@ -536,8 +536,16 @@
       setSnoozeSelection(0);
       return;
     }
-    const delta = direction === "down" ? 1 : -1;
-    setSnoozeSelection(snoozeActiveIndex + delta);
+    const total = snoozeButtons.length;
+    let nextIndex = snoozeActiveIndex;
+    if (direction === "down") {
+      // Wrap from last item back to the first
+      nextIndex = (snoozeActiveIndex + 1) % total;
+    } else {
+      // Wrap from first item up to the last
+      nextIndex = (snoozeActiveIndex - 1 + total) % total;
+    }
+    setSnoozeSelection(nextIndex);
   }
 
   function handleSnoozeClick(preset) {
