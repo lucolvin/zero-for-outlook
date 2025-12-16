@@ -12,10 +12,10 @@
     key: "z" // normalized to lower-case
   };
   const DEFAULT_COMMAND_SHORTCUT = {
-    ctrlKey: true,
+    ctrlKey: false,
     altKey: false,
     shiftKey: false,
-    metaKey: false,
+    metaKey: true,
     key: "k"
   };
 
