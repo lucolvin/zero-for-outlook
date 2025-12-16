@@ -17,6 +17,15 @@ body {
   min-height: 100vh;
 }
 
+html.oz-theme-dark {
+  background-color: #020617;
+}
+
+body.oz-theme-dark {
+  background-color: #020617;
+  color: #e5e7eb;
+}
+
 .oz-container {
   max-width: 760px;
   margin: 24px auto;
@@ -59,6 +68,10 @@ h1 {
   font-size: 0.9rem;
 }
 
+body.oz-theme-dark .oz-subtitle {
+  color: #9ca3af;
+}
+
 .oz-card {
   background-color: #ffffff;
   border-radius: 12px;
@@ -67,6 +80,14 @@ h1 {
     0 1px 2px rgba(15, 23, 42, 0.05),
     0 8px 20px rgba(15, 23, 42, 0.04);
   margin-bottom: 16px;
+}
+
+body.oz-theme-dark .oz-card {
+  background-color: rgba(15, 23, 42, 0.9);
+  box-shadow:
+    0 12px 35px rgba(15, 23, 42, 0.9),
+    0 0 0 1px rgba(30, 64, 175, 0.55);
+  backdrop-filter: blur(18px);
 }
 
 .oz-card h2 {
@@ -80,6 +101,10 @@ h1 {
   margin-bottom: 12px;
   font-size: 0.9rem;
   color: #4b5563;
+}
+
+body.oz-theme-dark .oz-help {
+  color: #9ca3af;
 }
 
 .oz-shortcut-row {
@@ -110,6 +135,17 @@ h1 {
   background-color: #ffffff;
 }
 
+body.oz-theme-dark .oz-shortcut-input {
+  border-color: #1f2937;
+  background-color: rgba(15, 23, 42, 0.6);
+  color: #e5e7eb;
+}
+
+body.oz-theme-dark .oz-shortcut-input:focus-visible {
+  border-color: #2563eb;
+  background-color: rgba(15, 23, 42, 0.8);
+}
+
 .oz-button {
   border-radius: 999px;
   border: none;
@@ -130,6 +166,15 @@ h1 {
 
 .oz-button-ghost:hover {
   background-color: #e5e7eb;
+}
+
+body.oz-theme-dark .oz-button-ghost {
+  background-color: rgba(15, 23, 42, 0.6);
+  color: #e5e7eb;
+}
+
+body.oz-theme-dark .oz-button-ghost:hover {
+  background-color: rgba(30, 64, 175, 0.4);
 }
 
 .oz-button:active {
@@ -158,6 +203,10 @@ h1 {
   color: #374151;
 }
 
+body.oz-theme-dark .oz-toggle {
+  color: #e5e7eb;
+}
+
 .oz-toggle-input {
   width: 16px;
   height: 16px;
@@ -174,6 +223,10 @@ h1 {
   color: #4b5563;
 }
 
+body.oz-theme-dark .oz-list {
+  color: #9ca3af;
+}
+
 .oz-list li + li {
   margin-top: 4px;
 }
@@ -183,6 +236,10 @@ h1 {
   justify-content: space-between;
   margin-top: 16px;
   font-size: 0.8rem;
+  color: #6b7280;
+}
+
+body.oz-theme-dark .oz-footer {
   color: #6b7280;
 }
 
@@ -198,6 +255,12 @@ kbd {
   border-radius: 4px;
   border: 1px solid #d1d5db;
   background-color: #f9fafb;
+}
+
+body.oz-theme-dark kbd {
+  border-color: #1f2937;
+  background-color: #020617;
+  color: #e5e7eb;
 }
 
 @media (max-width: 600px) {

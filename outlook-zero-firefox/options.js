@@ -15,6 +15,7 @@
   const statusEl = document.getElementById("status");
   const clearBtn = document.getElementById("clearUndo");
   const vimToggle = document.getElementById("vimEnabled");
+  const darkToggle = document.getElementById("darkModeEnabled");
 
   function formatShortcut(shortcut) {
     if (!shortcut || !shortcut.key) return "Not set";
@@ -49,6 +50,34 @@
       });
     } catch (e) {
       setStatus("Could not update vim setting.");
+    }
+  }
+
+  function applyTheme(darkEnabled) {
+    const html = document.documentElement;
+    const body = document.body;
+    if (!html || !body) return;
+    if (darkEnabled) {
+      html.classList.add("oz-theme-dark");
+      body.classList.add("oz-theme-dark");
+    } else {
+      html.classList.remove("oz-theme-dark");
+      body.classList.remove("oz-theme-dark");
+    }
+  }
+
+  function saveDarkModeEnabled(enabled) {
+    try {
+      browserApi.storage.sync.set({ darkModeEnabled: enabled }, () => {
+        if (browserApi.runtime && browserApi.runtime.lastError) {
+          setStatus("Could not update dark mode (storage error).");
+          return;
+        }
+        applyTheme(enabled);
+        setStatus(enabled ? "Dark mode enabled." : "Dark mode disabled.");
+      });
+    } catch (e) {
+      setStatus("Could not update dark mode.");
     }
   }
 
@@ -100,7 +129,7 @@
   function restoreOptions() {
     try {
       browserApi.storage.sync.get(
-        { undoShortcut: DEFAULT_UNDO_SHORTCUT, vimEnabled: true },
+        { undoShortcut: DEFAULT_UNDO_SHORTCUT, vimEnabled: true, darkModeEnabled: true },
         (items) => {
           if (browserApi.runtime && browserApi.runtime.lastError) {
             shortcutInput.value = formatShortcut(DEFAULT_UNDO_SHORTCUT);
@@ -116,6 +145,15 @@
                 : true;
             vimToggle.checked = enabled;
           }
+
+          const darkEnabled =
+            items && typeof items.darkModeEnabled === "boolean"
+              ? items.darkModeEnabled
+              : true;
+          if (darkToggle) {
+            darkToggle.checked = darkEnabled;
+          }
+          applyTheme(darkEnabled);
         }
       );
     } catch (e) {
@@ -150,6 +188,13 @@
     vimToggle.addEventListener("change", (e) => {
       const target = /** @type {HTMLInputElement} */ (e.target);
       saveVimEnabled(!!target.checked);
+    });
+  }
+
+  if (darkToggle) {
+    darkToggle.addEventListener("change", (e) => {
+      const target = /** @type {HTMLInputElement} */ (e.target);
+      saveDarkModeEnabled(!!target.checked);
     });
   }
 
