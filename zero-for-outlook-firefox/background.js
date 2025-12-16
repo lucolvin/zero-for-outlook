@@ -57,7 +57,7 @@
     }
 
     const endpoint =
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
+      "https://generativelanguage.googleapis.com/v1beta/models/gemma-3-4b-it:generateContent";
 
     const instructions =
       "You are helping a busy email user quickly understand an email conversation (thread)." +
