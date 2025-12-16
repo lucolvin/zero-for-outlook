@@ -1199,6 +1199,15 @@
       }
     },
     {
+      id: "unsubscribe",
+      title: "Unsubscribe",
+      subtitle: "Find and click an unsubscribe link in the current email",
+      shortcutHint: "Command bar",
+      action: () => {
+        clickUnsubscribeLink();
+      }
+    },
+    {
       id: "snooze-later-today",
       title: "Snooze – Later today",
       subtitle: "Move selected message to later today",
@@ -1771,12 +1780,72 @@
     return count;
   }
 
+  function getCurrentEmailRoot() {
+    return (
+      document.getElementById("ConversationReadingPaneContainer") ||
+      document.querySelector('[data-app-section="ConversationContainer"]') ||
+      document
+    );
+  }
+
+  function findUnsubscribeLinkInCurrentEmail() {
+    try {
+      const root = getCurrentEmailRoot();
+      if (!root) return null;
+
+      /** @type {HTMLElement | null} */
+      let bestMatch = null;
+
+      const anchors = Array.from(root.querySelectorAll("a[href]"));
+      const lowerIncludes = (value, needle) =>
+        typeof value === "string" && value.toLowerCase().includes(needle);
+
+      for (const node of anchors) {
+        const el = /** @type {HTMLElement} */ (node);
+        if (!el) continue;
+
+        const text = (el.innerText || el.textContent || "").trim();
+        const href = el.getAttribute("href") || "";
+        const aria = el.getAttribute("aria-label") || "";
+
+        const isUnsub =
+          lowerIncludes(text, "unsubscribe") ||
+          lowerIncludes(href, "unsubscribe") ||
+          lowerIncludes(aria, "unsubscribe");
+
+        if (isUnsub) {
+          bestMatch = el;
+          break;
+        }
+      }
+
+      return bestMatch;
+    } catch (e) {
+      // best-effort only
+    }
+    return null;
+  }
+
+  function clickUnsubscribeLink() {
+    const link = findUnsubscribeLinkInCurrentEmail();
+    if (!link) {
+      // eslint-disable-next-line no-console
+      console.debug("Zero: No unsubscribe link found in current email.");
+      return false;
+    }
+    try {
+      /** @type {HTMLElement} */ (link).click();
+      return true;
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.debug("Zero: Failed to click unsubscribe link:", e);
+      return false;
+    }
+  }
+
   function getCurrentEmailText() {
     try {
-      const root =
-        document.getElementById("ConversationReadingPaneContainer") ||
-        document.querySelector('[data-app-section="ConversationContainer"]') ||
-        document;
+      const root = getCurrentEmailRoot() || document;
 
       /** @type {string[]} */
       const chunks = [];
