@@ -103,7 +103,27 @@
   function isScheduledView() {
     try {
       const url = window.location.href || "";
-      return url.indexOf("/mail/scheduled/") !== -1;
+      if (!url) return false;
+
+      // Support multiple Outlook Scheduled-folder URL shapes, e.g.:
+      // - https://outlook.office.com/mail/scheduled/
+      // - https://outlook.office.com/mail/0/scheduled
+      // - https://outlook.office.com/mail/scheduled?view=...
+      // - https://outlook.office.com/mail/0/scheduled?view=...
+      //
+      // We look for a "/mail/<something>/scheduled" pattern where <something>
+      // may be empty or a short identifier like "0".
+      const scheduledPattern = /\/mail\/[^/]*\/scheduled(?:[/?#]|$)/;
+      if (scheduledPattern.test(url)) {
+        return true;
+      }
+
+      // Fallback: older style URLs that might omit the intermediate segment.
+      if (url.indexOf("/mail/scheduled/") !== -1 || url.endsWith("/mail/scheduled")) {
+        return true;
+      }
+
+      return false;
     } catch (e) {
       return false;
     }
