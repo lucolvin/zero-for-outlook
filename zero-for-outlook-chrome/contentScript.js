@@ -778,6 +778,41 @@
     return getCurrentRowIndex(rows) !== -1;
   }
 
+  /**
+   * Ask Outlook to extend the current selection using its built‑in
+   * Shift+ArrowUp / Shift+ArrowDown handling.
+   *
+   * We do this by synthesizing a native-looking keydown event for the
+   * appropriate arrow key with `shiftKey: true`. Our own keyboard
+   * handler ignores synthetic events (`event.isTrusted === false`),
+   * so this will only be processed by Outlook itself.
+   *
+   * @param {"up" | "down"} direction
+   */
+  function sendShiftArrow(direction) {
+    const key = direction === "down" ? "ArrowDown" : "ArrowUp";
+    const keyCode = direction === "down" ? 40 : 38;
+
+    /** @type {Element | null} */
+    const targetEl = document.activeElement || document.body;
+    if (!targetEl) return;
+
+    const evt = new KeyboardEvent("keydown", {
+      key,
+      code: key,
+      keyCode,
+      which: keyCode,
+      shiftKey: true,
+      ctrlKey: false,
+      altKey: false,
+      metaKey: false,
+      bubbles: true,
+      cancelable: true
+    });
+
+    targetEl.dispatchEvent(evt);
+  }
+
   function moveSelection(direction) {
     const rows = getMessageRows();
     if (!rows.length) return;
@@ -989,6 +1024,12 @@
 
   function onKeyDown(event) {
     try {
+      // Ignore synthetic events (including our own Shift+Arrow events)
+      // so that we only ever react to real user key presses.
+      if (!event.isTrusted) {
+        return;
+      }
+
       // Ignore if user is typing in an input/textarea/contentEditable
       if (isEditableElement(event.target)) {
         // When typing, fall back to default context.
@@ -997,6 +1038,25 @@
       }
 
       const key = (event.key || "").toLowerCase();
+
+      // Multi‑select support: Shift+j / Shift+k behave like
+      // Shift+ArrowDown / Shift+ArrowUp in the message list, allowing
+      // you to select ranges of messages that can then be snoozed or
+      // archived together using Outlook's own commands.
+      if (
+        vimEnabled &&
+        event.shiftKey &&
+        !event.ctrlKey &&
+        !event.altKey &&
+        !event.metaKey &&
+        (key === "j" || key === "k") &&
+        !snoozeOverlay
+      ) {
+        event.preventDefault();
+        event.stopPropagation();
+        sendShiftArrow(key === "j" ? "down" : "up");
+        return;
+      }
 
       if (!event.ctrlKey && !event.altKey && !event.shiftKey && !event.metaKey) {
         if (snoozeOverlay) {
