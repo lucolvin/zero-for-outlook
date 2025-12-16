@@ -157,6 +157,33 @@
     });
   }
 
+  // In some Outlook views (notably the Scheduled folder), the built‑in
+  // "Unsnooze" command is only wired up after the Snooze dropdown has
+  // been opened at least once after page load. We "prime" it by
+  // briefly toggling the Snooze button when our popup opens.
+  function primeSnoozeDropdown() {
+    try {
+      const snoozeButton = findSnoozeButton();
+      if (!snoozeButton) return;
+      /** @type {HTMLElement} */ (snoozeButton).click();
+      // Close it again shortly after so the menu does not stay
+      // visually open on top of our overlay.
+      window.setTimeout(() => {
+        try {
+          const btn = findSnoozeButton();
+          if (btn) {
+            /** @type {HTMLElement} */ (btn).click();
+          }
+        } catch (e) {
+          // Best‑effort only.
+        }
+      }, 120);
+    } catch (e) {
+      // Best‑effort only; if this fails we still fall back to the
+      // normal Unsnooze lookup logic.
+    }
+  }
+
   function clickSnoozePreset(presetName) {
     const labels = {
       laterToday: "Later today",
@@ -234,7 +261,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 999999;
+  /* Very high z-index so we always sit above Outlook's Snooze dropdown */
+  z-index: 2147483647;
 }
 
 .oz-snooze-backdrop.oz-snooze-dark {
@@ -437,6 +465,9 @@
     modal.className = "oz-snooze-modal " + (darkModeEnabled ? "oz-snooze-dark" : "oz-snooze-light");
 
     if (isScheduledView()) {
+      // Ensure Outlook's own Snooze/Unsnooze menu has been initialized
+      // so that the "Unsnooze" command exists when we try to trigger it.
+      primeSnoozeDropdown();
       modal.innerHTML = `
         <div class="oz-snooze-header">
           <div class="oz-snooze-title">Unsnooze</div>
