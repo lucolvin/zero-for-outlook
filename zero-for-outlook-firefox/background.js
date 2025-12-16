@@ -60,13 +60,15 @@
       "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 
     const instructions =
-      "You are helping a busy email user quickly understand a single email." +
-      "\n\nTask: Briefly summarize the most important details from the email below." +
-      "\n- Focus on key decisions, requests, dates, and next steps." +
+      "You are helping a busy email user quickly understand an email conversation (thread)." +
+      "\n\nTask: Briefly summarize the most important details from the conversation below." +
+      "\n- Treat the text as a full thread, not just one message." +
+      "\n- Focus on key decisions, requests, dates, and next steps across the whole conversation." +
+      "\n- Make sure the summary reflects the latest message while using earlier messages for context." +
       "\n- Prefer 3–6 short bullet points." +
       "\n- Use plain language, no introductions or conclusions." +
-      "\n- Do not invent information that is not present in the email text." +
-      "\n\nEmail:\n\n" +
+      "\n- Do not invent information that is not present in the text." +
+      "\n\nConversation:\n\n" +
       bodyText.trim();
 
     try {

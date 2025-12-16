@@ -1531,21 +1531,52 @@
 
   function getCurrentEmailText() {
     try {
-      const selectors = [
+      const root =
+        document.getElementById("ConversationReadingPaneContainer") ||
+        document.querySelector('[data-app-section="ConversationContainer"]') ||
+        document;
+
+      /** @type {string[]} */
+      const chunks = [];
+      const seen = new Set();
+
+      const bodySelectors = [
         'div[role="document"]',
         '[data-message-id] [role="document"]',
         'div[aria-label="Message body"]',
-        'div[aria-label="Reading pane"]',
         'div[aria-label="Message content"]'
       ];
-      for (const selector of selectors) {
-        const el = document.querySelector(selector);
-        if (!el) continue;
-        const text = (el.innerText || el.textContent || "").trim();
-        if (text) {
-          return text;
+
+      for (const selector of bodySelectors) {
+        const nodes = Array.from(root.querySelectorAll(selector));
+        if (!nodes.length) continue;
+        for (const el of nodes) {
+          if (!el) continue;
+          const text = (el.innerText || el.textContent || "").trim();
+          if (text && !seen.has(text)) {
+            seen.add(text);
+            chunks.push(text);
+          }
         }
       }
+
+      const previewNodes = Array.from(root.querySelectorAll("div._nzWz"));
+      for (const el of previewNodes) {
+        if (!el) continue;
+        const text = (el.innerText || el.textContent || "").trim();
+        if (text && !seen.has(text)) {
+          seen.add(text);
+          chunks.push(text);
+        }
+      }
+
+      if (!chunks.length) {
+        return "";
+      }
+
+      const full = chunks.join("\n\n---\n\n");
+      const maxChars = 20000;
+      return full.length > maxChars ? full.slice(full.length - maxChars) : full;
     } catch (e) {
       // best-effort only
     }
@@ -2185,4 +2216,5 @@
 
   window.addEventListener("keydown", onKeyDown, true);
 })();
+
 
