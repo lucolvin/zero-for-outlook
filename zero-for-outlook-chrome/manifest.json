@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Zero for Outlook",
   "description": "Add customizable keyboard shortcuts to Outlook on the web, starting with an undo-archive shortcut.",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "permissions": [
     "storage"
   ],
