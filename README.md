@@ -15,17 +15,25 @@ The first shortcut supported is **Undo archive**, which clicks the transient **U
 
 - **Vim-style navigation (h / j / k / l)**
   - When enabled, gives you a Vim-like flow for switching folders and messages:
-    - **`h`** (or `l` from the message list) focuses and “pins” the left sidebar/folder list.
+    - **`h`** (or `l` from the message list) focuses and "pins" the left sidebar/folder list.
     - While pinned, **`j`** / **`k`** move up and down items in the sidebar.
     - Press **`l`** from the sidebar to move into the message list; then **`j`** / **`k`** move between messages.
   - All vim keys are ignored while you are typing in an input, textarea, or rich-text editor, so they do not interfere with composing emails.
-  - Default is **on**, but you can toggle it from the extension’s options page (see **Vim-style navigation** toggle).
+  - Default is **on**, but you can toggle it from the extension's options page (see **Vim-style navigation** toggle).
+
+- **Snooze overlay (s)**
+  - Press **`s`** when a message is selected to open a beautiful overlay menu for snoozing or unsnoozing.
+  - In regular views, the overlay shows options to snooze: **Later today**, **Tomorrow**, **This weekend**, **Next week**, and **Choose a date**.
+  - In the Scheduled folder, the overlay shows an **Unsnooze** option to move messages back to the Inbox.
+  - Navigate with **`j`** / **`k`**, select with **Enter**, and close with **Esc** or **`s`**.
+  - The overlay displays concrete times (e.g., "5:00 AM", "Wed 8:00 AM") when Outlook provides them.
 
 - **Settings / options page**
   - Lets you capture a keyboard shortcut by pressing the keys directly.
   - Lets you toggle vim-style navigation on/off.
   - Lets you enable a dark, glassy theme for the options page.
   - Shows brief information on how the extension behaves, on which domains it runs, and how vim-style navigation works.
+  - Accessible by clicking the extension icon in your browser's toolbar, or by right-clicking the extension icon and selecting "Options".
 
 ### Privacy / data collection
 
@@ -37,7 +45,7 @@ The first shortcut supported is **Undo archive**, which clicks the transient **U
 
 - **`zero-for-outlook-chrome/manifest.json`**: Manifest V3 configuration for the Chrome extension.
 - **`zero-for-outlook-firefox/manifest.json`**: Manifest V2 configuration for the Firefox extension (with `browser_specific_settings` for Gecko).
-- **`contentScript.js`**: Injected into Outlook web; listens for the configured shortcut and clicks the **Undo** button, and handles vim-style navigation.
+- **`contentScript.js`**: Injected into Outlook web; listens for the configured shortcut and clicks the **Undo** button, handles vim-style navigation, and manages the snooze overlay.
 - **`options.html` / `options.js` / `options.css`**: Options page UI and logic; stores the shortcut, vim toggle, and dark mode toggle in `storage.sync`.
 
 The same code structure is duplicated for both the Chrome and Firefox versions of the extension, under `zero-for-outlook-chrome` and `zero-for-outlook-firefox`.
@@ -49,6 +57,7 @@ The same code structure is duplicated for both the Chrome and Firefox versions o
 3. Click **Load unpacked** and select the `zero-for-outlook-chrome` folder:
    - `/path/to/folder/zero-for-outlook/zero-for-outlook-chrome`
 4. Open Outlook on the web in a tab, archive an email, and when the **Undo** bar appears, press your configured shortcut to test.
+5. Try pressing **`s`** on a selected message to test the snooze overlay, or use **`j`** / **`k`** to navigate messages if vim navigation is enabled.
 
 ### Loading in Firefox (Temporary Add-on)
 
@@ -57,6 +66,7 @@ The same code structure is duplicated for both the Chrome and Firefox versions o
 3. Select the `manifest.json` file in the Firefox folder:
    - `/path/to/folder/zero-for-outlook/zero-for-outlook-firefox/manifest.json`
 4. Open Outlook on the web and test the shortcut the same way as in Chrome.
+5. Try pressing **`s`** on a selected message to test the snooze overlay, or use **`j`** / **`k`** to navigate messages if vim navigation is enabled.
 
 ### Customizing / extending
 
@@ -64,6 +74,3 @@ The same code structure is duplicated for both the Chrome and Firefox versions o
   - Extend the storage schema (e.g., `archiveShortcut`, `markReadShortcut`, etc.).
   - Add more keyboard handlers and DOM queries in `contentScript.js` for the relevant buttons/elements.
   - Expand the options UI to configure those additional shortcuts and toggles.
-
-
-
