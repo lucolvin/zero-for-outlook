@@ -18,6 +18,7 @@ The first shortcut supported is **Undo archive**, which clicks the transient **U
     - **`h`** (or `l` from the message list) focuses and "pins" the left sidebar/folder list.
     - While pinned, **`j`** / **`k`** move up and down items in the sidebar.
     - Press **`l`** from the sidebar to move into the message list; then **`j`** / **`k`** move between messages.
+    - In the message list, **Shift + `j`** / **Shift + `k`** act like **Shift + ↓ / Shift + ↑**, extending the current selection so you can select **multiple messages at once** and then snooze or archive them using Outlook’s own commands.
   - All vim keys are ignored while you are typing in an input, textarea, or rich-text editor, so they do not interfere with composing emails.
   - Default is **on**, but you can toggle it from the extension's options page (see **Vim-style navigation** toggle).
 
@@ -30,9 +31,9 @@ The first shortcut supported is **Undo archive**, which clicks the transient **U
 
 - **Settings / options page**
   - Lets you capture a keyboard shortcut by pressing the keys directly.
-  - Lets you toggle vim-style navigation on/off.
-  - Lets you enable a dark, glassy theme for the options page.
-  - Shows brief information on how the extension behaves, on which domains it runs, and how vim-style navigation works.
+  - Lets you toggle vim-style navigation on/off, including **Shift + j / Shift + k multi-select** behavior in the message list.
+  - Lets you enable a dark, glassy theme for the options page and snooze/unsnooze overlay.
+  - Shows brief information on how the extension behaves, on which domains it runs, and how vim-style navigation and multi-select work.
   - Accessible by clicking the extension icon in your browser's toolbar, or by right-clicking the extension icon and selecting "Options".
 
 ### Privacy / data collection
