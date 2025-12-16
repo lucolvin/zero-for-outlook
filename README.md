@@ -35,19 +35,19 @@ The first shortcut supported is **Undo archive**, which clicks the transient **U
 
 ### Files overview
 
-- **`outlook-zero-chrome/manifest.json`**: Manifest V3 configuration for the Chrome extension.
-- **`outlook-zero-firefox/manifest.json`**: Manifest V2 configuration for the Firefox extension (with `browser_specific_settings` for Gecko).
+- **`zero-for-outlook-chrome/manifest.json`**: Manifest V3 configuration for the Chrome extension.
+- **`zero-for-outlook-firefox/manifest.json`**: Manifest V2 configuration for the Firefox extension (with `browser_specific_settings` for Gecko).
 - **`contentScript.js`**: Injected into Outlook web; listens for the configured shortcut and clicks the **Undo** button, and handles vim-style navigation.
 - **`options.html` / `options.js` / `options.css`**: Options page UI and logic; stores the shortcut, vim toggle, and dark mode toggle in `storage.sync`.
 
-The same code structure is duplicated for both the Chrome and Firefox versions of the extension, under `outlook-zero-chrome` and `outlook-zero-firefox`.
+The same code structure is duplicated for both the Chrome and Firefox versions of the extension, under `zero-for-outlook-chrome` and `zero-for-outlook-firefox`.
 
 ### Loading in Chrome (Developer Mode)
 
 1. Run Chrome and open `chrome://extensions`.
 2. Enable **Developer mode** (top-right toggle).
-3. Click **Load unpacked** and select the `outlook-zero-chrome` folder:
-   - `/Users/lcolvin/Dev/zero-for-outlook/outlook-zero-chrome`
+3. Click **Load unpacked** and select the `zero-for-outlook-chrome` folder:
+   - `/Users/lcolvin/Dev/zero-for-outlook/zero-for-outlook-chrome`
 4. Open Outlook on the web in a tab, archive an email, and when the **Undo** bar appears, press your configured shortcut to test.
 
 ### Loading in Firefox (Temporary Add-on)
@@ -55,7 +55,7 @@ The same code structure is duplicated for both the Chrome and Firefox versions o
 1. Run Firefox and open `about:debugging#/runtime/this-firefox`.
 2. Click **Load Temporary Add-on…**.
 3. Select the `manifest.json` file in the Firefox folder:
-   - `/Users/lcolvin/Dev/zero-for-outlook/outlook-zero-firefox/manifest.json`
+   - `/Users/lcolvin/Dev/zero-for-outlook/zero-for-outlook-firefox/manifest.json`
 4. Open Outlook on the web and test the shortcut the same way as in Chrome.
 
 ### Customizing / extending
