@@ -263,6 +263,53 @@
     return result;
   }
 
+  /**
+   * After we've toggled Outlook's Snooze dropdown, poll briefly for the
+   * concrete preset times and hydrate our overlay's secondary labels once
+   * they are available. Until then, the descriptions remain hidden/empty.
+   *
+   * @param {HTMLElement} modal
+   */
+  function hydrateSnoozeDescriptions(modal) {
+    if (!modal) return;
+    const maxAttempts = 8;
+    const delay = 80;
+    let attempts = 0;
+
+    function tryHydrate() {
+      attempts += 1;
+      const nativeTimes = getNativeSnoozePresetTimes();
+      let updated = false;
+
+      /** @type {{ key: keyof ReturnType<typeof getNativeSnoozePresetTimes>; selector: string }[]} */
+      const mapping = [
+        { key: "laterToday", selector: '[data-oz-snooze="laterToday"] .oz-snooze-secondary' },
+        { key: "tomorrow", selector: '[data-oz-snooze="tomorrow"] .oz-snooze-secondary' },
+        { key: "thisWeekend", selector: '[data-oz-snooze="thisWeekend"] .oz-snooze-secondary' },
+        { key: "nextWeek", selector: '[data-oz-snooze="nextWeek"] .oz-snooze-secondary' }
+      ];
+
+      for (const item of mapping) {
+        const value = nativeTimes[item.key];
+        if (!value) continue;
+        const el = /** @type {HTMLElement | null} */ (
+          modal.querySelector(item.selector)
+        );
+        if (!el) continue;
+        if (!el.textContent || !el.textContent.trim()) {
+          el.textContent = value;
+          updated = true;
+        }
+      }
+
+      if (!updated && attempts < maxAttempts) {
+        window.setTimeout(tryHydrate, delay);
+      }
+    }
+
+    tryHydrate();
+  }
+
   function clickSnoozePreset(presetName) {
     const labels = {
       laterToday: "Later today",
@@ -597,11 +644,11 @@
         </div>
       `;
     } else {
-      const nativeTimes = getNativeSnoozePresetTimes();
-      const laterTodayText = nativeTimes.laterToday || "Typically this afternoon";
-      const tomorrowText = nativeTimes.tomorrow || "Usually tomorrow morning";
-      const thisWeekendText = nativeTimes.thisWeekend || "Next weekend morning";
-      const nextWeekText = nativeTimes.nextWeek || "Next Monday morning";
+      // Just like the Unsnooze view, we want Outlook's own Snooze dropdown
+      // to be opened at least once so that its preset DOM nodes (with the
+      // concrete times like "5:00 AM") exist before we try to read them.
+      // This briefly toggles the Snooze button and then closes it again.
+      primeSnoozeDropdown();
       modal.innerHTML = `
         <div class="oz-snooze-header">
           <div class="oz-snooze-title">
@@ -620,19 +667,19 @@
         <div class="oz-snooze-section">
           <button type="button" class="oz-snooze-button" data-oz-snooze="laterToday">
             <span class="oz-snooze-label">Later today</span>
-            <span class="oz-snooze-secondary">${laterTodayText}</span>
+            <span class="oz-snooze-secondary"></span>
           </button>
           <button type="button" class="oz-snooze-button" data-oz-snooze="tomorrow">
             <span class="oz-snooze-label">Tomorrow</span>
-            <span class="oz-snooze-secondary">${tomorrowText}</span>
+            <span class="oz-snooze-secondary"></span>
           </button>
           <button type="button" class="oz-snooze-button" data-oz-snooze="thisWeekend">
             <span class="oz-snooze-label">This weekend</span>
-            <span class="oz-snooze-secondary">${thisWeekendText}</span>
+            <span class="oz-snooze-secondary"></span>
           </button>
           <button type="button" class="oz-snooze-button" data-oz-snooze="nextWeek">
             <span class="oz-snooze-label">Next week</span>
-            <span class="oz-snooze-secondary">${nextWeekText}</span>
+            <span class="oz-snooze-secondary"></span>
           </button>
         </div>
         <div class="oz-snooze-section oz-snooze-section-divider">
@@ -651,6 +698,10 @@
     // that `setSnoozeSelection` doesn't early‑return due to a null overlay.
     document.documentElement.appendChild(backdrop);
     snoozeOverlay = backdrop;
+
+    // Now that the underlying Snooze dropdown has been toggled, start
+    // hydrating the secondary labels with the real times once they appear.
+    hydrateSnoozeDescriptions(modal);
 
     setSnoozeSelection(0);
 
