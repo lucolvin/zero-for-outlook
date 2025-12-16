@@ -47,7 +47,7 @@ The same code structure is duplicated for both the Chrome and Firefox versions o
 1. Run Chrome and open `chrome://extensions`.
 2. Enable **Developer mode** (top-right toggle).
 3. Click **Load unpacked** and select the `zero-for-outlook-chrome` folder:
-   - `/Users/lcolvin/Dev/zero-for-outlook/zero-for-outlook-chrome`
+   - `/path/to/folder/zero-for-outlook/zero-for-outlook-chrome`
 4. Open Outlook on the web in a tab, archive an email, and when the **Undo** bar appears, press your configured shortcut to test.
 
 ### Loading in Firefox (Temporary Add-on)
@@ -55,7 +55,7 @@ The same code structure is duplicated for both the Chrome and Firefox versions o
 1. Run Firefox and open `about:debugging#/runtime/this-firefox`.
 2. Click **Load Temporary Add-on…**.
 3. Select the `manifest.json` file in the Firefox folder:
-   - `/Users/lcolvin/Dev/zero-for-outlook/zero-for-outlook-firefox/manifest.json`
+   - `/path/to/folder/zero-for-outlook/zero-for-outlook-firefox/manifest.json`
 4. Open Outlook on the web and test the shortcut the same way as in Chrome.
 
 ### Customizing / extending
