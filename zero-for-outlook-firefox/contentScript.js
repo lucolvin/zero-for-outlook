@@ -770,6 +770,12 @@
     return fallbackIndex;
   }
 
+  function hasSelectedMessage() {
+    const rows = getMessageRows();
+    if (!rows.length) return false;
+    return getCurrentRowIndex(rows) !== -1;
+  }
+
   function moveSelection(direction) {
     const rows = getMessageRows();
     if (!rows.length) return;
@@ -1023,7 +1029,9 @@
           if (snoozeOverlay) {
             closeSnoozeOverlay();
           } else {
-            openSnoozeOverlay();
+            if (hasSelectedMessage()) {
+              openSnoozeOverlay();
+            }
           }
           return;
         }
