@@ -517,6 +517,12 @@
     backdrop.appendChild(modal);
 
     snoozeButtons = Array.from(modal.querySelectorAll("[data-oz-snooze]"));
+
+    // Register the overlay before we attempt to set the initial selection so
+    // that `setSnoozeSelection` doesn't early‑return due to a null overlay.
+    document.documentElement.appendChild(backdrop);
+    snoozeOverlay = backdrop;
+
     setSnoozeSelection(0);
 
     backdrop.addEventListener("click", (e) => {
@@ -538,9 +544,6 @@
       if (!preset) return;
       handleSnoozeClick(preset);
     });
-
-    document.documentElement.appendChild(backdrop);
-    snoozeOverlay = backdrop;
   }
 
   function getMessageRows() {
