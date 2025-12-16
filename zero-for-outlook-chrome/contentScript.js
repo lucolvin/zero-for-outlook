@@ -398,6 +398,9 @@
   let snoozeButtons = [];
   let snoozeActiveIndex = -1;
 
+  let summaryOverlay = null;
+  let summaryContentEl = null;
+
   function ensureSnoozeStyles() {
     if (document.getElementById("oz-snooze-style")) return;
     const style = document.createElement("style");
@@ -587,6 +590,194 @@
     snoozeOverlay = null;
     snoozeButtons = [];
     snoozeActiveIndex = -1;
+  }
+
+  function ensureSummaryStyles() {
+    if (document.getElementById("oz-summary-style")) return;
+    const style = document.createElement("style");
+    style.id = "oz-summary-style";
+    style.textContent = `
+.oz-summary-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.18);
+  backdrop-filter: blur(14px) saturate(130%);
+  -webkit-backdrop-filter: blur(14px) saturate(130%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2147483647;
+}
+
+.oz-summary-backdrop.oz-summary-dark {
+  background:
+    radial-gradient(circle at top left, rgba(59, 130, 246, 0.25), transparent 55%),
+    radial-gradient(circle at bottom right, rgba(129, 140, 248, 0.3), transparent 55%),
+    rgba(15, 23, 42, 0.32);
+}
+
+.oz-summary-backdrop.oz-summary-light {
+  background:
+    radial-gradient(circle at top left, rgba(59, 130, 246, 0.18), transparent 55%),
+    radial-gradient(circle at bottom right, rgba(129, 140, 248, 0.2), transparent 55%),
+    rgba(15, 23, 42, 0.12);
+}
+
+.oz-summary-modal {
+  max-width: min(520px, 96vw);
+  border-radius: 12px;
+  padding: 14px 16px 12px;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.oz-summary-modal.oz-summary-dark {
+  background-color: #020617;
+  box-shadow:
+    0 18px 36px rgba(15, 23, 42, 0.9),
+    0 0 0 1px rgba(148, 163, 184, 0.5);
+  color: #e5e7eb;
+}
+
+.oz-summary-modal.oz-summary-light {
+  background-color: #ffffff;
+  box-shadow:
+    0 10px 24px rgba(15, 23, 42, 0.16),
+    0 0 0 1px rgba(148, 163, 184, 0.45);
+  color: #111827;
+}
+
+.oz-summary-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.oz-summary-title {
+  font-size: 1.02rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.oz-summary-chip {
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.7);
+  opacity: 0.85;
+}
+
+.oz-summary-close {
+  border: none;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: 0.8rem;
+  padding: 2px 4px;
+}
+
+.oz-summary-close:hover {
+  opacity: 0.9;
+}
+
+.oz-summary-body {
+  font-size: 0.9rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
+.oz-summary-body-error {
+  color: #f97373;
+}
+
+.oz-summary-body-loading {
+  opacity: 0.86;
+}
+`;
+    document.documentElement.appendChild(style);
+  }
+
+  function closeSummaryOverlay() {
+    if (summaryOverlay && summaryOverlay.parentNode) {
+      summaryOverlay.parentNode.removeChild(summaryOverlay);
+    }
+    summaryOverlay = null;
+    summaryContentEl = null;
+  }
+
+  function openSummaryOverlay(options) {
+    const title = (options && options.title) || "Email summary";
+    const body = (options && options.body) || "";
+    const isError = !!(options && options.isError);
+    const isLoading = !!(options && options.isLoading);
+
+    ensureSummaryStyles();
+
+    if (!summaryOverlay) {
+      const backdrop = document.createElement("div");
+      backdrop.className =
+        "oz-summary-backdrop " + (darkModeEnabled ? "oz-summary-dark" : "oz-summary-light");
+
+      const modal = document.createElement("div");
+      modal.className =
+        "oz-summary-modal " + (darkModeEnabled ? "oz-summary-dark" : "oz-summary-light");
+
+      modal.innerHTML = `
+        <div class="oz-summary-header">
+          <div class="oz-summary-title">
+            <span>Summary</span>
+            <span class="oz-summary-chip">Gemini</span>
+          </div>
+          <button type="button" class="oz-summary-close" aria-label="Close summary">Esc</button>
+        </div>
+        <div class="oz-summary-body"></div>
+      `;
+
+      backdrop.appendChild(modal);
+      document.documentElement.appendChild(backdrop);
+
+      summaryOverlay = backdrop;
+      summaryContentEl = modal.querySelector(".oz-summary-body");
+
+      backdrop.addEventListener("click", (e) => {
+        if (e.target === backdrop && !isLoading) {
+          closeSummaryOverlay();
+        }
+      });
+
+      const closeBtn = modal.querySelector(".oz-summary-close");
+      if (closeBtn) {
+        closeBtn.addEventListener("click", () => {
+          if (!isLoading) {
+            closeSummaryOverlay();
+          }
+        });
+      }
+    }
+
+    const modal = summaryOverlay.querySelector(".oz-summary-modal");
+    if (modal) {
+      const titleEl = modal.querySelector(".oz-summary-title span");
+      if (titleEl) {
+        titleEl.textContent = title;
+      }
+    }
+
+    if (!summaryContentEl) {
+      summaryContentEl = summaryOverlay.querySelector(".oz-summary-body");
+    }
+
+    if (summaryContentEl) {
+      summaryContentEl.textContent = body;
+      summaryContentEl.classList.remove("oz-summary-body-error", "oz-summary-body-loading");
+      if (isError) {
+        summaryContentEl.classList.add("oz-summary-body-error");
+      } else if (isLoading) {
+        summaryContentEl.classList.add("oz-summary-body-loading");
+      }
+    }
   }
 
   function setSnoozeSelection(index) {
@@ -819,6 +1010,15 @@
       }
     },
     {
+      id: "summarize-email",
+      title: "Summarize current email",
+      subtitle: "Use Gemini to highlight key points from the open message",
+      shortcutHint: "Command bar · Gemini",
+      action: () => {
+        summarizeCurrentEmail();
+      }
+    },
+    {
       id: "snooze-later-today",
       title: "Snooze – Later today",
       subtitle: "Move selected message to later today",
@@ -908,6 +1108,87 @@
       .filter((x) => x.score > 0)
       .sort((a, b) => b.score - a.score)
       .map((x) => x.cmd);
+  }
+
+  function requestEmailSummary(bodyText) {
+    return new Promise((resolve) => {
+      try {
+        browserApi.runtime.sendMessage(
+          {
+            type: "oz-summarize-email",
+            bodyText: bodyText || ""
+          },
+          (response) => {
+            if (browserApi.runtime && browserApi.runtime.lastError) {
+              resolve({
+                ok: false,
+                error:
+                  "Could not reach the background script for summarization. Is the extension enabled?"
+              });
+              return;
+            }
+            if (!response) {
+              resolve({ ok: false, error: "Unexpected empty response from Gemini." });
+              return;
+            }
+            resolve(response);
+          }
+        );
+      } catch (e) {
+        resolve({
+          ok: false,
+          error: "Unexpected error while requesting a summary from the extension."
+        });
+      }
+    });
+  }
+
+  function summarizeCurrentEmail() {
+    const bodyText = getCurrentEmailText();
+    if (!bodyText) {
+      openSummaryOverlay({
+        title: "Email summary",
+        body: "Could not find any visible email content to summarize.",
+        isError: true
+      });
+      return;
+    }
+
+    openSummaryOverlay({
+      title: "Summarizing…",
+      body: "Summarizing the current email with Gemini. This usually takes a moment.",
+      isLoading: true
+    });
+
+    requestEmailSummary(bodyText).then((result) => {
+      if (!result || !result.ok) {
+        const msg =
+          (result && result.error) ||
+          "Gemini could not generate a summary. Please try again in a moment.";
+        openSummaryOverlay({
+          title: "Summary unavailable",
+          body: msg,
+          isError: true
+        });
+        return;
+      }
+
+      const summary = (result && result.summary) || "";
+      if (!summary) {
+        openSummaryOverlay({
+          title: "Summary unavailable",
+          body: "Gemini returned an empty summary for this email.",
+          isError: true
+        });
+        return;
+      }
+
+      openSummaryOverlay({
+        title: "Email summary",
+        body: summary,
+        isError: false
+      });
+    });
   }
 
   function closeCommandOverlay() {
@@ -1248,6 +1529,29 @@
     const container = getMessageListContainer();
     if (!container) return [];
     return Array.from(container.querySelectorAll('[role="row"], [role="option"]'));
+  }
+
+  function getCurrentEmailText() {
+    try {
+      const selectors = [
+        'div[role="document"]',
+        '[data-message-id] [role="document"]',
+        'div[aria-label="Message body"]',
+        'div[aria-label="Reading pane"]',
+        'div[aria-label="Message content"]'
+      ];
+      for (const selector of selectors) {
+        const el = document.querySelector(selector);
+        if (!el) continue;
+        const text = (el.innerText || el.textContent || "").trim();
+        if (text) {
+          return text;
+        }
+      }
+    } catch (e) {
+      // best-effort only
+    }
+    return "";
   }
 
   function getCurrentRowIndex(rows) {
@@ -1665,6 +1969,15 @@
         event.preventDefault();
         event.stopPropagation();
         return;
+      }
+
+      if (summaryOverlay) {
+        if (key === "escape") {
+          event.preventDefault();
+          event.stopPropagation();
+          closeSummaryOverlay();
+          return;
+        }
       }
 
       // Ignore if user is typing in a "normal" input/textarea/contentEditable

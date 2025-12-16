@@ -117,6 +117,45 @@
       </section>
 
       <section class="oz-card">
+        <h2>AI Summaries (Gemini)</h2>
+        <p class="oz-help">
+          Add a Google Gemini API key to enable an AI command that briefly summarizes the important
+          details from the currently open email in Outlook.
+        </p>
+
+        <div class="oz-shortcut-row">
+          <label for="geminiApiKey" class="oz-label">Gemini API key</label>
+          <input
+            id="geminiApiKey"
+            type="password"
+            class="oz-shortcut-input"
+            autocomplete="off"
+            spellcheck="false"
+            placeholder="Paste your Gemini API key…"
+          />
+          <button id="saveGeminiKey" class="oz-button oz-button-ghost" type="button">Save</button>
+          <button id="clearGeminiKey" class="oz-button oz-button-ghost" type="button">
+            Clear
+          </button>
+        </div>
+
+        <ul class="oz-list" style="margin-top: 0.75rem;">
+          <li>
+            <strong>When it runs</strong>: The key is only used when you invoke the
+            <em>Summarize current email</em> command from the command bar.
+          </li>
+          <li>
+            <strong>What is sent</strong>: The visible text content of the currently open email is
+            sent to Google Gemini along with brief summarization instructions.
+          </li>
+          <li>
+            <strong>Where it is stored</strong>: The API key is stored only in your browser’s
+            extension storage and is not shared anywhere else.
+          </li>
+        </ul>
+      </section>
+
+      <section class="oz-card">
         <h2>How it works</h2>
         <ul class="oz-list">
           <li>

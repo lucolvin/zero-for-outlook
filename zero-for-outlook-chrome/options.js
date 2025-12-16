@@ -25,6 +25,9 @@
   const clearCommandBtn = document.getElementById("clearCommand");
   const vimToggle = document.getElementById("vimEnabled");
   const darkToggle = document.getElementById("darkModeEnabled");
+  const geminiInput = document.getElementById("geminiApiKey");
+  const saveGeminiBtn = document.getElementById("saveGeminiKey");
+  const clearGeminiBtn = document.getElementById("clearGeminiKey");
 
   function formatShortcut(shortcut) {
     if (!shortcut || !shortcut.key) return "Not set";
@@ -87,6 +90,20 @@
       });
     } catch (e) {
       setStatus("Could not update dark mode.");
+    }
+  }
+
+  function saveGeminiApiKey(value) {
+    try {
+      browserApi.storage.sync.set({ geminiApiKey: value || "" }, () => {
+        if (browserApi.runtime && browserApi.runtime.lastError) {
+          setStatus("Could not save Gemini API key (storage error).");
+          return;
+        }
+        setStatus(value ? "Gemini API key saved." : "Gemini API key cleared.");
+      });
+    } catch (e) {
+      setStatus("Could not save Gemini API key.");
     }
   }
 
@@ -160,7 +177,8 @@
           undoShortcut: DEFAULT_UNDO_SHORTCUT,
           commandShortcut: DEFAULT_COMMAND_SHORTCUT,
           vimEnabled: true,
-          darkModeEnabled: true
+          darkModeEnabled: true,
+          geminiApiKey: ""
         },
         (items) => {
           if (browserApi.runtime && browserApi.runtime.lastError) {
@@ -192,6 +210,10 @@
             darkToggle.checked = darkEnabled;
           }
           applyTheme(darkEnabled);
+
+          if (geminiInput) {
+            geminiInput.value = (items && items.geminiApiKey) || "";
+          }
         }
       );
     } catch (e) {
@@ -219,6 +241,13 @@
       key: ""
     };
     saveCommandShortcut(emptyShortcut);
+  }
+
+  function clearGeminiApiKey() {
+    if (geminiInput) {
+      geminiInput.value = "";
+    }
+    saveGeminiApiKey("");
   }
 
   if (shortcutInput) {
@@ -259,6 +288,26 @@
     darkToggle.addEventListener("change", (e) => {
       const target = /** @type {HTMLInputElement} */ (e.target);
       saveDarkModeEnabled(!!target.checked);
+    });
+  }
+
+  if (saveGeminiBtn && geminiInput) {
+    saveGeminiBtn.addEventListener("click", () => {
+      saveGeminiApiKey(geminiInput.value.trim());
+    });
+  }
+
+  if (clearGeminiBtn) {
+    clearGeminiBtn.addEventListener("click", clearGeminiApiKey);
+  }
+
+  if (geminiInput) {
+    geminiInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        e.stopPropagation();
+        saveGeminiApiKey(geminiInput.value.trim());
+      }
     });
   }
 
