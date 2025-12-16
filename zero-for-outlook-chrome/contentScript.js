@@ -89,6 +89,21 @@
     );
   }
 
+  function formatShortcutDisplay(shortcut) {
+    if (!shortcut || !shortcut.key) return "Not set";
+
+    const parts = [];
+    if (shortcut.ctrlKey) parts.push("Ctrl");
+    if (shortcut.altKey) parts.push("Alt");
+    if (shortcut.shiftKey) parts.push("Shift");
+    if (shortcut.metaKey) {
+      parts.push(navigator.platform.includes("Mac") ? "Cmd" : "Meta");
+    }
+    parts.push((shortcut.key || "").toUpperCase());
+
+    return parts.join(" + ");
+  }
+
   function findUndoButton() {
     // Outlook Web typically uses an "Undo" button with an aria-label or title of "Undo"
     const selectors = [
@@ -1004,7 +1019,6 @@
       id: "undo",
       title: "Undo last action",
       subtitle: "Trigger Outlook’s built-in Undo for message actions",
-      shortcutHint: "Ctrl+Z (custom)",
       action: () => {
         triggerUndo();
       }
@@ -1108,6 +1122,14 @@
       .filter((x) => x.score > 0)
       .sort((a, b) => b.score - a.score)
       .map((x) => x.cmd);
+  }
+
+  function getCommandShortcutHint(cmd) {
+    if (!cmd) return "";
+    if (cmd.id === "undo") {
+      return formatShortcutDisplay(undoShortcut);
+    }
+    return cmd.shortcutHint || "";
   }
 
   function requestEmailSummary(bodyText) {
@@ -1247,7 +1269,7 @@
           <div class="oz-command-item-title">${cmd.title}</div>
           <div class="oz-command-item-subtitle">${cmd.subtitle || ""}</div>
         </div>
-        <div class="oz-command-item-shortcut">${cmd.shortcutHint || ""}</div>
+        <div class="oz-command-item-shortcut">${getCommandShortcutHint(cmd)}</div>
       `;
       item.addEventListener("mouseenter", () => {
         setCommandSelection(index);
