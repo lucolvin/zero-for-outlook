@@ -97,7 +97,13 @@
     if (!button) {
       return;
     }
+    // Capture the current message list so we can refocus the restored item once
+    // Outlook completes the undo operation and re-renders the row.
+    const beforeRows = getMessageRows();
+    const beforeKeys = buildRowKeySet(beforeRows);
+    const beforeCount = beforeRows.length;
     button.click();
+    refocusRestoredMessage(beforeKeys, beforeCount);
   }
 
   function isScheduledView() {
@@ -724,16 +730,19 @@
     });
   }
 
-  function getMessageRows() {
-    // Outlook's message list is typically rendered as a grid or listbox of rows/options
-    const container =
+  function getMessageListContainer() {
+    return (
       document.querySelector('[role="grid"]') ||
       document.querySelector('[role="listbox"]') ||
-      document.querySelector('[role="treegrid"]');
-    if (!container) return [];
-    return Array.from(
-      container.querySelectorAll('[role="row"], [role="option"]')
+      document.querySelector('[role="treegrid"]')
     );
+  }
+
+  function getMessageRows() {
+    // Outlook's message list is typically rendered as a grid or listbox of rows/options
+    const container = getMessageListContainer();
+    if (!container) return [];
+    return Array.from(container.querySelectorAll('[role="row"], [role="option"]'));
   }
 
   function getCurrentRowIndex(rows) {
@@ -774,6 +783,111 @@
     const rows = getMessageRows();
     if (!rows.length) return false;
     return getCurrentRowIndex(rows) !== -1;
+  }
+
+  function focusMessageRow(row) {
+    const targetRow = /** @type {HTMLElement} */ (row);
+    if (!targetRow) return;
+    targetRow.click();
+    if (typeof targetRow.focus === "function") {
+      targetRow.focus();
+    }
+    if (typeof targetRow.scrollIntoView === "function") {
+      targetRow.scrollIntoView({ block: "nearest" });
+    }
+  }
+
+  function getRowKey(row) {
+    const el = /** @type {HTMLElement} */ (row);
+    if (!el) return "";
+
+    const attrCandidates = [
+      "data-conversation-id",
+      "data-conversationid",
+      "data-thread-id",
+      "data-threadid",
+      "data-message-id",
+      "data-messageid",
+      "data-itemid",
+      "data-item-id"
+    ];
+
+    for (const attr of attrCandidates) {
+      const value = el.getAttribute(attr);
+      if (value) {
+        return `${attr}:${value}`;
+      }
+    }
+
+    const ariaLabel = el.getAttribute("aria-label");
+    if (ariaLabel) {
+      return `aria:${ariaLabel}`;
+    }
+
+    const text = (el.textContent || "").trim();
+    if (text) {
+      return `text:${text.slice(0, 200)}`;
+    }
+
+    return "";
+  }
+
+  function buildRowKeySet(rows) {
+    const result = new Set();
+    for (const row of rows) {
+      const key = getRowKey(row);
+      if (key) {
+        result.add(key);
+      }
+    }
+    return result;
+  }
+
+  function refocusRestoredMessage(previousKeys, previousCount) {
+    const container = getMessageListContainer() || document.body;
+    if (!container) return;
+
+    const prevCount = typeof previousCount === "number" ? previousCount : 0;
+
+    const findRestoredRow = () => {
+      const rows = getMessageRows();
+      for (const row of rows) {
+        const key = getRowKey(row);
+        if (key && !previousKeys.has(key)) {
+          return /** @type {HTMLElement} */ (row);
+        }
+      }
+
+      // Fallback: if the list grew but we didn't find a new key, pick the top row.
+      if (rows.length > prevCount && rows[0]) {
+        return /** @type {HTMLElement} */ (rows[0]);
+      }
+
+      return null;
+    };
+
+    const focusIfRestored = () => {
+      const restored = findRestoredRow();
+      if (restored) {
+        focusMessageRow(restored);
+        return true;
+      }
+      return false;
+    };
+
+    if (focusIfRestored()) {
+      return;
+    }
+
+    const observer = new MutationObserver(() => {
+      if (focusIfRestored()) {
+        observer.disconnect();
+        clearTimeout(timeoutId);
+      }
+    });
+
+    observer.observe(container, { childList: true, subtree: true });
+    const timeoutId = setTimeout(() => observer.disconnect(), 3000);
   }
 
   /**
