@@ -11,8 +11,16 @@
     metaKey: false,
     key: "z" // normalized to lower-case
   };
+  const DEFAULT_COMMAND_SHORTCUT = {
+    ctrlKey: true,
+    altKey: false,
+    shiftKey: false,
+    metaKey: false,
+    key: "k"
+  };
 
   let undoShortcut = { ...DEFAULT_UNDO_SHORTCUT };
+  let commandShortcut = { ...DEFAULT_COMMAND_SHORTCUT };
   let vimEnabled = true;
   let darkModeEnabled = true;
   /** @type {"auto" | "sidebar"} */
@@ -21,7 +29,12 @@
   function loadSettings() {
     try {
       browserApi.storage.sync.get(
-        { undoShortcut: DEFAULT_UNDO_SHORTCUT, vimEnabled: true, darkModeEnabled: true },
+        {
+          undoShortcut: DEFAULT_UNDO_SHORTCUT,
+          commandShortcut: DEFAULT_COMMAND_SHORTCUT,
+          vimEnabled: true,
+          darkModeEnabled: true
+        },
         (items) => {
           if (browserApi.runtime && browserApi.runtime.lastError) {
             // Fail silently; use defaults
@@ -32,6 +45,12 @@
               undoShortcut = {
                 ...DEFAULT_UNDO_SHORTCUT,
                 ...items.undoShortcut
+              };
+            }
+            if (items.commandShortcut) {
+              commandShortcut = {
+                ...DEFAULT_COMMAND_SHORTCUT,
+                ...items.commandShortcut
               };
             }
             if (typeof items.vimEnabled === "boolean") {
@@ -603,6 +622,490 @@
     setSnoozeSelection(nextIndex);
   }
 
+  // --- Command bar (Ctrl+K) -------------------------------------------------
+
+  let commandOverlay = null;
+  let commandInput = null;
+  let commandItems = [];
+  let commandActiveIndex = -1;
+  let commandFiltered = [];
+
+  function ensureCommandBarStyles() {
+    if (document.getElementById("oz-command-style")) return;
+    const style = document.createElement("style");
+    style.id = "oz-command-style";
+    style.textContent = `
+.oz-command-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.18);
+  backdrop-filter: blur(14px) saturate(130%);
+  -webkit-backdrop-filter: blur(14px) saturate(130%);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 10vh;
+  z-index: 2147483647;
+}
+
+.oz-command-backdrop.oz-command-dark {
+  background:
+    radial-gradient(circle at top left, rgba(59, 130, 246, 0.25), transparent 55%),
+    radial-gradient(circle at bottom right, rgba(129, 140, 248, 0.3), transparent 55%),
+    rgba(15, 23, 42, 0.32);
+}
+
+.oz-command-backdrop.oz-command-light {
+  background:
+    radial-gradient(circle at top left, rgba(59, 130, 246, 0.18), transparent 55%),
+    radial-gradient(circle at bottom right, rgba(129, 140, 248, 0.2), transparent 55%),
+    rgba(15, 23, 42, 0.12);
+}
+
+.oz-command-modal {
+  width: min(640px, 96vw);
+  border-radius: 12px;
+  overflow: hidden;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.oz-command-modal,
+.oz-command-modal * {
+  box-sizing: border-box;
+}
+
+.oz-command-modal.oz-command-dark {
+  background-color: #020617;
+  box-shadow:
+    0 22px 40px rgba(15, 23, 42, 0.9),
+    0 0 0 1px rgba(148, 163, 184, 0.55);
+  color: #e5e7eb;
+}
+
+.oz-command-modal.oz-command-light {
+  background-color: #ffffff;
+  box-shadow:
+    0 16px 32px rgba(15, 23, 42, 0.16),
+    0 0 0 1px rgba(148, 163, 184, 0.45);
+  color: #111827;
+}
+
+.oz-command-input-wrapper {
+  position: relative;
+  padding: 10px 12px 8px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.4);
+}
+
+.oz-command-input {
+  width: 100%;
+  border-radius: 8px;
+  border: 1px solid rgba(148, 163, 184, 0.6);
+  background: rgba(15, 23, 42, 0.8);
+  color: #e5e7eb;
+  padding: 8px 9px 7px 28px;
+  font-size: 0.95rem;
+  outline: none;
+}
+
+.oz-command-modal.oz-command-light .oz-command-input {
+  background: #f9fafb;
+  color: #111827;
+}
+
+.oz-command-input::placeholder {
+  color: rgba(148, 163, 184, 0.8);
+}
+
+.oz-command-input-icon {
+  position: absolute;
+  left: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.9rem;
+  opacity: 0.8;
+  pointer-events: none;
+}
+
+.oz-command-list {
+  max-height: 360px;
+  overflow-y: auto;
+  padding: 4px 4px 6px;
+}
+
+.oz-command-empty {
+  padding: 10px 12px 12px;
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+
+.oz-command-item {
+  border-radius: 8px;
+  padding: 7px 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  transition:
+    background-color 90ms ease,
+    transform 60ms ease;
+}
+
+.oz-command-item-main {
+  display: flex;
+  flex-direction: column;
+}
+
+.oz-command-item-title {
+  font-size: 0.93rem;
+  font-weight: 500;
+}
+
+.oz-command-item-subtitle {
+  font-size: 0.8rem;
+  opacity: 0.82;
+}
+
+.oz-command-item-shortcut {
+  font-size: 0.75rem;
+  opacity: 0.78;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.7);
+  padding: 3px 7px 2px;
+}
+
+.oz-command-modal.oz-command-dark .oz-command-item {
+  color: #e5e7eb;
+}
+
+.oz-command-modal.oz-command-light .oz-command-item {
+  color: #111827;
+}
+
+.oz-command-item:hover {
+  transform: translateY(-0.5px);
+}
+
+.oz-command-modal.oz-command-dark .oz-command-item:hover {
+  background-color: rgba(31, 41, 55, 0.95);
+}
+
+.oz-command-modal.oz-command-light .oz-command-item:hover {
+  background-color: #f3f4f6;
+}
+
+.oz-command-item-active {
+  transform: translateY(-0.5px);
+}
+
+.oz-command-modal.oz-command-dark .oz-command-item-active {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.24), rgba(129, 140, 248, 0.24));
+}
+
+.oz-command-modal.oz-command-light .oz-command-item-active {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.14), rgba(129, 140, 248, 0.16));
+}
+`;
+    document.documentElement.appendChild(style);
+  }
+
+  const COMMANDS = [
+    {
+      id: "undo",
+      title: "Undo last action",
+      subtitle: "Trigger Outlook’s built-in Undo for message actions",
+      shortcutHint: "Ctrl+Z (custom)",
+      action: () => {
+        triggerUndo();
+      }
+    },
+    {
+      id: "snooze-later-today",
+      title: "Snooze – Later today",
+      subtitle: "Move selected message to later today",
+      shortcutHint: "S, then preset",
+      action: () => {
+        openSnoozeAndApplyPreset("laterToday");
+      }
+    },
+    {
+      id: "snooze-tomorrow",
+      title: "Snooze – Tomorrow",
+      subtitle: "Move selected message to tomorrow morning",
+      shortcutHint: "S, then preset",
+      action: () => {
+        openSnoozeAndApplyPreset("tomorrow");
+      }
+    },
+    {
+      id: "snooze-this-weekend",
+      title: "Snooze – This weekend",
+      subtitle: "Move selected message to this weekend",
+      shortcutHint: "S, then preset",
+      action: () => {
+        openSnoozeAndApplyPreset("thisWeekend");
+      }
+    },
+    {
+      id: "snooze-next-week",
+      title: "Snooze – Next week",
+      subtitle: "Move selected message to next week",
+      shortcutHint: "S, then preset",
+      action: () => {
+        openSnoozeAndApplyPreset("nextWeek");
+      }
+    },
+    {
+      id: "unsnooze",
+      title: "Unsnooze",
+      subtitle: "Move scheduled message back to Inbox",
+      shortcutHint: "S, then Unsnooze",
+      action: () => {
+        clickUnsnooze();
+      }
+    },
+    {
+      id: "focus-sidebar",
+      title: "Focus sidebar",
+      subtitle: "Jump focus to folder list/navigation",
+      shortcutHint: "h",
+      action: () => {
+        focusSidebar();
+      }
+    },
+    {
+      id: "focus-message-list",
+      title: "Focus message list",
+      subtitle: "Jump focus back to the message list",
+      shortcutHint: "l (from sidebar)",
+      action: () => {
+        focusMessageListFromSidebar();
+      }
+    }
+  ];
+
+  function scoreCommandMatch(cmd, query) {
+    if (!query) return 1;
+    const q = query.toLowerCase().trim();
+    if (!q) return 1;
+    const haystack =
+      (cmd.title || "").toLowerCase() +
+      " " +
+      (cmd.subtitle || "").toLowerCase() +
+      " " +
+      (cmd.id || "").toLowerCase();
+    if (haystack === q) return 100;
+    if (haystack.startsWith(q)) return 50;
+    if (haystack.indexOf(q) !== -1) return 25;
+    return 0;
+  }
+
+  function getFilteredCommands(query) {
+    const scored = COMMANDS.map((cmd) => ({
+      cmd,
+      score: scoreCommandMatch(cmd, query)
+    }));
+    return scored
+      .filter((x) => x.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .map((x) => x.cmd);
+  }
+
+  function closeCommandOverlay() {
+    if (commandOverlay && commandOverlay.parentNode) {
+      commandOverlay.parentNode.removeChild(commandOverlay);
+    }
+    commandOverlay = null;
+    commandInput = null;
+    commandItems = [];
+    commandActiveIndex = -1;
+    commandFiltered = [];
+  }
+
+  function setCommandSelection(index) {
+    if (!commandItems || !commandItems.length) return;
+    const clamped = Math.max(0, Math.min(commandItems.length - 1, index));
+    commandActiveIndex = clamped;
+    commandItems.forEach((el, i) => {
+      if (!el) return;
+      if (i === clamped) {
+        el.classList.add("oz-command-item-active");
+      } else {
+        el.classList.remove("oz-command-item-active");
+      }
+    });
+  }
+
+  function renderCommandList(query) {
+    if (!commandOverlay) return;
+    const list = commandOverlay.querySelector(".oz-command-list");
+    const empty = commandOverlay.querySelector(".oz-command-empty");
+    if (!list) return;
+
+    const filtered = getFilteredCommands(query);
+    commandFiltered = filtered;
+    list.innerHTML = "";
+    commandItems = [];
+    commandActiveIndex = -1;
+
+    if (!filtered.length) {
+      if (empty) {
+        empty.textContent = query ? `No commands match “${query}”` : "No commands available.";
+        empty.style.display = "block";
+      }
+      return;
+    }
+    if (empty) {
+      empty.style.display = "none";
+    }
+
+    filtered.forEach((cmd, index) => {
+      const item = document.createElement("div");
+      item.className = "oz-command-item";
+      item.innerHTML = `
+        <div class="oz-command-item-main">
+          <div class="oz-command-item-title">${cmd.title}</div>
+          <div class="oz-command-item-subtitle">${cmd.subtitle || ""}</div>
+        </div>
+        <div class="oz-command-item-shortcut">${cmd.shortcutHint || ""}</div>
+      `;
+      item.addEventListener("mouseenter", () => {
+        setCommandSelection(index);
+      });
+      item.addEventListener("click", () => {
+        if (cmd && typeof cmd.action === "function") {
+          closeCommandOverlay();
+          try {
+            cmd.action();
+          } catch (e) {
+            // eslint-disable-next-line no-console
+            console.debug("Zero command action error:", e);
+          }
+        }
+      });
+      list.appendChild(item);
+      commandItems.push(item);
+    });
+
+    setCommandSelection(0);
+  }
+
+  function openCommandOverlay() {
+    ensureCommandBarStyles();
+    if (commandOverlay) {
+      if (commandInput) {
+        commandInput.focus();
+        commandInput.select();
+      }
+      return;
+    }
+
+    const backdrop = document.createElement("div");
+    backdrop.className =
+      "oz-command-backdrop " + (darkModeEnabled ? "oz-command-dark" : "oz-command-light");
+
+    const modal = document.createElement("div");
+    modal.className =
+      "oz-command-modal " + (darkModeEnabled ? "oz-command-dark" : "oz-command-light");
+
+    modal.innerHTML = `
+      <div class="oz-command-input-wrapper">
+        <span class="oz-command-input-icon">⌘</span>
+        <input
+          class="oz-command-input"
+          type="text"
+          placeholder="Type a command…"
+          autocomplete="off"
+          spellcheck="false"
+        />
+      </div>
+      <div class="oz-command-list"></div>
+      <div class="oz-command-empty"></div>
+    `;
+
+    backdrop.appendChild(modal);
+    document.documentElement.appendChild(backdrop);
+
+    commandOverlay = backdrop;
+    commandInput = modal.querySelector(".oz-command-input");
+
+    renderCommandList("");
+
+    if (commandInput) {
+      commandInput.addEventListener("input", () => {
+        renderCommandList(commandInput.value || "");
+      });
+      window.setTimeout(() => {
+        try {
+          commandInput.focus();
+          commandInput.select();
+        } catch (e) {
+          // ignore
+        }
+      }, 0);
+    }
+
+    backdrop.addEventListener("click", (e) => {
+      if (e.target === backdrop) {
+        closeCommandOverlay();
+      }
+    });
+  }
+
+  function handleCommandOverlayKeydown(event) {
+    if (!commandOverlay) return false;
+    const key = (event.key || "").toLowerCase();
+
+    if (key === "escape") {
+      event.preventDefault();
+      event.stopPropagation();
+      closeCommandOverlay();
+      return true;
+    }
+
+    if (!event.metaKey && !event.ctrlKey && !event.altKey) {
+      if (key === "arrowdown") {
+        event.preventDefault();
+        event.stopPropagation();
+        if (!commandItems.length) return true;
+        const next =
+          commandActiveIndex === -1
+            ? 0
+            : (commandActiveIndex + 1) % Math.max(1, commandItems.length);
+        setCommandSelection(next);
+        return true;
+      }
+      if (key === "arrowup") {
+        event.preventDefault();
+        event.stopPropagation();
+        if (!commandItems.length) return true;
+        const next =
+          commandActiveIndex === -1
+            ? commandItems.length - 1
+            : (commandActiveIndex - 1 + commandItems.length) %
+              Math.max(1, commandItems.length);
+        setCommandSelection(next);
+        return true;
+      }
+      if (key === "enter") {
+        event.preventDefault();
+        event.stopPropagation();
+        if (commandActiveIndex >= 0 && commandFiltered[commandActiveIndex]) {
+          const cmd = commandFiltered[commandActiveIndex];
+          closeCommandOverlay();
+          try {
+            cmd.action();
+          } catch (e) {
+            // eslint-disable-next-line no-console
+            console.debug("Zero command action error:", e);
+          }
+        }
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   function handleSnoozeClick(preset) {
     closeSnoozeOverlay();
     if (preset === "unsnooze") {
@@ -1144,14 +1647,32 @@
         return;
       }
 
-      // Ignore if user is typing in an input/textarea/contentEditable
-      if (isEditableElement(event.target)) {
+      const key = (event.key || "").toLowerCase();
+      const targetNode = /** @type {Node | null} */ (event.target);
+
+      // If the command bar is open, it owns all key handling; block everything else.
+      if (commandOverlay) {
+        if (handleCommandOverlayKeydown(event)) {
+          return;
+        }
+        // If the key event originated inside the command bar (e.g. typing in the input),
+        // let the input receive characters but stop propagation so Outlook doesn't see it.
+        if (targetNode && commandOverlay.contains(targetNode)) {
+          event.stopPropagation();
+          return;
+        }
+        // Otherwise (e.g. keystrokes bubbling from the page), swallow entirely.
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
+
+      // Ignore if user is typing in a "normal" input/textarea/contentEditable
+      if (isEditableElement(targetNode)) {
         // When typing, fall back to default context.
         vimContext = "auto";
         return;
       }
-
-      const key = (event.key || "").toLowerCase();
 
       // Multi‑select support: Shift+j / Shift+k behave like
       // Shift+ArrowDown / Shift+ArrowUp in the message list, allowing
@@ -1276,6 +1797,17 @@
         }
       }
 
+      if (commandShortcut && shortcutMatches(event, commandShortcut)) {
+        event.preventDefault();
+        event.stopPropagation();
+        if (commandOverlay) {
+          closeCommandOverlay();
+        } else {
+          openCommandOverlay();
+        }
+        return;
+      }
+
       if (undoShortcut && shortcutMatches(event, undoShortcut)) {
         event.preventDefault();
         event.stopPropagation();
@@ -1299,6 +1831,12 @@
         undoShortcut = {
           ...DEFAULT_UNDO_SHORTCUT,
           ...changes.undoShortcut.newValue
+        };
+      }
+      if (changes.commandShortcut && changes.commandShortcut.newValue) {
+        commandShortcut = {
+          ...DEFAULT_COMMAND_SHORTCUT,
+          ...changes.commandShortcut.newValue
         };
       }
       if (changes.vimEnabled && typeof changes.vimEnabled.newValue === "boolean") {

@@ -50,6 +50,27 @@
       </section>
 
       <section class="oz-card">
+        <h2>Command Bar Shortcut</h2>
+        <p class="oz-help">
+          Set the hotkey for the Superhuman-style command bar (default: <kbd>Ctrl</kbd> + <kbd>K</kbd>).
+          Click the box and press your preferred keys.
+        </p>
+
+        <div class="oz-shortcut-row">
+          <label for="commandShortcut" class="oz-label">Shortcut</label>
+          <input
+            id="commandShortcut"
+            type="text"
+            class="oz-shortcut-input"
+            autocomplete="off"
+            spellcheck="false"
+            placeholder="Press keys…"
+          />
+          <button id="clearCommand" class="oz-button oz-button-ghost" type="button">Clear</button>
+        </div>
+      </section>
+
+      <section class="oz-card">
         <h2>Vim-style navigation</h2>
         <p class="oz-help">
           Toggle vim-style navigation to move efficiently between folders and messages using

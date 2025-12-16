@@ -10,10 +10,19 @@
     metaKey: false,
     key: "z"
   };
+  const DEFAULT_COMMAND_SHORTCUT = {
+    ctrlKey: true,
+    altKey: false,
+    shiftKey: false,
+    metaKey: false,
+    key: "k"
+  };
 
   const shortcutInput = document.getElementById("undoShortcut");
+  const commandShortcutInput = document.getElementById("commandShortcut");
   const statusEl = document.getElementById("status");
   const clearBtn = document.getElementById("clearUndo");
+  const clearCommandBtn = document.getElementById("clearCommand");
   const vimToggle = document.getElementById("vimEnabled");
   const darkToggle = document.getElementById("darkModeEnabled");
 
@@ -96,40 +105,63 @@
     }
   }
 
-  function handleKeyCapture(event) {
-    event.preventDefault();
-    event.stopPropagation();
-
-    const key = (event.key || "").toLowerCase();
-
-    // Ignore keys that are just modifiers or not useful
-    const ignoredKeys = [
-      "shift",
-      "control",
-      "alt",
-      "meta",
-      "capslock",
-      "tab"
-    ];
-    if (!key || ignoredKeys.includes(key)) {
-      return;
+  function saveCommandShortcut(shortcut) {
+    try {
+      browserApi.storage.sync.set({ commandShortcut: shortcut }, () => {
+        if (browserApi.runtime && browserApi.runtime.lastError) {
+          setStatus("Could not save command bar shortcut (storage error).");
+          return;
+        }
+        if (commandShortcutInput) {
+          commandShortcutInput.value = formatShortcut(shortcut);
+        }
+        setStatus("Command bar shortcut saved.");
+      });
+    } catch (e) {
+      setStatus("Could not save command bar shortcut.");
     }
+  }
 
-    const shortcut = {
-      ctrlKey: event.ctrlKey,
-      altKey: event.altKey,
-      shiftKey: event.shiftKey,
-      metaKey: event.metaKey,
-      key
+  function createShortcutHandler(saveFn) {
+    return (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+
+      const key = (event.key || "").toLowerCase();
+
+      const ignoredKeys = [
+        "shift",
+        "control",
+        "alt",
+        "meta",
+        "capslock",
+        "tab"
+      ];
+      if (!key || ignoredKeys.includes(key)) {
+        return;
+      }
+
+      const shortcut = {
+        ctrlKey: event.ctrlKey,
+        altKey: event.altKey,
+        shiftKey: event.shiftKey,
+        metaKey: event.metaKey,
+        key
+      };
+
+      saveFn(shortcut);
     };
-
-    saveShortcut(shortcut);
   }
 
   function restoreOptions() {
     try {
       browserApi.storage.sync.get(
-        { undoShortcut: DEFAULT_UNDO_SHORTCUT, vimEnabled: true, darkModeEnabled: true },
+        {
+          undoShortcut: DEFAULT_UNDO_SHORTCUT,
+          commandShortcut: DEFAULT_COMMAND_SHORTCUT,
+          vimEnabled: true,
+          darkModeEnabled: true
+        },
         (items) => {
           if (browserApi.runtime && browserApi.runtime.lastError) {
             shortcutInput.value = formatShortcut(DEFAULT_UNDO_SHORTCUT);
@@ -137,6 +169,12 @@
           }
           const shortcut = (items && items.undoShortcut) || DEFAULT_UNDO_SHORTCUT;
           shortcutInput.value = formatShortcut(shortcut);
+
+          if (commandShortcutInput) {
+            const cmdShortcut =
+              (items && items.commandShortcut) || DEFAULT_COMMAND_SHORTCUT;
+            commandShortcutInput.value = formatShortcut(cmdShortcut);
+          }
 
           if (vimToggle) {
             const enabled =
@@ -172,9 +210,31 @@
     saveShortcut(emptyShortcut);
   }
 
+  function clearCommandShortcut() {
+    const emptyShortcut = {
+      ctrlKey: false,
+      altKey: false,
+      shiftKey: false,
+      metaKey: false,
+      key: ""
+    };
+    saveCommandShortcut(emptyShortcut);
+  }
+
   if (shortcutInput) {
-    shortcutInput.addEventListener("keydown", handleKeyCapture);
+    shortcutInput.addEventListener("keydown", createShortcutHandler(saveShortcut));
     shortcutInput.addEventListener("keyup", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+    });
+  }
+
+  if (commandShortcutInput) {
+    commandShortcutInput.addEventListener(
+      "keydown",
+      createShortcutHandler(saveCommandShortcut)
+    );
+    commandShortcutInput.addEventListener("keyup", (e) => {
       e.preventDefault();
       e.stopPropagation();
     });
@@ -182,6 +242,10 @@
 
   if (clearBtn) {
     clearBtn.addEventListener("click", clearShortcut);
+  }
+
+  if (clearCommandBtn) {
+    clearCommandBtn.addEventListener("click", clearCommandShortcut);
   }
 
   if (vimToggle) {
