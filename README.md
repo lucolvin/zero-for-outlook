@@ -18,7 +18,7 @@ The first shortcut supported is **Undo archive**, which clicks the transient **U
     - **`h`** (or `l` from the message list) focuses and "pins" the left sidebar/folder list.
     - While pinned, **`j`** / **`k`** move up and down items in the sidebar.
     - Press **`l`** from the sidebar to move into the message list; then **`j`** / **`k`** move between messages.
-    - In the message list, **Shift + `j`** / **Shift + `k`** act like **Shift + ↓ / Shift + ↑**, extending the current selection so you can select **multiple messages at once** and then snooze or archive them using Outlook’s own commands.
+    - In the message list, **Shift + `j`** / **Shift + `k`** act like **Shift + ↓ / Shift + ↑**, extending the current selection so you can select **multiple messages at once** and then snooze or archive them using Outlook’s own commands and commands from Zero for Outlook.
   - All vim keys are ignored while you are typing in an input, textarea, or rich-text editor, so they do not interfere with composing emails.
   - Default is **on**, but you can toggle it from the extension's options page (see **Vim-style navigation** toggle).
 
