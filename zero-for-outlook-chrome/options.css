@@ -1,0 +1,278 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background-color: #f3f4f6;
+  color: #111827;
+}
+
+body {
+  min-height: 100vh;
+}
+
+html.oz-theme-dark {
+  background-color: #020617;
+}
+
+body.oz-theme-dark {
+  background-color: #020617;
+  color: #e5e7eb;
+}
+
+.oz-container {
+  max-width: 760px;
+  margin: 24px auto;
+  padding: 0 16px 32px;
+}
+
+.oz-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.oz-icon-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #2563eb, #4f46e5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  font-size: 14px;
+  box-shadow: 0 8px 16px rgba(37, 99, 235, 0.35);
+}
+
+.oz-icon-letter {
+  letter-spacing: 0.03em;
+}
+
+h1 {
+  margin: 0 0 4px;
+  font-size: 1.4rem;
+}
+
+.oz-subtitle {
+  margin: 0;
+  color: #4b5563;
+  font-size: 0.9rem;
+}
+
+body.oz-theme-dark .oz-subtitle {
+  color: #9ca3af;
+}
+
+.oz-card {
+  background-color: #ffffff;
+  border-radius: 12px;
+  padding: 16px 18px 18px;
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.05),
+    0 8px 20px rgba(15, 23, 42, 0.04);
+  margin-bottom: 16px;
+}
+
+body.oz-theme-dark .oz-card {
+  background-color: rgba(15, 23, 42, 0.9);
+  box-shadow:
+    0 12px 35px rgba(15, 23, 42, 0.9),
+    0 0 0 1px rgba(30, 64, 175, 0.55);
+  backdrop-filter: blur(18px);
+}
+
+.oz-card h2 {
+  margin-top: 0;
+  margin-bottom: 8px;
+  font-size: 1.1rem;
+}
+
+.oz-help {
+  margin-top: 0;
+  margin-bottom: 12px;
+  font-size: 0.9rem;
+  color: #4b5563;
+}
+
+body.oz-theme-dark .oz-help {
+  color: #9ca3af;
+}
+
+.oz-shortcut-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.oz-label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  min-width: 70px;
+}
+
+.oz-shortcut-input {
+  flex: 1;
+  border-radius: 999px;
+  border: 1px solid #d1d5db;
+  padding: 8px 12px;
+  font-size: 0.95rem;
+  outline: none;
+  background-color: #f9fafb;
+}
+
+.oz-shortcut-input:focus-visible {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 1px #2563eb33;
+  background-color: #ffffff;
+}
+
+body.oz-theme-dark .oz-shortcut-input {
+  border-color: #1f2937;
+  background-color: rgba(15, 23, 42, 0.6);
+  color: #e5e7eb;
+}
+
+body.oz-theme-dark .oz-shortcut-input:focus-visible {
+  border-color: #2563eb;
+  background-color: rgba(15, 23, 42, 0.8);
+}
+
+.oz-button {
+  border-radius: 999px;
+  border: none;
+  padding: 7px 14px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  font-weight: 500;
+  transition:
+    background-color 120ms ease,
+    box-shadow 120ms ease,
+    transform 50ms ease;
+}
+
+.oz-button-ghost {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+.oz-button-ghost:hover {
+  background-color: #e5e7eb;
+}
+
+body.oz-theme-dark .oz-button-ghost {
+  background-color: rgba(15, 23, 42, 0.6);
+  color: #e5e7eb;
+}
+
+body.oz-theme-dark .oz-button-ghost:hover {
+  background-color: rgba(30, 64, 175, 0.4);
+}
+
+.oz-button:active {
+  transform: translateY(1px);
+  box-shadow: none;
+}
+
+.oz-status {
+  margin-top: 10px;
+  font-size: 0.85rem;
+  color: #059669;
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+
+.oz-status-visible {
+  opacity: 1;
+}
+
+.oz-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  font-size: 0.9rem;
+  color: #374151;
+}
+
+body.oz-theme-dark .oz-toggle {
+  color: #e5e7eb;
+}
+
+.oz-toggle-input {
+  width: 16px;
+  height: 16px;
+}
+
+.oz-toggle-label {
+  flex: 1;
+}
+
+.oz-list {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 0.9rem;
+  color: #4b5563;
+}
+
+body.oz-theme-dark .oz-list {
+  color: #9ca3af;
+}
+
+.oz-list li + li {
+  margin-top: 4px;
+}
+
+.oz-footer {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 16px;
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+body.oz-theme-dark .oz-footer {
+  color: #6b7280;
+}
+
+code,
+kbd {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", monospace;
+  font-size: 0.85em;
+}
+
+kbd {
+  padding: 2px 5px;
+  border-radius: 4px;
+  border: 1px solid #d1d5db;
+  background-color: #f9fafb;
+}
+
+body.oz-theme-dark kbd {
+  border-color: #1f2937;
+  background-color: #020617;
+  color: #e5e7eb;
+}
+
+@media (max-width: 600px) {
+  .oz-shortcut-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .oz-label {
+    min-width: 0;
+  }
+}
+
+
+
