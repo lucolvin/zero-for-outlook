@@ -307,12 +307,15 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 4px;
+  margin-bottom: 10px;
 }
 
 .oz-snooze-title {
   font-size: 1.05rem;
   font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .oz-snooze-hint {
@@ -332,6 +335,22 @@
 
 .oz-snooze-close:hover {
   color: #e5e7eb;
+}
+
+.oz-snooze-info {
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.6);
+  background: transparent;
+  color: inherit;
+  cursor: default;
+  font-size: 0.7rem;
+  line-height: 1;
+  padding: 2px 6px;
+  opacity: 0.8;
+}
+
+.oz-snooze-info:hover {
+  opacity: 1;
 }
 
 .oz-snooze-section {
@@ -470,10 +489,19 @@
       primeSnoozeDropdown();
       modal.innerHTML = `
         <div class="oz-snooze-header">
-          <div class="oz-snooze-title">Unsnooze</div>
+          <div class="oz-snooze-title">
+            Unsnooze
+            <button
+              type="button"
+              class="oz-snooze-info"
+              aria-label="Unsnooze keyboard help"
+              title="Use j / k to navigate and Enter to select · Esc to close"
+            >
+              ?
+            </button>
+          </div>
           <button type="button" class="oz-snooze-close" aria-label="Close unsnooze menu">Esc</button>
         </div>
-        <p class="oz-snooze-hint">Use j / k and Enter · Esc to close</p>
         <div class="oz-snooze-section">
           <button type="button" class="oz-snooze-button" data-oz-snooze="unsnooze">
             <span class="oz-snooze-label">Unsnooze</span>
@@ -484,10 +512,19 @@
     } else {
       modal.innerHTML = `
         <div class="oz-snooze-header">
-          <div class="oz-snooze-title">Snooze</div>
+          <div class="oz-snooze-title">
+            Snooze
+            <button
+              type="button"
+              class="oz-snooze-info"
+              aria-label="Snooze keyboard help"
+              title="Use j / k to navigate and Enter to select · Esc to close"
+            >
+              ?
+            </button>
+          </div>
           <button type="button" class="oz-snooze-close" aria-label="Close snooze menu">Esc</button>
         </div>
-        <p class="oz-snooze-hint">Use j / k and Enter · Esc to close</p>
         <div class="oz-snooze-section">
           <button type="button" class="oz-snooze-button" data-oz-snooze="laterToday">
             <span class="oz-snooze-label">Later today</span>
