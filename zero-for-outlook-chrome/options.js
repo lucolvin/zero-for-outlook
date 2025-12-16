@@ -20,7 +20,11 @@
 
   const shortcutInput = document.getElementById("undoShortcut");
   const commandShortcutInput = document.getElementById("commandShortcut");
-  const statusEl = document.getElementById("status");
+  const undoStatusEl = document.getElementById("status");
+  const commandStatusEl = document.getElementById("status-command");
+  const vimStatusEl = document.getElementById("status-vim");
+  const darkStatusEl = document.getElementById("status-dark");
+  const geminiStatusEl = document.getElementById("status-gemini");
   const clearBtn = document.getElementById("clearUndo");
   const clearCommandBtn = document.getElementById("clearCommand");
   const vimToggle = document.getElementById("vimEnabled");
@@ -42,26 +46,46 @@
     return parts.join(" + ");
   }
 
-  function setStatus(message) {
-    if (!statusEl) return;
-    statusEl.textContent = message;
-    statusEl.classList.add("oz-status-visible");
+  function setStatus(el, message) {
+    if (!el) return;
+    el.textContent = message;
+    el.classList.add("oz-status-visible");
     setTimeout(() => {
-      statusEl.classList.remove("oz-status-visible");
+      el.classList.remove("oz-status-visible");
     }, 2000);
+  }
+
+  function setUndoStatus(message) {
+    setStatus(undoStatusEl, message);
+  }
+
+  function setCommandStatus(message) {
+    setStatus(commandStatusEl, message);
+  }
+
+  function setVimStatus(message) {
+    setStatus(vimStatusEl, message);
+  }
+
+  function setDarkStatus(message) {
+    setStatus(darkStatusEl, message);
+  }
+
+  function setGeminiStatus(message) {
+    setStatus(geminiStatusEl, message);
   }
 
   function saveVimEnabled(enabled) {
     try {
       browserApi.storage.sync.set({ vimEnabled: enabled }, () => {
         if (browserApi.runtime && browserApi.runtime.lastError) {
-          setStatus("Could not update vim setting (storage error).");
+          setVimStatus("Could not update vim setting (storage error).");
           return;
         }
-        setStatus(enabled ? "Vim navigation enabled." : "Vim navigation disabled.");
+        setVimStatus(enabled ? "Vim navigation enabled." : "Vim navigation disabled.");
       });
     } catch (e) {
-      setStatus("Could not update vim setting.");
+      setVimStatus("Could not update vim setting.");
     }
   }
 
@@ -82,14 +106,14 @@
     try {
       browserApi.storage.sync.set({ darkModeEnabled: enabled }, () => {
         if (browserApi.runtime && browserApi.runtime.lastError) {
-          setStatus("Could not update dark mode (storage error).");
+          setDarkStatus("Could not update dark mode (storage error).");
           return;
         }
         applyTheme(enabled);
-        setStatus(enabled ? "Dark mode enabled." : "Dark mode disabled.");
+        setDarkStatus(enabled ? "Dark mode enabled." : "Dark mode disabled.");
       });
     } catch (e) {
-      setStatus("Could not update dark mode.");
+      setDarkStatus("Could not update dark mode.");
     }
   }
 
@@ -97,13 +121,13 @@
     try {
       browserApi.storage.sync.set({ geminiApiKey: value || "" }, () => {
         if (browserApi.runtime && browserApi.runtime.lastError) {
-          setStatus("Could not save Gemini API key (storage error).");
+          setGeminiStatus("Could not save Gemini API key (storage error).");
           return;
         }
-        setStatus(value ? "Gemini API key saved." : "Gemini API key cleared.");
+        setGeminiStatus(value ? "Gemini API key saved." : "Gemini API key cleared.");
       });
     } catch (e) {
-      setStatus("Could not save Gemini API key.");
+      setGeminiStatus("Could not save Gemini API key.");
     }
   }
 
@@ -111,14 +135,14 @@
     try {
       browserApi.storage.sync.set({ undoShortcut: shortcut }, () => {
         if (browserApi.runtime && browserApi.runtime.lastError) {
-          setStatus("Could not save shortcut (storage error).");
+          setUndoStatus("Could not save shortcut (storage error).");
           return;
         }
         shortcutInput.value = formatShortcut(shortcut);
-        setStatus("Shortcut saved.");
+        setUndoStatus("Shortcut saved.");
       });
     } catch (e) {
-      setStatus("Could not save shortcut.");
+      setUndoStatus("Could not save shortcut.");
     }
   }
 
@@ -126,16 +150,16 @@
     try {
       browserApi.storage.sync.set({ commandShortcut: shortcut }, () => {
         if (browserApi.runtime && browserApi.runtime.lastError) {
-          setStatus("Could not save command bar shortcut (storage error).");
+          setCommandStatus("Could not save command bar shortcut (storage error).");
           return;
         }
         if (commandShortcutInput) {
           commandShortcutInput.value = formatShortcut(shortcut);
         }
-        setStatus("Command bar shortcut saved.");
+        setCommandStatus("Command bar shortcut saved.");
       });
     } catch (e) {
-      setStatus("Could not save command bar shortcut.");
+      setCommandStatus("Could not save command bar shortcut.");
     }
   }
 
