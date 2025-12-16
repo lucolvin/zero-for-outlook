@@ -27,49 +27,67 @@
       </header>
 
       <section class="oz-card">
-        <h2>Undo Archive Shortcut</h2>
+        <h2>Keyboard shortcuts</h2>
         <p class="oz-help">
-          Click in the box below, then press the key combination you want to use (for example
+          Click in a shortcut box, then press the key combination you want to use (for example
           <kbd>Ctrl</kbd> + <kbd>Z</kbd> or <kbd>Alt</kbd> + <kbd>U</kbd>).
         </p>
 
-        <div class="oz-shortcut-row">
-          <label for="undoShortcut" class="oz-label">Shortcut</label>
-          <input
-            id="undoShortcut"
-            type="text"
-            class="oz-shortcut-input"
-            autocomplete="off"
-            spellcheck="false"
-            placeholder="Press keys…"
-          />
-          <button id="clearUndo" class="oz-button oz-button-ghost" type="button">Clear</button>
+        <div class="oz-shortcut-group">
+          <div class="oz-shortcut-row">
+            <div class="oz-shortcut-info">
+              <div class="oz-label">Undo archive</div>
+              <p class="oz-help-sub">
+                Trigger Outlook’s <em>Undo</em> after archiving or moving an email.
+              </p>
+            </div>
+            <div class="oz-shortcut-controls">
+              <label for="undoShortcut" class="oz-visually-hidden">Undo archive shortcut</label>
+              <input
+                id="undoShortcut"
+                type="text"
+                class="oz-shortcut-input"
+                autocomplete="off"
+                spellcheck="false"
+                placeholder="Press keys…"
+              />
+              <button id="clearUndo" class="oz-button oz-button-ghost" type="button">Clear</button>
+            </div>
+          </div>
+
+          <p id="status" class="oz-status" role="status" aria-live="polite"></p>
+
+          <div class="oz-divider"></div>
+
+          <div class="oz-shortcut-row">
+            <div class="oz-shortcut-info">
+              <div class="oz-label">Command bar</div>
+              <p class="oz-help-sub">
+                Open the Superhuman-style command bar (default: <kbd>Ctrl</kbd> + <kbd>K</kbd>).
+              </p>
+            </div>
+            <div class="oz-shortcut-controls">
+              <label for="commandShortcut" class="oz-visually-hidden">Command bar shortcut</label>
+              <input
+                id="commandShortcut"
+                type="text"
+                class="oz-shortcut-input"
+                autocomplete="off"
+                spellcheck="false"
+                placeholder="Press keys…"
+              />
+              <button
+                id="clearCommand"
+                class="oz-button oz-button-ghost"
+                type="button"
+              >
+                Clear
+              </button>
+            </div>
+          </div>
+
+          <p id="status-command" class="oz-status" role="status" aria-live="polite"></p>
         </div>
-
-        <p id="status" class="oz-status" role="status" aria-live="polite"></p>
-      </section>
-
-      <section class="oz-card">
-        <h2>Command Bar Shortcut</h2>
-        <p class="oz-help">
-          Set the hotkey for the Superhuman-style command bar (default: <kbd>Ctrl</kbd> + <kbd>K</kbd>).
-          Click the box and press your preferred keys.
-        </p>
-
-        <div class="oz-shortcut-row">
-          <label for="commandShortcut" class="oz-label">Shortcut</label>
-          <input
-            id="commandShortcut"
-            type="text"
-            class="oz-shortcut-input"
-            autocomplete="off"
-            spellcheck="false"
-            placeholder="Press keys…"
-          />
-          <button id="clearCommand" class="oz-button oz-button-ghost" type="button">Clear</button>
-        </div>
-
-        <p id="status-command" class="oz-status" role="status" aria-live="polite"></p>
       </section>
 
       <section class="oz-card">
