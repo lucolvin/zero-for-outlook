@@ -1,0 +1,16 @@
+{
+  "name": "zero-for-outlook",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Build tooling for the Zero for Outlook browser extensions.",
+  "scripts": {
+    "build:chrome": "node scripts/build-chrome.mjs",
+    "build:firefox": "node scripts/build-firefox.mjs",
+    "build": "npm run build:chrome && npm run build:firefox"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.0"
+  }
+}
+
+
