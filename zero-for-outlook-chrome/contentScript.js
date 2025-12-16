@@ -1084,6 +1084,12 @@
             }
             return;
           }
+          // Block sidebar/message navigation keys while the snooze/unsnooze overlay is active.
+          if (key === "h" || key === "l") {
+            event.preventDefault();
+            event.stopPropagation();
+            return;
+          }
         }
         if (key === "s") {
           event.preventDefault();
