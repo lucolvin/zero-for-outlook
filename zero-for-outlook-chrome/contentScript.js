@@ -206,6 +206,63 @@
     }
   }
 
+  /**
+   * Best-effort helper to read the concrete date/time strings that Outlook shows
+   * in its own Snooze menu (e.g. "5:00 AM", "Wed 8:00 AM") so that we can
+   * mirror those in our overlay instead of using vague descriptions.
+   *
+   * If we can't find any of these elements in the DOM (because the menu
+   * hasn't been rendered yet, or Outlook's markup has changed), we simply
+   * return an empty object and fall back to our built-in text.
+   *
+   * @returns {{ laterToday?: string; tomorrow?: string; thisWeekend?: string; nextWeek?: string }}
+   */
+  function getNativeSnoozePresetTimes() {
+    const result = {};
+
+    /**
+     * Try to find a secondary text span inside the given Snooze button element.
+     * Outlook currently uses classes like "secondaryTextMenu secondaryText-356",
+     * but we keep this fairly loose so minor class changes don't break us.
+     *
+     * @param {HTMLElement | null} btn
+     */
+    function findSecondaryText(btn) {
+      if (!btn) return "";
+      const span =
+        btn.querySelector(".secondaryTextMenu") ||
+        btn.querySelector('span[class*="secondaryText"]');
+      if (!span) return "";
+      const text = (span.textContent || "").trim();
+      return text;
+    }
+
+    const presets = [
+      { key: "laterToday", name: "Later today" },
+      { key: "tomorrow", name: "Tomorrow" },
+      { key: "thisWeekend", name: "This weekend" },
+      { key: "nextWeek", name: "Next week" }
+    ];
+
+    for (const preset of presets) {
+      try {
+        const btn = /** @type {HTMLElement | null} */ (
+          document.querySelector(
+            `button[name="${preset.name}"], button[aria-label^="${preset.name}"], button[aria-label="${preset.name}"]`
+          )
+        );
+        const text = findSecondaryText(btn);
+        if (text) {
+          result[preset.key] = text;
+        }
+      } catch (e) {
+        // Best-effort; ignore lookup errors and continue.
+      }
+    }
+
+    return result;
+  }
+
   function clickSnoozePreset(presetName) {
     const labels = {
       laterToday: "Later today",
@@ -532,6 +589,11 @@
         </div>
       `;
     } else {
+      const nativeTimes = getNativeSnoozePresetTimes();
+      const laterTodayText = nativeTimes.laterToday || "Typically this afternoon";
+      const tomorrowText = nativeTimes.tomorrow || "Usually tomorrow morning";
+      const thisWeekendText = nativeTimes.thisWeekend || "Next weekend morning";
+      const nextWeekText = nativeTimes.nextWeek || "Next Monday morning";
       modal.innerHTML = `
         <div class="oz-snooze-header">
           <div class="oz-snooze-title">
@@ -550,19 +612,19 @@
         <div class="oz-snooze-section">
           <button type="button" class="oz-snooze-button" data-oz-snooze="laterToday">
             <span class="oz-snooze-label">Later today</span>
-            <span class="oz-snooze-secondary">Typically this afternoon</span>
+            <span class="oz-snooze-secondary">${laterTodayText}</span>
           </button>
           <button type="button" class="oz-snooze-button" data-oz-snooze="tomorrow">
             <span class="oz-snooze-label">Tomorrow</span>
-            <span class="oz-snooze-secondary">Usually tomorrow morning</span>
+            <span class="oz-snooze-secondary">${tomorrowText}</span>
           </button>
           <button type="button" class="oz-snooze-button" data-oz-snooze="thisWeekend">
             <span class="oz-snooze-label">This weekend</span>
-            <span class="oz-snooze-secondary">Next weekend morning</span>
+            <span class="oz-snooze-secondary">${thisWeekendText}</span>
           </button>
           <button type="button" class="oz-snooze-button" data-oz-snooze="nextWeek">
             <span class="oz-snooze-label">Next week</span>
-            <span class="oz-snooze-secondary">Next Monday morning</span>
+            <span class="oz-snooze-secondary">${nextWeekText}</span>
           </button>
         </div>
         <div class="oz-snooze-section oz-snooze-section-divider">
