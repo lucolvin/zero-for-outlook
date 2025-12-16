@@ -5,7 +5,7 @@
   const browserApi = typeof chrome !== "undefined" ? chrome : browser;
 
   const DEFAULT_UNDO_SHORTCUT = {
-    ctrlKey: true,
+    ctrlKey: false,
     altKey: false,
     shiftKey: false,
     metaKey: false,
