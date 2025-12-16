@@ -129,6 +129,18 @@
           return true;
         }
 
+        if (message.type === "oz-open-options") {
+          try {
+            if (api.runtime && api.runtime.openOptionsPage) {
+              api.runtime.openOptionsPage();
+            }
+            sendResponse({ ok: true });
+          } catch (e) {
+            sendResponse({ ok: false, error: String(e) });
+          }
+          return true;
+        }
+
         return undefined;
       });
     }

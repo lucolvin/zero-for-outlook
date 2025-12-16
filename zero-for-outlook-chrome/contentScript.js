@@ -1094,6 +1094,26 @@
       action: () => {
         focusMessageListFromSidebar();
       }
+    },
+    {
+      id: "settings",
+      title: "Settings",
+      subtitle: "Open extension options page",
+      action: () => {
+        try {
+          browserApi.runtime.sendMessage(
+            {
+              type: "oz-open-options"
+            },
+            () => {
+              // Ignore response/errors
+            }
+          );
+        } catch (e) {
+          // eslint-disable-next-line no-console
+          console.debug("Zero: Could not open options page:", e);
+        }
+      }
     }
   ];
 
@@ -1276,12 +1296,13 @@
       });
       item.addEventListener("click", () => {
         if (cmd && typeof cmd.action === "function") {
-          closeCommandOverlay();
           try {
             cmd.action();
+            closeCommandOverlay();
           } catch (e) {
             // eslint-disable-next-line no-console
             console.debug("Zero command action error:", e);
+            closeCommandOverlay();
           }
         }
       });
