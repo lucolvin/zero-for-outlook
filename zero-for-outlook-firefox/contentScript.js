@@ -178,6 +178,71 @@
     }
   }
 
+  function toggleDarkMode() {
+    try {
+      const newValue = !darkModeEnabled;
+      browserApi.storage.sync.set({ darkModeEnabled: newValue }, () => {
+        if (browserApi.runtime && browserApi.runtime.lastError) {
+          // eslint-disable-next-line no-console
+          console.debug("Zero: Could not toggle dark mode setting:", browserApi.runtime.lastError);
+          return;
+        }
+        darkModeEnabled = newValue;
+        updateCommandOverlayTheme();
+        // Re-render command list to update the toggle command's display text
+        if (commandOverlay && commandInput) {
+          renderCommandList(commandInput.value || "");
+        }
+        // Also update snooze and summary overlays if they're open
+        if (snoozeOverlay) {
+          updateSnoozeOverlayTheme();
+        }
+        if (summaryOverlay) {
+          updateSummaryOverlayTheme();
+        }
+      });
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.debug("Zero: Could not toggle dark mode setting:", e);
+    }
+  }
+
+  function updateCommandOverlayTheme() {
+    if (!commandOverlay) return;
+    const backdrop = commandOverlay;
+    const modal = backdrop.querySelector(".oz-command-modal");
+    if (!modal) return;
+
+    backdrop.className =
+      "oz-command-backdrop " + (darkModeEnabled ? "oz-command-dark" : "oz-command-light");
+    modal.className =
+      "oz-command-modal " + (darkModeEnabled ? "oz-command-dark" : "oz-command-light");
+  }
+
+  function updateSnoozeOverlayTheme() {
+    if (!snoozeOverlay) return;
+    const backdrop = snoozeOverlay;
+    const modal = backdrop.querySelector(".oz-snooze-modal");
+    if (!modal) return;
+
+    backdrop.className =
+      "oz-snooze-backdrop " + (darkModeEnabled ? "oz-snooze-dark" : "oz-snooze-light");
+    modal.className =
+      "oz-snooze-modal " + (darkModeEnabled ? "oz-snooze-dark" : "oz-snooze-light");
+  }
+
+  function updateSummaryOverlayTheme() {
+    if (!summaryOverlay) return;
+    const backdrop = summaryOverlay;
+    const modal = backdrop.querySelector(".oz-summary-modal");
+    if (!modal) return;
+
+    backdrop.className =
+      "oz-summary-backdrop " + (darkModeEnabled ? "oz-summary-dark" : "oz-summary-light");
+    modal.className =
+      "oz-summary-modal " + (darkModeEnabled ? "oz-summary-dark" : "oz-summary-light");
+  }
+
   function triggerUndo() {
     const button = findUndoButton();
     if (!button) {
@@ -1356,6 +1421,14 @@
       }
     },
     {
+      id: "toggle-dark-mode",
+      title: "Toggle dark mode",
+      subtitle: "Switch between dark and light theme for overlays",
+      action: () => {
+        toggleDarkMode();
+      }
+    },
+    {
       id: "settings",
       title: "Settings",
       subtitle: "Open extension options page",
@@ -1392,6 +1465,13 @@
         return "Hide options bar";
       }
     }
+    if (cmd.id === "toggle-dark-mode") {
+      if (darkModeEnabled) {
+        return "Switch to light mode";
+      } else {
+        return "Switch to dark mode";
+      }
+    }
     return cmd.title || "";
   }
 
@@ -1408,6 +1488,13 @@
         return "Show the options bar";
       } else {
         return "Hide the options bar";
+      }
+    }
+    if (cmd.id === "toggle-dark-mode") {
+      if (darkModeEnabled) {
+        return "Change overlays to light theme";
+      } else {
+        return "Change overlays to dark theme";
       }
     }
     return cmd.subtitle || "";
@@ -2714,6 +2801,16 @@
       if (changes.optionsBarHidden && typeof changes.optionsBarHidden.newValue === "boolean") {
         optionsBarHidden = changes.optionsBarHidden.newValue;
         applyOptionsBarVisibility();
+      }
+      if (changes.darkModeEnabled && typeof changes.darkModeEnabled.newValue === "boolean") {
+        darkModeEnabled = changes.darkModeEnabled.newValue;
+        updateCommandOverlayTheme();
+        if (snoozeOverlay) {
+          updateSnoozeOverlayTheme();
+        }
+        if (summaryOverlay) {
+          updateSummaryOverlayTheme();
+        }
       }
     });
   } catch (e) {
