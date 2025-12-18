@@ -2,6 +2,11 @@
 
 This extension adds configurable keyboard shortcuts to Outlook on the web.  
 The first shortcut supported is **Undo archive**, which clicks the transient **Undo** button that appears after you archive or move a message.
+> [!CAUTION]
+> These extensions are still in early beta and are under active development. Expect breaking changes. Use at your own risk and so on.
+
+> [!NOTE]
+> The docs including this README are extremely out of date. A docs site is currently being created. And will be updated here.
 
 ### What it does
 
