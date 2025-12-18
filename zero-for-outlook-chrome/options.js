@@ -24,11 +24,13 @@
   const commandStatusEl = document.getElementById("status-command");
   const vimStatusEl = document.getElementById("status-vim");
   const darkStatusEl = document.getElementById("status-dark");
+  const inboxZeroStatusEl = document.getElementById("status-inbox-zero");
   const geminiStatusEl = document.getElementById("status-gemini");
   const clearBtn = document.getElementById("clearUndo");
   const clearCommandBtn = document.getElementById("clearCommand");
   const vimToggle = document.getElementById("vimEnabled");
   const darkToggle = document.getElementById("darkModeEnabled");
+  const inboxZeroToggle = document.getElementById("inboxZeroEnabled");
   const geminiInput = document.getElementById("geminiApiKey");
   const saveGeminiBtn = document.getElementById("saveGeminiKey");
   const clearGeminiBtn = document.getElementById("clearGeminiKey");
@@ -75,6 +77,10 @@
     setStatus(geminiStatusEl, message);
   }
 
+  function setInboxZeroStatus(message) {
+    setStatus(inboxZeroStatusEl, message);
+  }
+
   function saveVimEnabled(enabled) {
     try {
       browserApi.storage.sync.set({ vimEnabled: enabled }, () => {
@@ -114,6 +120,20 @@
       });
     } catch (e) {
       setDarkStatus("Could not update dark mode.");
+    }
+  }
+
+  function saveInboxZeroEnabled(enabled) {
+    try {
+      browserApi.storage.sync.set({ inboxZeroEnabled: enabled }, () => {
+        if (browserApi.runtime && browserApi.runtime.lastError) {
+          setInboxZeroStatus("Could not update inbox zero setting (storage error).");
+          return;
+        }
+        setInboxZeroStatus(enabled ? "celebration enabled." : "celebration disabled.");
+      });
+    } catch (e) {
+      setInboxZeroStatus("Could not update inbox zero setting.");
     }
   }
 
@@ -202,6 +222,7 @@
           commandShortcut: DEFAULT_COMMAND_SHORTCUT,
           vimEnabled: true,
           darkModeEnabled: true,
+          inboxZeroEnabled: false,
           geminiApiKey: ""
         },
         (items) => {
@@ -234,6 +255,14 @@
             darkToggle.checked = darkEnabled;
           }
           applyTheme(darkEnabled);
+
+          const inboxZeroEnabled =
+            items && typeof items.inboxZeroEnabled === "boolean"
+              ? items.inboxZeroEnabled
+              : false;
+          if (inboxZeroToggle) {
+            inboxZeroToggle.checked = inboxZeroEnabled;
+          }
 
           if (geminiInput) {
             geminiInput.value = (items && items.geminiApiKey) || "";
@@ -312,6 +341,13 @@
     darkToggle.addEventListener("change", (e) => {
       const target = /** @type {HTMLInputElement} */ (e.target);
       saveDarkModeEnabled(!!target.checked);
+    });
+  }
+
+  if (inboxZeroToggle) {
+    inboxZeroToggle.addEventListener("change", (e) => {
+      const target = /** @type {HTMLInputElement} */ (e.target);
+      saveInboxZeroEnabled(!!target.checked);
     });
   }
 

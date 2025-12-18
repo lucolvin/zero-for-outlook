@@ -23,6 +23,7 @@
   let commandShortcut = { ...DEFAULT_COMMAND_SHORTCUT };
   let vimEnabled = true;
   let darkModeEnabled = true;
+  let inboxZeroEnabled = false;
   /** @type {"auto" | "sidebar"} */
   let vimContext = "auto";
 
@@ -33,7 +34,8 @@
           undoShortcut: DEFAULT_UNDO_SHORTCUT,
           commandShortcut: DEFAULT_COMMAND_SHORTCUT,
           vimEnabled: true,
-          darkModeEnabled: true
+          darkModeEnabled: true,
+          inboxZeroEnabled: false
         },
         (items) => {
           if (browserApi.runtime && browserApi.runtime.lastError) {
@@ -59,6 +61,16 @@
             if (typeof items.darkModeEnabled === "boolean") {
               darkModeEnabled = items.darkModeEnabled;
             }
+            if (typeof items.inboxZeroEnabled === "boolean") {
+              inboxZeroEnabled = items.inboxZeroEnabled;
+            }
+          }
+          // Start or stop the observer based on the setting
+          if (inboxZeroEnabled) {
+            startInboxZeroObserver();
+          } else if (inboxZeroObserver) {
+            inboxZeroObserver.disconnect();
+            inboxZeroObserver = null;
           }
         }
       );
@@ -1269,6 +1281,33 @@
       }
     },
     {
+      id: "toggle-inbox-zero",
+      title: "Enable celebration (WIP)",
+      subtitle: "Toggle celebration overlay when inbox reaches zero",
+      action: () => {
+        try {
+          const newValue = !inboxZeroEnabled;
+          browserApi.storage.sync.set({ inboxZeroEnabled: newValue }, () => {
+            if (browserApi.runtime && browserApi.runtime.lastError) {
+              // eslint-disable-next-line no-console
+              console.debug("Zero: Could not toggle inbox zero setting:", browserApi.runtime.lastError);
+              return;
+            }
+            inboxZeroEnabled = newValue;
+            if (inboxZeroEnabled) {
+              startInboxZeroObserver();
+            } else if (inboxZeroObserver) {
+              inboxZeroObserver.disconnect();
+              inboxZeroObserver = null;
+            }
+          });
+        } catch (e) {
+          // eslint-disable-next-line no-console
+          console.debug("Zero: Could not toggle inbox zero setting:", e);
+        }
+      }
+    },
+    {
       id: "settings",
       title: "Settings",
       subtitle: "Open extension options page",
@@ -1457,10 +1496,22 @@
     filtered.forEach((cmd, index) => {
       const item = document.createElement("div");
       item.className = "oz-command-item";
+      let title = cmd.title || "";
+      let subtitle = cmd.subtitle || "";
+      // Make title and subtitle dynamic for inbox zero toggle
+      if (cmd.id === "toggle-inbox-zero") {
+        if (inboxZeroEnabled) {
+          title = "Disable celebration (WIP)";
+          subtitle = "Disable celebration overlay when inbox reaches zero";
+        } else {
+          title = "Enable celebration (WIP)";
+          subtitle = "Enable celebration overlay when inbox reaches zero";
+        }
+      }
       item.innerHTML = `
         <div class="oz-command-item-main">
-          <div class="oz-command-item-title">${cmd.title}</div>
-          <div class="oz-command-item-subtitle">${cmd.subtitle || ""}</div>
+          <div class="oz-command-item-title">${title}</div>
+          <div class="oz-command-item-subtitle">${subtitle}</div>
         </div>
         <div class="oz-command-item-shortcut">${getCommandShortcutHint(cmd)}</div>
       `;
@@ -2512,16 +2563,21 @@
   loadSettings();
 
   // Wait until the message list is present, then watch it for inbox-zero transitions.
+  // Only start if enabled (will be started by loadSettings if enabled)
   if (document.readyState === "loading") {
     document.addEventListener(
       "DOMContentLoaded",
       () => {
-        startInboxZeroObserver();
+        if (inboxZeroEnabled) {
+          startInboxZeroObserver();
+        }
       },
       { once: true }
     );
   } else {
-    startInboxZeroObserver();
+    if (inboxZeroEnabled) {
+      startInboxZeroObserver();
+    }
   }
 
   // Listen for settings changes from the options page
@@ -2545,6 +2601,15 @@
       }
       if (changes.darkModeEnabled && typeof changes.darkModeEnabled.newValue === "boolean") {
         darkModeEnabled = changes.darkModeEnabled.newValue;
+      }
+      if (changes.inboxZeroEnabled && typeof changes.inboxZeroEnabled.newValue === "boolean") {
+        inboxZeroEnabled = changes.inboxZeroEnabled.newValue;
+        if (inboxZeroEnabled) {
+          startInboxZeroObserver();
+        } else if (inboxZeroObserver) {
+          inboxZeroObserver.disconnect();
+          inboxZeroObserver = null;
+        }
       }
     });
   } catch (e) {
