@@ -75,3 +75,20 @@ The same code structure is duplicated for both the Chrome and Firefox versions o
   - Extend the storage schema (e.g., `archiveShortcut`, `markReadShortcut`, etc.).
   - Add more keyboard handlers and DOM queries in `contentScript.js` for the relevant buttons/elements.
   - Expand the options UI to configure those additional shortcuts and toggles.
+
+---
+
+- [x] Add toggle for inbox zero celebration
+  - [ ] Fix inbox zero firework/confetti
+  - [ ] Fix issues with celebration triggering with empty inbox repeatedly
+- [ ] Add dark mode setting to command bar
+- [ ] Add hide top bar setting to command bar
+- [ ] add hide sidebar setting to command bar
+- [ ] Add hide inbox or focus email to command bar
+- [ ] Fix sidebar navigation
+- [ ] Fix options in command bar that do not have a hotkey to not show the hotkey container on the right.
+- [ ] Add option in command bar for Outlook account
+- [ ] Add option in command bar for Outlook settings
+- [ ] Add full integration of Outlook search in a popup
+- [ ] Remove the native popup for actions at the bottom and replace with centered custom popup.
+- [ ] Make the extensions dark/light mode toggle effect outlook
