@@ -78,6 +78,8 @@ The same code structure is duplicated for both the Chrome and Firefox versions o
 
 ---
 
+# ToDo
+
 - [x] Add toggle for inbox zero celebration
   - [ ] Fix inbox zero firework/confetti
   - [ ] Fix issues with celebration triggering with empty inbox repeatedly
