@@ -145,6 +145,45 @@
     });
   }
 
+  function findOutlookSettingsButton() {
+    // Outlook Web Settings button - try ID first, then aria-label/title
+    const selectors = [
+      '#owaSettingsButton',
+      'button#owaSettingsButton',
+      'button[aria-label="Settings"]',
+      'button[title="Settings"]',
+      'button[aria-label*="Settings"]',
+      'button[title*="Settings"]'
+    ];
+
+    for (const selector of selectors) {
+      const btn = document.querySelector(selector);
+      if (btn) return btn;
+    }
+
+    // Fallback: search by text content
+    const buttons = Array.from(document.querySelectorAll("button"));
+    return buttons.find((btn) => {
+      const text = (btn.textContent || "").trim().toLowerCase();
+      return text === "settings";
+    });
+  }
+
+  function openOutlookSettings() {
+    const button = findOutlookSettingsButton();
+    if (!button) {
+      return false;
+    }
+    try {
+      /** @type {HTMLElement} */ (button).click();
+      return true;
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.debug("Zero: Failed to click Outlook settings button:", e);
+      return false;
+    }
+  }
+
   function applyOptionsBarVisibility() {
     try {
       // Hide/show the options bar elements
@@ -1349,7 +1388,6 @@
       id: "unsubscribe",
       title: "Unsubscribe",
       subtitle: "Find and click an unsubscribe link in the current email",
-      shortcutHint: "Command bar",
       action: () => {
         clickUnsubscribeLink();
       }
@@ -1478,6 +1516,14 @@
           // eslint-disable-next-line no-console
           console.debug("Zero: Could not open options page:", e);
         }
+      }
+    },
+    {
+      id: "outlook-settings",
+      title: "Outlook settings",
+      subtitle: "Open Outlook's built-in settings panel",
+      action: () => {
+        openOutlookSettings();
       }
     }
   ];
