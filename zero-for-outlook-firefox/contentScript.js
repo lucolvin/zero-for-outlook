@@ -1592,6 +1592,9 @@
       (cmd.id || "").toLowerCase();
     if (haystack === q) return 100;
     if (haystack.startsWith(q)) return 50;
+    // Check for full word matches (word boundaries) - these should rank higher than partial matches
+    const wordBoundaryRegex = new RegExp(`\\b${q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i");
+    if (wordBoundaryRegex.test(haystack)) return 40;
     if (haystack.indexOf(q) !== -1) return 25;
     return 0;
   }
