@@ -103,3 +103,7 @@ The same code structure is duplicated for both the Chrome and Firefox versions o
 - [ ] Add full integration of Outlook search in a popup
 - [ ] Remove the native popup for actions at the bottom and replace with centered custom popup.
 - [x] Make the extensions dark/light mode toggle effect outlook
+
+---
+
+Copyright (C) 2025 Luke Colvin
