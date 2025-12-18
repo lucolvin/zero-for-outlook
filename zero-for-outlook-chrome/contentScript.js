@@ -1705,12 +1705,13 @@
       item.className = "oz-command-item";
       const title = getCommandDisplayTitle(cmd);
       const subtitle = getCommandDisplaySubtitle(cmd);
+      const shortcutHint = getCommandShortcutHint(cmd);
       item.innerHTML = `
         <div class="oz-command-item-main">
           <div class="oz-command-item-title">${title}</div>
           <div class="oz-command-item-subtitle">${subtitle}</div>
         </div>
-        <div class="oz-command-item-shortcut">${getCommandShortcutHint(cmd)}</div>
+        ${shortcutHint ? `<div class="oz-command-item-shortcut">${shortcutHint}</div>` : ""}
       `;
       item.addEventListener("mouseenter", () => {
         setCommandSelection(index);
