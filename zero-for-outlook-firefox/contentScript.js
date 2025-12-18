@@ -1499,9 +1499,9 @@
       }
     },
     {
-      id: "settings",
-      title: "Settings",
-      subtitle: "Open extension options page",
+      id: "options",
+      title: "Options",
+      subtitle: "Open Zero for Outlook options page",
       action: () => {
         try {
           browserApi.runtime.sendMessage(
