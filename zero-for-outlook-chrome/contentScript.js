@@ -77,7 +77,7 @@
             inboxZeroObserver.disconnect();
             inboxZeroObserver = null;
           }
-          // Apply options bar visibility
+          // Apply Outlook options visibility
           applyOptionsBarVisibility();
         }
       );
@@ -147,6 +147,7 @@
 
   function applyOptionsBarVisibility() {
     try {
+      // Hide/show the options bar elements
       const elements = document.querySelectorAll(".fabqree");
       elements.forEach((el) => {
         if (optionsBarHidden) {
@@ -155,6 +156,37 @@
           /** @type {HTMLElement} */ (el).style.display = "";
         }
       });
+      // Hide/show the Outlook header
+      const outlookHeader = document.getElementById("O365_NavHeader");
+      if (outlookHeader) {
+        if (optionsBarHidden) {
+          /** @type {HTMLElement} */ (outlookHeader).style.display = "none";
+        } else {
+          /** @type {HTMLElement} */ (outlookHeader).style.display = "";
+        }
+      }
+      // Hide/show the Outlook header container
+      const outlookHeaderContainer = document.getElementById("o365header");
+      if (outlookHeaderContainer) {
+        if (optionsBarHidden) {
+          /** @type {HTMLElement} */ (outlookHeaderContainer).style.height = "0px";
+        } else {
+          /** @type {HTMLElement} */ (outlookHeaderContainer).style.height = "";
+        }
+      }
+      // Hide/show the left rail app bar navigation
+      const leftRailAppBar = document.querySelector('[role="navigation"][aria-label="left-rail-appbar"]');
+      if (leftRailAppBar) {
+        // Find the parent container that wraps the navigation
+        const parentContainer = leftRailAppBar.closest('div[data-tabster]');
+        if (parentContainer) {
+          if (optionsBarHidden) {
+            /** @type {HTMLElement} */ (parentContainer).style.display = "none";
+          } else {
+            /** @type {HTMLElement} */ (parentContainer).style.display = "";
+          }
+        }
+      }
     } catch (e) {
       // Best-effort only
     }
@@ -166,7 +198,7 @@
       browserApi.storage.sync.set({ optionsBarHidden: newValue }, () => {
         if (browserApi.runtime && browserApi.runtime.lastError) {
           // eslint-disable-next-line no-console
-          console.debug("Zero: Could not toggle options bar setting:", browserApi.runtime.lastError);
+          console.debug("Zero: Could not toggle Outlook options setting:", browserApi.runtime.lastError);
           return;
         }
         optionsBarHidden = newValue;
@@ -174,7 +206,7 @@
       });
     } catch (e) {
       // eslint-disable-next-line no-console
-      console.debug("Zero: Could not toggle options bar setting:", e);
+      console.debug("Zero: Could not toggle Outlook options setting:", e);
     }
   }
 
@@ -1416,8 +1448,8 @@
     },
     {
       id: "toggle-options-bar",
-      title: "Hide options bar",
-      subtitle: "Toggle visibility of the options bar",
+      title: "Hide/show Outlook options",
+      subtitle: "Toggle visibility of Outlook options bar and header",
       action: () => {
         toggleOptionsBar();
       }
@@ -1462,9 +1494,9 @@
     }
     if (cmd.id === "toggle-options-bar") {
       if (optionsBarHidden) {
-        return "Show options bar";
+        return "Show Outlook options";
       } else {
-        return "Hide options bar";
+        return "Hide Outlook options";
       }
     }
     if (cmd.id === "toggle-dark-mode") {
@@ -1487,9 +1519,9 @@
     }
     if (cmd.id === "toggle-options-bar") {
       if (optionsBarHidden) {
-        return "Show the options bar";
+        return "Show the Outlook options bar and header";
       } else {
-        return "Hide the options bar";
+        return "Hide the Outlook options bar and header";
       }
     }
     if (cmd.id === "toggle-dark-mode") {
@@ -2731,7 +2763,7 @@
   // Initial load
   loadSettings();
 
-  // Watch for new options bar elements being added to the DOM
+  // Watch for new Outlook options elements being added to the DOM
   let optionsBarObserver = null;
   function startOptionsBarObserver() {
     try {
