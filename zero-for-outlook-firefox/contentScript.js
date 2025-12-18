@@ -249,6 +249,160 @@
     }
   }
 
+  function toggleOutlookAppearance(targetMode) {
+    // targetMode: "light" or "dark"
+    // Opens settings, navigates to Appearance tab, selects theme, and closes
+    try {
+      let settingsWasOpen = false;
+      
+      // Check if settings panel is already open
+      const existingPanel = document.querySelector('[role="dialog"][aria-modal="true"]');
+      if (existingPanel) {
+        settingsWasOpen = true;
+      }
+
+      // Step 1: Open settings if not already open
+      if (!settingsWasOpen) {
+        const settingsButton = findOutlookSettingsButton();
+        if (!settingsButton) {
+          return;
+        }
+        /** @type {HTMLElement} */ (settingsButton).click();
+        // Wait for settings panel to open (check for dialog element)
+        waitForElement('[role="dialog"][aria-modal="true"]').then(() => {
+          navigateToAppearanceAndToggle(targetMode, settingsWasOpen);
+        });
+      } else {
+        navigateToAppearanceAndToggle(targetMode, settingsWasOpen);
+      }
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.debug("Zero: Could not toggle Outlook appearance:", e);
+    }
+  }
+
+  function waitForElement(selector, maxAttempts = 50, interval = 50) {
+    return new Promise((resolve) => {
+      let attempts = 0;
+      const checkElement = () => {
+        attempts++;
+        const element = document.querySelector(selector);
+        if (element) {
+          resolve(element);
+          return;
+        }
+        if (attempts >= maxAttempts) {
+          resolve(null);
+          return;
+        }
+        window.setTimeout(checkElement, interval);
+      };
+      checkElement();
+    });
+  }
+
+  function waitForElementByText(tagName, text, maxAttempts = 50, interval = 50) {
+    return new Promise((resolve) => {
+      let attempts = 0;
+      const checkElement = () => {
+        attempts++;
+        const elements = Array.from(document.querySelectorAll(tagName));
+        const found = elements.find(el => {
+          const elText = (el.textContent || "").trim();
+          return elText === text;
+        });
+        if (found) {
+          resolve(found);
+          return;
+        }
+        if (attempts >= maxAttempts) {
+          resolve(null);
+          return;
+        }
+        window.setTimeout(checkElement, interval);
+      };
+      checkElement();
+    });
+  }
+
+  async function navigateToAppearanceAndToggle(targetMode, settingsWasOpen) {
+    try {
+      // Step 2: Wait for and click the "General" tab
+      const generalTab = await waitForElement('button[role="tab"][value="general"]');
+      if (generalTab) {
+        /** @type {HTMLElement} */ (generalTab).click();
+        // Small delay to let the click register
+        await new Promise(resolve => window.setTimeout(resolve, 50));
+      }
+
+      // Step 3: Wait for and click the "Appearance" tab
+      const appearanceTab = await waitForElement('button[role="tab"][value="appAppearance"]');
+      if (appearanceTab) {
+        /** @type {HTMLElement} */ (appearanceTab).click();
+        // Small delay to let the appearance options load
+        await new Promise(resolve => window.setTimeout(resolve, 100));
+      }
+
+      // Step 4: Wait for the radio button to appear, then click it
+      const radioSelector = `input[id^="ChoiceGroup"][id$="-${targetMode}"]`;
+      const radio = await waitForElement(radioSelector);
+      if (radio) {
+        /** @type {HTMLElement} */ (radio).click();
+        // Small delay to let the selection register
+        await new Promise(resolve => window.setTimeout(resolve, 50));
+      }
+
+      // Step 5: Wait for and click the Save button
+      const saveBtn = await waitForElementByText('button[type="button"]', 'Save');
+      if (saveBtn) {
+        /** @type {HTMLElement} */ (saveBtn).click();
+        // Small delay to let save complete
+        await new Promise(resolve => window.setTimeout(resolve, 150));
+      }
+      
+      // Step 6: Close settings panel if we opened it
+      if (!settingsWasOpen) {
+        closeSettingsPanel();
+      }
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.debug("Zero: Could not navigate to appearance:", e);
+    }
+  }
+
+  function closeSettingsPanel() {
+    try {
+      // Try various methods to close the settings panel
+      const closeSelectors = [
+        'button[aria-label*="Close"]',
+        '.ms-Panel-closeButton',
+        'button[title*="Close"]',
+      ];
+      
+      for (const selector of closeSelectors) {
+        const closeBtn = document.querySelector(selector);
+        if (closeBtn) {
+          /** @type {HTMLElement} */ (closeBtn).click();
+          return;
+        }
+      }
+      
+      // Fallback: Press Escape key
+      const escEvent = new KeyboardEvent("keydown", {
+        key: "Escape",
+        code: "Escape",
+        keyCode: 27,
+        which: 27,
+        bubbles: true,
+        cancelable: true
+      });
+      document.activeElement?.dispatchEvent(escEvent);
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.debug("Zero: Could not close settings panel:", e);
+    }
+  }
+
   function toggleDarkMode() {
     try {
       const newValue = !darkModeEnabled;
@@ -259,6 +413,10 @@
           return;
         }
         darkModeEnabled = newValue;
+        
+        // Also toggle Outlook's dark/light mode
+        toggleOutlookAppearance(newValue ? "dark" : "light");
+        
         updateCommandOverlayTheme();
         // Re-render command list to update the toggle command's display text
         if (commandOverlay && commandInput) {
@@ -1570,9 +1728,9 @@
     }
     if (cmd.id === "toggle-dark-mode") {
       if (darkModeEnabled) {
-        return "Change overlays to light theme";
+        return "Change overlays and Outlook to light theme";
       } else {
-        return "Change overlays to dark theme";
+        return "Change overlays and Outlook to dark theme";
       }
     }
     return cmd.subtitle || "";
