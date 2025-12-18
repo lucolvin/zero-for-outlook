@@ -24,6 +24,7 @@
   let vimEnabled = true;
   let darkModeEnabled = true;
   let inboxZeroEnabled = false;
+  let optionsBarHidden = false;
   /** @type {"auto" | "sidebar"} */
   let vimContext = "auto";
 
@@ -35,7 +36,8 @@
           commandShortcut: DEFAULT_COMMAND_SHORTCUT,
           vimEnabled: true,
           darkModeEnabled: true,
-          inboxZeroEnabled: false
+          inboxZeroEnabled: false,
+          optionsBarHidden: false
         },
         (items) => {
           if (browserApi.runtime && browserApi.runtime.lastError) {
@@ -64,6 +66,9 @@
             if (typeof items.inboxZeroEnabled === "boolean") {
               inboxZeroEnabled = items.inboxZeroEnabled;
             }
+            if (typeof items.optionsBarHidden === "boolean") {
+              optionsBarHidden = items.optionsBarHidden;
+            }
           }
           // Start or stop the observer based on the setting
           if (inboxZeroEnabled) {
@@ -72,6 +77,8 @@
             inboxZeroObserver.disconnect();
             inboxZeroObserver = null;
           }
+          // Apply options bar visibility
+          applyOptionsBarVisibility();
         }
       );
     } catch (e) {
@@ -136,6 +143,39 @@
       const text = (btn.textContent || "").trim().toLowerCase();
       return text === "undo";
     });
+  }
+
+  function applyOptionsBarVisibility() {
+    try {
+      const elements = document.querySelectorAll(".fabqree");
+      elements.forEach((el) => {
+        if (optionsBarHidden) {
+          /** @type {HTMLElement} */ (el).style.display = "none";
+        } else {
+          /** @type {HTMLElement} */ (el).style.display = "";
+        }
+      });
+    } catch (e) {
+      // Best-effort only
+    }
+  }
+
+  function toggleOptionsBar() {
+    try {
+      const newValue = !optionsBarHidden;
+      browserApi.storage.sync.set({ optionsBarHidden: newValue }, () => {
+        if (browserApi.runtime && browserApi.runtime.lastError) {
+          // eslint-disable-next-line no-console
+          console.debug("Zero: Could not toggle options bar setting:", browserApi.runtime.lastError);
+          return;
+        }
+        optionsBarHidden = newValue;
+        applyOptionsBarVisibility();
+      });
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.debug("Zero: Could not toggle options bar setting:", e);
+    }
   }
 
   function triggerUndo() {
@@ -1308,6 +1348,14 @@
       }
     },
     {
+      id: "toggle-options-bar",
+      title: "Hide options bar",
+      subtitle: "Toggle visibility of the options bar",
+      action: () => {
+        toggleOptionsBar();
+      }
+    },
+    {
       id: "settings",
       title: "Settings",
       subtitle: "Open extension options page",
@@ -1329,14 +1377,52 @@
     }
   ];
 
+  function getCommandDisplayTitle(cmd) {
+    if (cmd.id === "toggle-inbox-zero") {
+      if (inboxZeroEnabled) {
+        return "Disable celebration (WIP)";
+      } else {
+        return "Enable celebration (WIP)";
+      }
+    }
+    if (cmd.id === "toggle-options-bar") {
+      if (optionsBarHidden) {
+        return "Show options bar";
+      } else {
+        return "Hide options bar";
+      }
+    }
+    return cmd.title || "";
+  }
+
+  function getCommandDisplaySubtitle(cmd) {
+    if (cmd.id === "toggle-inbox-zero") {
+      if (inboxZeroEnabled) {
+        return "Disable celebration overlay when inbox reaches zero";
+      } else {
+        return "Enable celebration overlay when inbox reaches zero";
+      }
+    }
+    if (cmd.id === "toggle-options-bar") {
+      if (optionsBarHidden) {
+        return "Show the options bar";
+      } else {
+        return "Hide the options bar";
+      }
+    }
+    return cmd.subtitle || "";
+  }
+
   function scoreCommandMatch(cmd, query) {
     if (!query) return 1;
     const q = query.toLowerCase().trim();
     if (!q) return 1;
+    const title = getCommandDisplayTitle(cmd);
+    const subtitle = getCommandDisplaySubtitle(cmd);
     const haystack =
-      (cmd.title || "").toLowerCase() +
+      title.toLowerCase() +
       " " +
-      (cmd.subtitle || "").toLowerCase() +
+      subtitle.toLowerCase() +
       " " +
       (cmd.id || "").toLowerCase();
     if (haystack === q) return 100;
@@ -1496,18 +1582,8 @@
     filtered.forEach((cmd, index) => {
       const item = document.createElement("div");
       item.className = "oz-command-item";
-      let title = cmd.title || "";
-      let subtitle = cmd.subtitle || "";
-      // Make title and subtitle dynamic for inbox zero toggle
-      if (cmd.id === "toggle-inbox-zero") {
-        if (inboxZeroEnabled) {
-          title = "Disable celebration (WIP)";
-          subtitle = "Disable celebration overlay when inbox reaches zero";
-        } else {
-          title = "Enable celebration (WIP)";
-          subtitle = "Enable celebration overlay when inbox reaches zero";
-        }
-      }
+      const title = getCommandDisplayTitle(cmd);
+      const subtitle = getCommandDisplaySubtitle(cmd);
       item.innerHTML = `
         <div class="oz-command-item-main">
           <div class="oz-command-item-title">${title}</div>
@@ -2562,6 +2638,28 @@
   // Initial load
   loadSettings();
 
+  // Watch for new options bar elements being added to the DOM
+  let optionsBarObserver = null;
+  function startOptionsBarObserver() {
+    try {
+      if (optionsBarObserver) {
+        optionsBarObserver.disconnect();
+      }
+      optionsBarObserver = new MutationObserver(() => {
+        applyOptionsBarVisibility();
+      });
+      const target = document.body || document.documentElement;
+      if (target) {
+        optionsBarObserver.observe(target, {
+          childList: true,
+          subtree: true
+        });
+      }
+    } catch (e) {
+      // Best-effort only
+    }
+  }
+
   // Wait until the message list is present, then watch it for inbox-zero transitions.
   // Only start if enabled (will be started by loadSettings if enabled)
   if (document.readyState === "loading") {
@@ -2571,6 +2669,7 @@
         if (inboxZeroEnabled) {
           startInboxZeroObserver();
         }
+        startOptionsBarObserver();
       },
       { once: true }
     );
@@ -2578,6 +2677,7 @@
     if (inboxZeroEnabled) {
       startInboxZeroObserver();
     }
+    startOptionsBarObserver();
   }
 
   // Listen for settings changes from the options page
@@ -2610,6 +2710,10 @@
           inboxZeroObserver.disconnect();
           inboxZeroObserver = null;
         }
+      }
+      if (changes.optionsBarHidden && typeof changes.optionsBarHidden.newValue === "boolean") {
+        optionsBarHidden = changes.optionsBarHidden.newValue;
+        applyOptionsBarVisibility();
       }
     });
   } catch (e) {
