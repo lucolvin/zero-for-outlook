@@ -5,6 +5,10 @@ The first shortcut supported is **Undo archive**, which clicks the transient **U
 > [!CAUTION]
 > These extensions are still in early beta and are under active development. Expect breaking changes. Use at your own risk and so on.
 
+
+> [!TIP]
+> Find an issue? open a [pull request](https://github.com/lucolvin/zero-for-outlook/pulls?q=sort%3Aupdated-desc+is%3Apr+is%3Aopen)
+
 > [!NOTE]
 > The docs including this README are extremely out of date. A docs site is currently being created. And will be updated here.
 
