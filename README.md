@@ -7,7 +7,7 @@ The first shortcut supported is **Undo archive**, which clicks the transient **U
 
 
 > [!TIP]
-> Find an issue? Open an [issue](https://github.com/lucolvin/zero-for-outlook/issues/new/choose).
+> Find a bug? Open an [issue](https://github.com/lucolvin/zero-for-outlook/issues/new/choose).
 
 > [!NOTE]
 > The docs including this README are extremely out of date. A docs site is currently being created. And will be updated here.
