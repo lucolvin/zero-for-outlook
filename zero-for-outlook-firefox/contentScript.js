@@ -262,6 +262,84 @@
     }
   }
 
+  function findBookingsButton() {
+    // Outlook Web Bookings button - try aria-label first
+    const selectors = [
+      'button[aria-label="Bookings"]',
+      'button[title="Bookings"]',
+      'button[aria-label*="Bookings"]',
+      'button[title*="Bookings"]'
+    ];
+
+    for (const selector of selectors) {
+      const btn = document.querySelector(selector);
+      if (btn) return btn;
+    }
+
+    // Fallback: search by text content
+    const buttons = Array.from(document.querySelectorAll("button"));
+    return buttons.find((btn) => {
+      const text = (btn.textContent || "").trim().toLowerCase();
+      return text === "bookings";
+    });
+  }
+
+  function openBookings() {
+    const button = findBookingsButton();
+    if (!button) {
+      return false;
+    }
+    try {
+      /** @type {HTMLElement} */ (button).click();
+      return true;
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.debug("Zero: Failed to click Bookings button:", e);
+      return false;
+    }
+  }
+
+  function findTodoButton() {
+    // Outlook Web To Do button - try aria-label first
+    const selectors = [
+      'button[aria-label="To Do"]',
+      'button[title="To Do"]',
+      'button[aria-label*="To Do"]',
+      'button[title*="To Do"]',
+      'button[aria-label="Todo"]',
+      'button[title="Todo"]',
+      'button[aria-label*="Todo"]',
+      'button[title*="Todo"]'
+    ];
+
+    for (const selector of selectors) {
+      const btn = document.querySelector(selector);
+      if (btn) return btn;
+    }
+
+    // Fallback: search by text content
+    const buttons = Array.from(document.querySelectorAll("button"));
+    return buttons.find((btn) => {
+      const text = (btn.textContent || "").trim().toLowerCase();
+      return text === "to do" || text === "todo";
+    });
+  }
+
+  function openTodo() {
+    const button = findTodoButton();
+    if (!button) {
+      return false;
+    }
+    try {
+      /** @type {HTMLElement} */ (button).click();
+      return true;
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.debug("Zero: Failed to click To Do button:", e);
+      return false;
+    }
+  }
+
   function applyOptionsBarVisibility() {
     try {
       // Hide/show the options bar elements
@@ -1776,6 +1854,22 @@
       subtitle: "Open Mail/Inbox in Outlook",
       action: () => {
         openInbox();
+      }
+    },
+    {
+      id: "bookings",
+      title: "Bookings",
+      subtitle: "Open Bookings in Outlook",
+      action: () => {
+        openBookings();
+      }
+    },
+    {
+      id: "todo",
+      title: "To Do",
+      subtitle: "Open To Do in Outlook",
+      action: () => {
+        openTodo();
       }
     }
   ];
