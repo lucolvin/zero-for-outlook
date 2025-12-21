@@ -85,6 +85,21 @@ The same code structure is duplicated for both the Chrome and Firefox versions o
   - Add more keyboard handlers and DOM queries in `contentScript.js` for the relevant buttons/elements.
   - Expand the options UI to configure those additional shortcuts and toggles.
 
+### Automated versioning
+
+This repository uses GitHub Actions to automatically manage version tags.
+
+**How it works:**
+
+- **Triggers on Push**: Runs every time you push code to `main`.
+- **Calculates Version**: It looks at your previous tags. If the last tag was `v1.0.0`, it automatically bumps it to `v1.0.1` (a "patch" update).
+- **Tags & Pushes**: It creates the new tag in the repo automatically.
+
+You can force a larger version jump by including specific words in your commit message:
+
+- `#major` (jumps from v1.0.0 to v2.0.0)
+- `#minor` (jumps from v1.0.0 to v1.1.0)
+
 ---
 
 # ToDo
