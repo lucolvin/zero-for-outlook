@@ -2970,6 +2970,19 @@
         return;
       }
 
+      // Check for command shortcut early to prevent Firefox from handling Cmd+K
+      // (which would focus the URL bar). This must happen before any other checks.
+      if (commandShortcut && shortcutMatches(event, commandShortcut)) {
+        event.preventDefault();
+        event.stopPropagation();
+        if (commandOverlay) {
+          closeCommandOverlay();
+        } else {
+          openCommandOverlay();
+        }
+        return;
+      }
+
       const key = (event.key || "").toLowerCase();
       const targetNode = /** @type {Node | null} */ (event.target);
 
@@ -3125,17 +3138,6 @@
           }
           return;
         }
-      }
-
-      if (commandShortcut && shortcutMatches(event, commandShortcut)) {
-        event.preventDefault();
-        event.stopPropagation();
-        if (commandOverlay) {
-          closeCommandOverlay();
-        } else {
-          openCommandOverlay();
-        }
-        return;
       }
 
       if (undoShortcut && shortcutMatches(event, undoShortcut)) {
