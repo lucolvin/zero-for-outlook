@@ -184,6 +184,84 @@
     }
   }
 
+  function findCalendarButton() {
+    // Outlook Web Calendar button - try aria-label first
+    const selectors = [
+      'button[aria-label="Calendar"]',
+      'button[title="Calendar"]',
+      'button[aria-label*="Calendar"]',
+      'button[title*="Calendar"]'
+    ];
+
+    for (const selector of selectors) {
+      const btn = document.querySelector(selector);
+      if (btn) return btn;
+    }
+
+    // Fallback: search by text content
+    const buttons = Array.from(document.querySelectorAll("button"));
+    return buttons.find((btn) => {
+      const text = (btn.textContent || "").trim().toLowerCase();
+      return text === "calendar";
+    });
+  }
+
+  function openCalendar() {
+    const button = findCalendarButton();
+    if (!button) {
+      return false;
+    }
+    try {
+      /** @type {HTMLElement} */ (button).click();
+      return true;
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.debug("Zero: Failed to click Calendar button:", e);
+      return false;
+    }
+  }
+
+  function findInboxButton() {
+    // Outlook Web Inbox/Mail button - try aria-label first
+    const selectors = [
+      'button[aria-label="Mail"]',
+      'button[title="Mail"]',
+      'button[aria-label*="Mail"]',
+      'button[title*="Mail"]',
+      'button[aria-label="Inbox"]',
+      'button[title="Inbox"]',
+      'button[aria-label*="Inbox"]',
+      'button[title*="Inbox"]'
+    ];
+
+    for (const selector of selectors) {
+      const btn = document.querySelector(selector);
+      if (btn) return btn;
+    }
+
+    // Fallback: search by text content
+    const buttons = Array.from(document.querySelectorAll("button"));
+    return buttons.find((btn) => {
+      const text = (btn.textContent || "").trim().toLowerCase();
+      return text === "mail" || text === "inbox";
+    });
+  }
+
+  function openInbox() {
+    const button = findInboxButton();
+    if (!button) {
+      return false;
+    }
+    try {
+      /** @type {HTMLElement} */ (button).click();
+      return true;
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.debug("Zero: Failed to click Inbox button:", e);
+      return false;
+    }
+  }
+
   function applyOptionsBarVisibility() {
     try {
       // Hide/show the options bar elements
@@ -1682,6 +1760,22 @@
       subtitle: "Open Outlook's built-in settings panel",
       action: () => {
         openOutlookSettings();
+      }
+    },
+    {
+      id: "calendar",
+      title: "Calendar",
+      subtitle: "Open Calendar in Outlook",
+      action: () => {
+        openCalendar();
+      }
+    },
+    {
+      id: "inbox",
+      title: "Inbox",
+      subtitle: "Open Mail/Inbox in Outlook",
+      action: () => {
+        openInbox();
       }
     }
   ];
