@@ -90,6 +90,46 @@
         </div>
       </section>
 
+      <section class="oz-card" id="custom-shortcuts-section">
+        <h2>Custom shortcuts</h2>
+        <p class="oz-help">
+          Add keyboard shortcuts for any button or element on screen. Open the command bar and select "Add custom shortcut" to get started.
+        </p>
+
+        <label class="oz-toggle" style="margin-bottom: 16px;">
+          <input id="aiTitleEditingEnabled" type="checkbox" class="oz-toggle-input" />
+          <span class="oz-toggle-label">
+            Use AI to format custom shortcut names (requires Gemini API key)
+          </span>
+        </label>
+
+        <p id="status-ai-title-editing" class="oz-status" role="status" aria-live="polite"></p>
+
+        <button id="manageCustomShortcuts" class="oz-button oz-button-ghost" type="button">
+          Manage custom shortcuts
+        </button>
+      </section>
+
+      <!-- Custom Shortcuts Sub-Page (hidden by default) -->
+      <div id="custom-shortcuts-page" style="display: none;">
+        <section class="oz-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <button id="backToMain" class="oz-button oz-button-ghost" type="button" style="margin-bottom: 0;">
+              ← Back
+            </button>
+            <button id="clearAllCustomShortcuts" class="oz-button oz-button-ghost" type="button" style="display: none;">
+              Clear all
+            </button>
+          </div>
+          <h2 style="margin-top: 0;">Custom shortcuts</h2>
+          <p class="oz-help">
+            Add keyboard shortcuts for any button or element on screen. Open the command bar and select "Add custom shortcut" to get started.
+          </p>
+          <div id="customShortcutsList"></div>
+          <p id="status-custom" class="oz-status" role="status" aria-live="polite"></p>
+        </section>
+      </div>
+
       <section class="oz-card">
         <h2>Vim-style navigation</h2>
         <p class="oz-help">
@@ -249,6 +289,16 @@
             rel="noopener noreferrer"
             >github.com/lucolvin/zero-for-outlook</a
           >.
+        </p>
+        <p class="oz-help" style="margin-top: 0.75rem;">
+          If you find this extension useful, consider
+          <a
+            href="https://buymeacoffee.com/Lcolvin"
+            target="_blank"
+            rel="noopener noreferrer"
+            >buying me a coffee</a
+          >
+          to support development.
         </p>
       </section>
 

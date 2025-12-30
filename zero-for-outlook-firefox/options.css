@@ -169,6 +169,23 @@ body.oz-theme-dark .oz-divider {
   border: 0;
 }
 
+.oz-selector-display {
+  display: block;
+  flex: 1;
+  font-family: ui-monospace, monospace;
+  font-size: 0.85rem;
+  padding: 8px 12px;
+  background-color: rgba(148, 163, 184, 0.1);
+  border-radius: 6px;
+  color: #475569;
+  word-break: break-all;
+}
+
+body.oz-theme-dark .oz-selector-display {
+  background-color: rgba(148, 163, 184, 0.15);
+  color: #94a3b8;
+}
+
 .oz-shortcut-input {
   flex: 1;
   border-radius: 999px;
@@ -311,6 +328,11 @@ body.oz-theme-dark kbd {
   border-color: #1f2937;
   background-color: #020617;
   color: #e5e7eb;
+}
+
+body.oz-theme-dark .oz-custom-shortcut-card {
+  background-color: rgba(31, 41, 55, 0.6) !important;
+  border-color: rgba(148, 163, 184, 0.5) !important;
 }
 
 @media (max-width: 600px) {

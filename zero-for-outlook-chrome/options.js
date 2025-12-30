@@ -34,6 +34,14 @@
   const geminiInput = document.getElementById("geminiApiKey");
   const saveGeminiBtn = document.getElementById("saveGeminiKey");
   const clearGeminiBtn = document.getElementById("clearGeminiKey");
+  const customShortcutsList = document.getElementById("customShortcutsList");
+  const customStatusEl = document.getElementById("status-custom");
+  const customShortcutsSection = document.getElementById("custom-shortcuts-section");
+  const customShortcutsPage = document.getElementById("custom-shortcuts-page");
+  const manageCustomShortcutsBtn = document.getElementById("manageCustomShortcuts");
+  const backToMainBtn = document.getElementById("backToMain");
+  const aiTitleEditingToggle = document.getElementById("aiTitleEditingEnabled");
+  const aiTitleEditingStatusEl = document.getElementById("status-ai-title-editing");
 
   function formatShortcut(shortcut) {
     if (!shortcut || !shortcut.key) return "Not set";
@@ -79,6 +87,10 @@
 
   function setInboxZeroStatus(message) {
     setStatus(inboxZeroStatusEl, message);
+  }
+
+  function setCustomStatus(message) {
+    setStatus(customStatusEl, message);
   }
 
   function saveVimEnabled(enabled) {
@@ -134,6 +146,24 @@
       });
     } catch (e) {
       setInboxZeroStatus("Could not update inbox zero setting.");
+    }
+  }
+
+  function setAiTitleEditingStatus(message) {
+    setStatus(aiTitleEditingStatusEl, message);
+  }
+
+  function saveAiTitleEditingEnabled(enabled) {
+    try {
+      browserApi.storage.sync.set({ aiTitleEditingEnabled: enabled }, () => {
+        if (browserApi.runtime && browserApi.runtime.lastError) {
+          setAiTitleEditingStatus("Could not update AI title editing setting (storage error).");
+          return;
+        }
+        setAiTitleEditingStatus(enabled ? "AI title editing enabled." : "AI title editing disabled.");
+      });
+    } catch (e) {
+      setAiTitleEditingStatus("Could not update AI title editing setting.");
     }
   }
 
@@ -214,6 +244,233 @@
     };
   }
 
+  function loadCustomShortcuts(callback) {
+    try {
+      browserApi.storage.sync.get({ customShortcuts: [] }, (items) => {
+        if (browserApi.runtime && browserApi.runtime.lastError) {
+          if (callback) callback();
+          return;
+        }
+        const shortcuts = Array.isArray(items.customShortcuts) ? items.customShortcuts : [];
+        renderCustomShortcuts(shortcuts);
+        if (callback) callback();
+      });
+    } catch (e) {
+      // Ignore errors
+      if (callback) callback();
+    }
+  }
+
+  function renderCustomShortcuts(shortcuts) {
+    if (!customShortcutsList) return;
+
+    const clearAllBtn = document.getElementById("clearAllCustomShortcuts");
+    if (clearAllBtn) {
+      clearAllBtn.style.display = shortcuts.length > 0 ? "block" : "none";
+    }
+
+    if (shortcuts.length === 0) {
+      customShortcutsList.innerHTML = '<p class="oz-help-sub">No custom shortcuts yet. Open the command bar and select "Add custom shortcut" to get started.</p>';
+      return;
+    }
+
+    customShortcutsList.innerHTML = "";
+
+    shortcuts.forEach((customShortcut, index) => {
+      const card = document.createElement("div");
+      card.style.marginBottom = "20px";
+      card.style.padding = "16px";
+      card.style.border = "1px solid rgba(148, 163, 184, 0.3)";
+      card.style.borderRadius = "8px";
+      card.style.backgroundColor = "rgba(249, 250, 251, 0.5)";
+      card.className = "oz-custom-shortcut-card";
+      card.setAttribute("data-shortcut-id", customShortcut.id);
+
+      const nameRow = document.createElement("div");
+      nameRow.className = "oz-shortcut-row";
+      nameRow.style.marginBottom = "12px";
+
+      const nameLabel = document.createElement("label");
+      nameLabel.className = "oz-label";
+      nameLabel.textContent = "Name:";
+      nameLabel.style.marginRight = "8px";
+      nameLabel.style.minWidth = "60px";
+
+      const nameInput = document.createElement("input");
+      nameInput.type = "text";
+      nameInput.className = "oz-shortcut-input";
+      nameInput.placeholder = "Custom shortcut name";
+      nameInput.value = customShortcut.description || customShortcut.name || "Custom shortcut";
+      nameInput.setAttribute("data-shortcut-id", customShortcut.id);
+      nameInput.setAttribute("data-field", "name");
+      nameInput.style.flex = "1";
+
+      nameInput.addEventListener("change", () => {
+        const newValue = nameInput.value.trim();
+        // Save both name and description (they mirror each other)
+        saveCustomShortcutField(customShortcut.id, "description", newValue);
+      });
+
+      nameRow.appendChild(nameLabel);
+      nameRow.appendChild(nameInput);
+
+      const selectorRow = document.createElement("div");
+      selectorRow.className = "oz-shortcut-row";
+      selectorRow.style.marginBottom = "12px";
+
+      const selectorLabel = document.createElement("label");
+      selectorLabel.className = "oz-label";
+      selectorLabel.textContent = "Selector:";
+      selectorLabel.style.marginRight = "8px";
+      selectorLabel.style.minWidth = "60px";
+
+      const selectorDisplay = document.createElement("code");
+      selectorDisplay.className = "oz-selector-display";
+      selectorDisplay.textContent = customShortcut.selector || "";
+
+      selectorRow.appendChild(selectorLabel);
+      selectorRow.appendChild(selectorDisplay);
+
+      const shortcutRow = document.createElement("div");
+      shortcutRow.className = "oz-shortcut-row";
+
+      const shortcutLabel = document.createElement("label");
+      shortcutLabel.className = "oz-label";
+      shortcutLabel.textContent = "Shortcut:";
+      shortcutLabel.style.marginRight = "8px";
+      shortcutLabel.style.minWidth = "60px";
+
+      const shortcutInput = document.createElement("input");
+      shortcutInput.type = "text";
+      shortcutInput.className = "oz-shortcut-input";
+      shortcutInput.placeholder = "Press keys…";
+      shortcutInput.value = formatShortcut(customShortcut.shortcut);
+      shortcutInput.setAttribute("data-shortcut-id", customShortcut.id);
+      shortcutInput.style.flex = "1";
+
+      const deleteBtn = document.createElement("button");
+      deleteBtn.className = "oz-button oz-button-ghost";
+      deleteBtn.type = "button";
+      deleteBtn.textContent = "Delete";
+      deleteBtn.addEventListener("click", () => {
+        deleteCustomShortcut(customShortcut.id);
+      });
+
+      shortcutRow.appendChild(shortcutLabel);
+      shortcutRow.appendChild(shortcutInput);
+      shortcutRow.appendChild(deleteBtn);
+
+      card.appendChild(nameRow);
+      card.appendChild(selectorRow);
+      card.appendChild(shortcutRow);
+
+      customShortcutsList.appendChild(card);
+
+      // Add keyboard shortcut handler
+      shortcutInput.addEventListener("keydown", createShortcutHandler((shortcut) => {
+        saveCustomShortcut(customShortcut.id, shortcut);
+        shortcutInput.value = formatShortcut(shortcut);
+      }));
+      shortcutInput.addEventListener("keyup", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      });
+    });
+  }
+
+  function saveCustomShortcut(id, shortcut) {
+    try {
+      browserApi.storage.sync.get({ customShortcuts: [] }, (items) => {
+        if (browserApi.runtime && browserApi.runtime.lastError) {
+          setCustomStatus("Could not save shortcut (storage error).");
+          return;
+        }
+        const shortcuts = Array.isArray(items.customShortcuts) ? items.customShortcuts : [];
+        const index = shortcuts.findIndex(s => s.id === id);
+        if (index !== -1) {
+          shortcuts[index] = { ...shortcuts[index], shortcut };
+          browserApi.storage.sync.set({ customShortcuts: shortcuts }, () => {
+            if (browserApi.runtime && browserApi.runtime.lastError) {
+              setCustomStatus("Could not save shortcut (storage error).");
+              return;
+            }
+            setCustomStatus("Shortcut saved.");
+          });
+        }
+      });
+    } catch (e) {
+      setCustomStatus("Could not save shortcut.");
+    }
+  }
+
+  function saveCustomShortcutField(id, field, value) {
+    try {
+      browserApi.storage.sync.get({ customShortcuts: [] }, (items) => {
+        if (browserApi.runtime && browserApi.runtime.lastError) {
+          setCustomStatus("Could not save (storage error).");
+          return;
+        }
+        const shortcuts = Array.isArray(items.customShortcuts) ? items.customShortcuts : [];
+        const index = shortcuts.findIndex(s => s.id === id);
+        if (index !== -1) {
+          // Description mirrors the name - when name changes, description updates
+          shortcuts[index] = { ...shortcuts[index], [field]: value };
+          browserApi.storage.sync.set({ customShortcuts: shortcuts }, () => {
+            if (browserApi.runtime && browserApi.runtime.lastError) {
+              setCustomStatus("Could not save (storage error).");
+              return;
+            }
+            setCustomStatus("Name saved.");
+          });
+        }
+      });
+    } catch (e) {
+      setCustomStatus("Could not save.");
+    }
+  }
+
+  function clearAllCustomShortcuts() {
+    if (!confirm("Are you sure you want to delete all custom shortcuts? This action cannot be undone.")) {
+      return;
+    }
+    
+    try {
+      browserApi.storage.sync.set({ customShortcuts: [] }, () => {
+        if (browserApi.runtime && browserApi.runtime.lastError) {
+          setCustomStatus("Could not clear shortcuts (storage error).");
+          return;
+        }
+        loadCustomShortcuts();
+        setCustomStatus("All shortcuts cleared.");
+      });
+    } catch (e) {
+      setCustomStatus("Could not clear shortcuts.");
+    }
+  }
+
+  function deleteCustomShortcut(id) {
+    try {
+      browserApi.storage.sync.get({ customShortcuts: [] }, (items) => {
+        if (browserApi.runtime && browserApi.runtime.lastError) {
+          setCustomStatus("Could not delete shortcut (storage error).");
+          return;
+        }
+        const shortcuts = Array.isArray(items.customShortcuts) ? items.customShortcuts : [];
+        const filtered = shortcuts.filter(s => s.id !== id);
+        browserApi.storage.sync.set({ customShortcuts: filtered }, () => {
+          if (browserApi.runtime && browserApi.runtime.lastError) {
+            setCustomStatus("Could not delete shortcut (storage error).");
+            return;
+          }
+          loadCustomShortcuts();
+          setCustomStatus("Shortcut deleted.");
+        });
+      });
+    } catch (e) {
+      setCustomStatus("Could not delete shortcut.");
+    }
+  }
+
   function restoreOptions() {
     try {
       browserApi.storage.sync.get(
@@ -223,7 +480,9 @@
           vimEnabled: true,
           darkModeEnabled: true,
           inboxZeroEnabled: false,
-          geminiApiKey: ""
+          geminiApiKey: "",
+          customShortcuts: [],
+          aiTitleEditingEnabled: true
         },
         (items) => {
           if (browserApi.runtime && browserApi.runtime.lastError) {
@@ -267,6 +526,17 @@
           if (geminiInput) {
             geminiInput.value = (items && items.geminiApiKey) || "";
           }
+
+          const aiTitleEditingEnabled =
+            items && typeof items.aiTitleEditingEnabled === "boolean"
+              ? items.aiTitleEditingEnabled
+              : true;
+          if (aiTitleEditingToggle) {
+            aiTitleEditingToggle.checked = aiTitleEditingEnabled;
+          }
+
+          // Load custom shortcuts
+          loadCustomShortcuts();
         }
       );
     } catch (e) {
@@ -351,6 +621,13 @@
     });
   }
 
+  if (aiTitleEditingToggle) {
+    aiTitleEditingToggle.addEventListener("change", (e) => {
+      const target = /** @type {HTMLInputElement} */ (e.target);
+      saveAiTitleEditingEnabled(!!target.checked);
+    });
+  }
+
   if (saveGeminiBtn && geminiInput) {
     saveGeminiBtn.addEventListener("click", () => {
       saveGeminiApiKey(geminiInput.value.trim());
@@ -371,7 +648,118 @@
     });
   }
 
-  document.addEventListener("DOMContentLoaded", restoreOptions);
+  function showCustomShortcutsPage() {
+    if (customShortcutsSection) {
+      customShortcutsSection.style.display = "none";
+    }
+    if (customShortcutsPage) {
+      customShortcutsPage.style.display = "block";
+      // Load shortcuts when showing the page
+      loadCustomShortcuts();
+    }
+  }
+
+  function hideCustomShortcutsPage() {
+    if (customShortcutsPage) {
+      customShortcutsPage.style.display = "none";
+    }
+    if (customShortcutsSection) {
+      customShortcutsSection.style.display = "block";
+    }
+  }
+
+  function scrollToShortcut(shortcutId) {
+    // First ensure shortcuts are loaded, then scroll
+    loadCustomShortcuts(() => {
+      // Wait a bit for DOM to update
+      setTimeout(() => {
+        // Show the custom shortcuts page first
+        showCustomShortcutsPage();
+        
+        // Wait a bit more for the page to be shown, then find and scroll to the card
+        setTimeout(() => {
+          // Find the card with the matching shortcut ID (using data-shortcut-id attribute on the card)
+          const card = document.querySelector('.oz-custom-shortcut-card[data-shortcut-id="' + shortcutId + '"]');
+          if (card) {
+            // Scroll to the card
+            card.scrollIntoView({ behavior: "smooth", block: "center" });
+            // Highlight the card briefly
+            card.style.transition = "box-shadow 0.3s ease";
+            card.style.boxShadow = "0 0 0 3px rgba(59, 130, 246, 0.5)";
+            setTimeout(() => {
+              card.style.boxShadow = "";
+            }, 2000);
+          }
+          // Clear the stored shortcut ID
+          browserApi.storage.local.remove("scrollToShortcutId");
+        }, 200);
+      }, 100);
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    // Check if we need to scroll to a specific shortcut BEFORE loading options
+    // This way we can wait for shortcuts to load before scrolling
+    browserApi.storage.local.get({ scrollToShortcutId: null }, (items) => {
+      const shortcutIdToScroll = items.scrollToShortcutId;
+      
+      // Load options (which will load shortcuts)
+      restoreOptions();
+      
+      // If we need to scroll to a shortcut, do it after shortcuts are loaded
+      if (shortcutIdToScroll) {
+        scrollToShortcut(shortcutIdToScroll);
+      }
+    });
+    
+    // Add clear all button handler
+    const clearAllBtn = document.getElementById("clearAllCustomShortcuts");
+    if (clearAllBtn) {
+      clearAllBtn.addEventListener("click", clearAllCustomShortcuts);
+    }
+
+    // Add navigation handlers
+    if (manageCustomShortcutsBtn) {
+      manageCustomShortcutsBtn.addEventListener("click", showCustomShortcutsPage);
+    }
+
+    if (backToMainBtn) {
+      backToMainBtn.addEventListener("click", hideCustomShortcutsPage);
+    }
+  });
+
+  // Listen for custom shortcuts changes (e.g., when added from content script)
+  try {
+    browserApi.storage.onChanged.addListener((changes, areaName) => {
+      if (areaName === "sync" && changes.customShortcuts) {
+        loadCustomShortcuts(() => {
+          // After shortcuts are loaded, check if we need to scroll to a new one
+          browserApi.storage.local.get({ scrollToShortcutId: null }, (items) => {
+            if (items.scrollToShortcutId) {
+              setTimeout(() => {
+                scrollToShortcut(items.scrollToShortcutId);
+              }, 200);
+            }
+          });
+        });
+      }
+      
+      // Also check for scrollToShortcutId in local storage (when a new shortcut is added)
+      if (areaName === "local" && changes.scrollToShortcutId) {
+        const newShortcutId = changes.scrollToShortcutId.newValue;
+        if (newShortcutId) {
+          // Load shortcuts first to ensure they're up to date, then scroll
+          loadCustomShortcuts(() => {
+            setTimeout(() => {
+              scrollToShortcut(newShortcutId);
+            }, 200);
+          });
+        }
+      }
+    });
+  } catch (e) {
+    // Ignore if storage events are not available
+  }
 })();
 
 
