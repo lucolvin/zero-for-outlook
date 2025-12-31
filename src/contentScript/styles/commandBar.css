@@ -1,0 +1,169 @@
+.oz-command-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.18);
+  -webkit-backdrop-filter: blur(14px) saturate(130%);
+  backdrop-filter: blur(14px) saturate(130%);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 10vh;
+  z-index: 2147483647;
+}
+
+.oz-command-backdrop.oz-command-dark {
+  background:
+    radial-gradient(circle at top left, rgba(59, 130, 246, 0.25), transparent 55%),
+    radial-gradient(circle at bottom right, rgba(129, 140, 248, 0.3), transparent 55%),
+    rgba(15, 23, 42, 0.32);
+}
+
+.oz-command-backdrop.oz-command-light {
+  background:
+    radial-gradient(circle at top left, rgba(59, 130, 246, 0.18), transparent 55%),
+    radial-gradient(circle at bottom right, rgba(129, 140, 248, 0.2), transparent 55%),
+    rgba(15, 23, 42, 0.12);
+}
+
+.oz-command-modal {
+  width: min(640px, 96vw);
+  border-radius: 12px;
+  overflow: hidden;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.oz-command-modal,
+.oz-command-modal * {
+  box-sizing: border-box;
+}
+
+.oz-command-modal.oz-command-dark {
+  background-color: #020617;
+  box-shadow:
+    0 22px 40px rgba(15, 23, 42, 0.9),
+    0 0 0 1px rgba(148, 163, 184, 0.55);
+  color: #e5e7eb;
+}
+
+.oz-command-modal.oz-command-light {
+  background-color: #ffffff;
+  box-shadow:
+    0 16px 32px rgba(15, 23, 42, 0.16),
+    0 0 0 1px rgba(148, 163, 184, 0.45);
+  color: #111827;
+}
+
+.oz-command-input-wrapper {
+  position: relative;
+  padding: 10px 12px 8px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.4);
+}
+
+.oz-command-input {
+  width: 100%;
+  border-radius: 8px;
+  border: 1px solid rgba(148, 163, 184, 0.6);
+  background: rgba(15, 23, 42, 0.8);
+  color: #e5e7eb;
+  padding: 8px 9px 7px 28px;
+  font-size: 0.95rem;
+  outline: none;
+}
+
+.oz-command-modal.oz-command-light .oz-command-input {
+  background: #f9fafb;
+  color: #111827;
+}
+
+.oz-command-input::placeholder {
+  color: rgba(148, 163, 184, 0.8);
+}
+
+.oz-command-input-icon {
+  position: absolute;
+  left: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.9rem;
+  opacity: 0.8;
+  pointer-events: none;
+}
+
+.oz-command-list {
+  max-height: 360px;
+  overflow-y: auto;
+  padding: 4px 4px 6px;
+}
+
+.oz-command-empty {
+  padding: 10px 12px 12px;
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+
+.oz-command-item {
+  border-radius: 8px;
+  padding: 7px 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  transition:
+    background-color 90ms ease,
+    transform 60ms ease;
+}
+
+.oz-command-item-main {
+  display: flex;
+  flex-direction: column;
+}
+
+.oz-command-item-title {
+  font-size: 0.93rem;
+  font-weight: 500;
+}
+
+.oz-command-item-subtitle {
+  font-size: 0.8rem;
+  opacity: 0.82;
+}
+
+.oz-command-item-shortcut {
+  font-size: 0.75rem;
+  opacity: 0.78;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.7);
+  padding: 3px 7px 2px;
+}
+
+.oz-command-modal.oz-command-dark .oz-command-item {
+  color: #e5e7eb;
+}
+
+.oz-command-modal.oz-command-light .oz-command-item {
+  color: #111827;
+}
+
+.oz-command-item:hover {
+  transform: translateY(-0.5px);
+}
+
+.oz-command-modal.oz-command-dark .oz-command-item:hover {
+  background-color: rgba(31, 41, 55, 0.95);
+}
+
+.oz-command-modal.oz-command-light .oz-command-item:hover {
+  background-color: #f3f4f6;
+}
+
+.oz-command-item-active {
+  transform: translateY(-0.5px);
+}
+
+.oz-command-modal.oz-command-dark .oz-command-item-active {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.24), rgba(129, 140, 248, 0.24));
+}
+
+.oz-command-modal.oz-command-light .oz-command-item-active {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.14), rgba(129, 140, 248, 0.16));
+}

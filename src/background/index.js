@@ -58,6 +58,7 @@
       };
     }
 
+    // Gemma 3 4B IT endpoint
     const endpoint =
       "https://generativelanguage.googleapis.com/v1beta/models/gemma-3-4b-it:generateContent";
 
@@ -296,5 +297,4 @@
     // best-effort only
   }
 })();
-
 

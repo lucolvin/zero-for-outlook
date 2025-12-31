@@ -157,13 +157,13 @@
     try {
       browserApi.storage.sync.set({ aiTitleEditingEnabled: enabled }, () => {
         if (browserApi.runtime && browserApi.runtime.lastError) {
-          setAiTitleEditingStatus("Could not update AI title editing setting (storage error).");
+          setAiTitleEditingStatus("Could not update LLM title editing setting (storage error).");
           return;
         }
-        setAiTitleEditingStatus(enabled ? "AI title editing enabled." : "AI title editing disabled.");
+        setAiTitleEditingStatus(enabled ? "LLM title editing enabled." : "LLM title editing disabled.");
       });
     } catch (e) {
-      setAiTitleEditingStatus("Could not update AI title editing setting.");
+      setAiTitleEditingStatus("Could not update LLM title editing setting.");
     }
   }
 
@@ -279,22 +279,33 @@
     shortcuts.forEach((customShortcut, index) => {
       const card = document.createElement("div");
       card.style.marginBottom = "20px";
-      card.style.padding = "16px";
+      // Extra right padding to avoid overlap with the top-right delete (×) button
+      card.style.padding = "16px 56px 16px 16px";
       card.style.border = "1px solid rgba(148, 163, 184, 0.3)";
       card.style.borderRadius = "8px";
       card.style.backgroundColor = "rgba(249, 250, 251, 0.5)";
       card.className = "oz-custom-shortcut-card";
       card.setAttribute("data-shortcut-id", customShortcut.id);
 
+      // Top-right delete button (removes the custom shortcut)
+      const deleteXBtn = document.createElement("button");
+      deleteXBtn.className = "oz-button oz-button-ghost oz-custom-shortcut-delete";
+      deleteXBtn.type = "button";
+      deleteXBtn.textContent = "×";
+      deleteXBtn.title = "Delete shortcut";
+      deleteXBtn.setAttribute("aria-label", "Delete custom shortcut");
+      deleteXBtn.addEventListener("click", () => {
+        deleteCustomShortcut(customShortcut.id);
+      });
+      card.appendChild(deleteXBtn);
+
       const nameRow = document.createElement("div");
-      nameRow.className = "oz-shortcut-row";
+      nameRow.className = "oz-shortcut-row oz-custom-shortcut-row";
       nameRow.style.marginBottom = "12px";
 
       const nameLabel = document.createElement("label");
       nameLabel.className = "oz-label";
       nameLabel.textContent = "Name:";
-      nameLabel.style.marginRight = "8px";
-      nameLabel.style.minWidth = "60px";
 
       const nameInput = document.createElement("input");
       nameInput.type = "text";
@@ -303,7 +314,6 @@
       nameInput.value = customShortcut.description || customShortcut.name || "Custom shortcut";
       nameInput.setAttribute("data-shortcut-id", customShortcut.id);
       nameInput.setAttribute("data-field", "name");
-      nameInput.style.flex = "1";
 
       nameInput.addEventListener("change", () => {
         const newValue = nameInput.value.trim();
@@ -315,14 +325,12 @@
       nameRow.appendChild(nameInput);
 
       const selectorRow = document.createElement("div");
-      selectorRow.className = "oz-shortcut-row";
+      selectorRow.className = "oz-shortcut-row oz-custom-shortcut-row";
       selectorRow.style.marginBottom = "12px";
 
       const selectorLabel = document.createElement("label");
       selectorLabel.className = "oz-label";
       selectorLabel.textContent = "Selector:";
-      selectorLabel.style.marginRight = "8px";
-      selectorLabel.style.minWidth = "60px";
 
       const selectorDisplay = document.createElement("code");
       selectorDisplay.className = "oz-selector-display";
@@ -332,13 +340,11 @@
       selectorRow.appendChild(selectorDisplay);
 
       const shortcutRow = document.createElement("div");
-      shortcutRow.className = "oz-shortcut-row";
+      shortcutRow.className = "oz-shortcut-row oz-custom-shortcut-row";
 
       const shortcutLabel = document.createElement("label");
       shortcutLabel.className = "oz-label";
       shortcutLabel.textContent = "Shortcut:";
-      shortcutLabel.style.marginRight = "8px";
-      shortcutLabel.style.minWidth = "60px";
 
       const shortcutInput = document.createElement("input");
       shortcutInput.type = "text";
@@ -346,19 +352,19 @@
       shortcutInput.placeholder = "Press keys…";
       shortcutInput.value = formatShortcut(customShortcut.shortcut);
       shortcutInput.setAttribute("data-shortcut-id", customShortcut.id);
-      shortcutInput.style.flex = "1";
 
-      const deleteBtn = document.createElement("button");
-      deleteBtn.className = "oz-button oz-button-ghost";
-      deleteBtn.type = "button";
-      deleteBtn.textContent = "Delete";
-      deleteBtn.addEventListener("click", () => {
-        deleteCustomShortcut(customShortcut.id);
+      const clearHotkeyBtn = document.createElement("button");
+      clearHotkeyBtn.className = "oz-button oz-button-ghost";
+      clearHotkeyBtn.type = "button";
+      clearHotkeyBtn.textContent = "Clear hotkey";
+      clearHotkeyBtn.addEventListener("click", () => {
+        saveCustomShortcut(customShortcut.id, null, { successMessage: "Hotkey cleared." });
+        shortcutInput.value = formatShortcut(null);
       });
 
       shortcutRow.appendChild(shortcutLabel);
       shortcutRow.appendChild(shortcutInput);
-      shortcutRow.appendChild(deleteBtn);
+      shortcutRow.appendChild(clearHotkeyBtn);
 
       card.appendChild(nameRow);
       card.appendChild(selectorRow);
@@ -378,7 +384,7 @@
     });
   }
 
-  function saveCustomShortcut(id, shortcut) {
+  function saveCustomShortcut(id, shortcut, options = {}) {
     try {
       browserApi.storage.sync.get({ customShortcuts: [] }, (items) => {
         if (browserApi.runtime && browserApi.runtime.lastError) {
@@ -394,7 +400,13 @@
               setCustomStatus("Could not save shortcut (storage error).");
               return;
             }
-            setCustomStatus("Shortcut saved.");
+            const successMessage =
+              options && typeof options.successMessage === "string"
+                ? options.successMessage
+                : shortcut
+                  ? "Shortcut saved."
+                  : "Hotkey cleared.";
+            setCustomStatus(successMessage);
           });
         }
       });
@@ -761,4 +773,6 @@
     // Ignore if storage events are not available
   }
 })();
+
+
 

@@ -87,6 +87,8 @@ body.oz-theme-dark .oz-card {
   box-shadow:
     0 12px 35px rgba(15, 23, 42, 0.9),
     0 0 0 1px rgba(30, 64, 175, 0.55);
+  -webkit-backdrop-filter: blur(18px);
+  /* stylelint-disable-next-line property-no-vendor-prefix */
   backdrop-filter: blur(18px);
 }
 
@@ -112,6 +114,44 @@ body.oz-theme-dark .oz-help {
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
+}
+
+/* Custom shortcut cards (Manage custom shortcuts page) */
+.oz-custom-shortcut-card {
+  position: relative;
+}
+
+.oz-custom-shortcut-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.oz-custom-shortcut-row .oz-label {
+  min-width: 80px;
+  text-align: right;
+}
+
+.oz-selector-display {
+  flex: 1;
+  min-width: 0;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.oz-custom-shortcut-delete {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  line-height: 1;
 }
 
 .oz-label {
@@ -324,9 +364,9 @@ body.oz-theme-dark .oz-custom-shortcut-card {
     align-items: stretch;
   }
 
-  .oz-label {
+  /* .oz-label { */
     /* no fixed min-width on narrow screens */
-  }
+  /* } */
 
   .oz-shortcut-controls {
     justify-content: flex-start;
@@ -348,6 +388,51 @@ body.oz-theme-dark .oz-custom-shortcut-card {
 body.oz-theme-dark .oz-selector-display {
   background-color: rgba(148, 163, 184, 0.15);
   color: #94a3b8;
+}
+
+.oz-header-icon {
+  border-radius: 8px;
+}
+
+.oz-toggle-spaced {
+  margin-bottom: 16px;
+}
+
+.oz-hidden {
+  display: none;
+}
+
+.oz-custom-shortcuts-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.oz-button-no-margin {
+  margin-bottom: 0;
+}
+
+.oz-heading-no-top {
+  margin-top: 0;
+}
+
+.oz-list-margin-top {
+  margin-top: 0.75rem;
+}
+
+.oz-wip-badge {
+  font-size: 0.75rem;
+  font-weight: normal;
+  opacity: 0.7;
+}
+
+.oz-help-margin-top {
+  margin-top: 0.75rem;
+}
+
+.oz-footer-link {
+  margin-left: 0.5rem;
 }
 
 

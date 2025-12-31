@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Zero for Outlook – Settings</title>
-    <link rel="stylesheet" href="options.css" />
+    <link rel="stylesheet" href="style.css" />
   </head>
   <body>
     <main class="oz-container">
@@ -15,7 +15,7 @@
             alt="Zero for Outlook"
             width="32"
             height="32"
-            style="border-radius: 8px;"
+            class="oz-header-icon"
           />
         </div>
         <div>
@@ -96,10 +96,10 @@
           Add keyboard shortcuts for any button or element on screen. Open the command bar and select "Add custom shortcut" to get started.
         </p>
 
-        <label class="oz-toggle" style="margin-bottom: 16px;">
+        <label class="oz-toggle oz-toggle-spaced">
           <input id="aiTitleEditingEnabled" type="checkbox" class="oz-toggle-input" />
           <span class="oz-toggle-label">
-            Use AI to format custom shortcut names (requires Gemini API key)
+            Use an LLM to format custom shortcut names (requires Gemini API key)
           </span>
         </label>
 
@@ -111,17 +111,17 @@
       </section>
 
       <!-- Custom Shortcuts Sub-Page (hidden by default) -->
-      <div id="custom-shortcuts-page" style="display: none;">
+      <div id="custom-shortcuts-page" class="oz-hidden">
         <section class="oz-card">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-            <button id="backToMain" class="oz-button oz-button-ghost" type="button" style="margin-bottom: 0;">
+          <div class="oz-custom-shortcuts-header">
+            <button id="backToMain" class="oz-button oz-button-ghost oz-button-no-margin" type="button">
               ← Back
             </button>
-            <button id="clearAllCustomShortcuts" class="oz-button oz-button-ghost" type="button" style="display: none;">
+            <button id="clearAllCustomShortcuts" class="oz-button oz-button-ghost oz-hidden" type="button">
               Clear all
             </button>
           </div>
-          <h2 style="margin-top: 0;">Custom shortcuts</h2>
+          <h2 class="oz-heading-no-top">Custom shortcuts</h2>
           <p class="oz-help">
             Add keyboard shortcuts for any button or element on screen. Open the command bar and select "Add custom shortcut" to get started.
           </p>
@@ -146,7 +146,7 @@
 
         <p id="status-vim" class="oz-status" role="status" aria-live="polite"></p>
 
-        <ul class="oz-list" style="margin-top: 0.75rem;">
+        <ul class="oz-list oz-list-margin-top">
           <li>
             <strong>Sidebar</strong>:
             <kbd>h</kbd> (or <kbd>l</kbd> from the message list) focuses and “pins” the sidebar.
@@ -181,7 +181,7 @@
       </section>
 
       <section class="oz-card">
-        <h2>celebration <span style="font-size: 0.75rem; font-weight: normal; opacity: 0.7;">(WIP)</span></h2>
+        <h2>celebration <span class="oz-wip-badge">(WIP)</span></h2>
         <p class="oz-help">
           Show a celebration animation when your inbox reaches zero messages.
         </p>
@@ -197,10 +197,10 @@
       </section>
 
       <section class="oz-card">
-        <h2>AI Summaries (Optional)</h2>
+        <h2>LLM Summary (Optional)</h2>
         <p class="oz-help">
-          Add a Google Gemini API key to enable an AI command that briefly summarizes the important
-          details from the currently open email in Outlook.
+          Add a Google Gemini API key to enable an LLM command that briefly summarizes the important
+          details from the currently open email in Outlook. 
         </p>
 
         <div class="oz-shortcut-row">
@@ -221,7 +221,12 @@
 
         <p id="status-gemini" class="oz-status" role="status" aria-live="polite"></p>
 
-        <ul class="oz-list" style="margin-top: 0.75rem;">
+        <ul class="oz-list oz-list-margin-top">
+          <li>
+            <strong>Disclaimer</strong>: LLMs can hallucinate or produce inaccurate information. 
+            Always verify important details (dates, financial figures, action items) in the original email. 
+            Do not use this feature on emails containing highly sensitive or confidential information.
+          </li>
           <li>
             <strong>When it runs</strong>: The key is only used when you invoke the
             <em>Summarize current email</em> command from the command bar.
@@ -290,7 +295,7 @@
             >github.com/lucolvin/zero-for-outlook</a
           >.
         </p>
-        <p class="oz-help" style="margin-top: 0.75rem;">
+        <p class="oz-help oz-help-margin-top">
           If you find this extension useful, consider
           <a
             href="https://buymeacoffee.com/Lcolvin"
@@ -303,7 +308,7 @@
       </section>
 
       <footer class="oz-footer">
-        <span>Version 0.4.1</span>
+        <span>Version 0.5.0</span>
         <span>
           Copyright (C) 2025 Luke Colvin · Zero for Outlook
           <a
@@ -311,7 +316,7 @@
             target="_blank"
             rel="noopener noreferrer"
             aria-label="View Zero for Outlook on GitHub"
-            style="margin-left: 0.5rem;"
+            class="oz-footer-link"
           >
             <svg
               width="16"
@@ -336,7 +341,7 @@
       </footer>
     </main>
 
-    <script src="options.js"></script>
+    <script src="main.js"></script>
   </body>
 </html>
 

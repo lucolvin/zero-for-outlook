@@ -1,0 +1,53 @@
+.oz-element-picker-backdrop {
+  position: fixed;
+  inset: 0;
+  background: transparent;
+  z-index: 2147483646;
+  pointer-events: none;
+}
+
+.oz-element-picker-highlight {
+  position: absolute;
+  border: 2px solid #3b82f6;
+  background: rgba(59, 130, 246, 0.15);
+  pointer-events: none;
+  z-index: 2147483647;
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.5);
+}
+
+.oz-element-picker-tooltip {
+  position: fixed;
+  background: rgba(15, 23, 42, 0.95);
+  color: #e5e7eb;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 0.85rem;
+  pointer-events: none;
+  z-index: 2147483648;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.5);
+  border: 1px solid rgba(148, 163, 184, 0.5);
+  max-width: 300px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.oz-element-picker-instructions {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(15, 23, 42, 0.95);
+  color: #e5e7eb;
+  padding: 12px 20px;
+  border-radius: 12px;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 0.9rem;
+  pointer-events: none;
+  z-index: 2147483648;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(148, 163, 184, 0.5);
+  text-align: center;
+}
+
