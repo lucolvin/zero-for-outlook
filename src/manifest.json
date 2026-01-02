@@ -1,7 +1,7 @@
 {
   "name": "Zero for Outlook",
-  "description": "Add customizable keyboard shortcuts to Outlook on the web, starting with an undo-archive shortcut.",
-  "version": "0.5.0",
+  "description": "Zero for Outlook adds configurable keyboard shortcuts and extends functionality of Outlook on the web.",
+  "version": "0.5.1",
   "permissions": [
     "storage"
   ],
