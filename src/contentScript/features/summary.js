@@ -44,16 +44,36 @@ export function openSummaryOverlay(options) {
     modal.className =
       "oz-summary-modal " + (darkModeEnabled ? "oz-summary-dark" : "oz-summary-light");
 
-    modal.innerHTML = `
-      <div class="oz-summary-header">
-        <div class="oz-summary-title">
-          <span>Summary</span>
-          <span class="oz-summary-chip">Gemini</span>
-        </div>
-        <button type="button" class="oz-summary-close" aria-label="Close summary">Esc</button>
-      </div>
-      <div class="oz-summary-body"></div>
-    `;
+    const header = document.createElement("div");
+    header.className = "oz-summary-header";
+
+    const titleWrap = document.createElement("div");
+    titleWrap.className = "oz-summary-title";
+
+    const titleText = document.createElement("span");
+    titleText.textContent = "Summary";
+
+    const chip = document.createElement("span");
+    chip.className = "oz-summary-chip";
+    chip.textContent = "Gemini";
+
+    titleWrap.appendChild(titleText);
+    titleWrap.appendChild(chip);
+
+    const closeBtn = document.createElement("button");
+    closeBtn.type = "button";
+    closeBtn.className = "oz-summary-close";
+    closeBtn.setAttribute("aria-label", "Close summary");
+    closeBtn.textContent = "Esc";
+
+    header.appendChild(titleWrap);
+    header.appendChild(closeBtn);
+
+    const bodyEl = document.createElement("div");
+    bodyEl.className = "oz-summary-body";
+
+    modal.appendChild(header);
+    modal.appendChild(bodyEl);
 
     backdrop.appendChild(modal);
     document.documentElement.appendChild(backdrop);
@@ -67,14 +87,11 @@ export function openSummaryOverlay(options) {
       }
     });
 
-    const closeBtn = modal.querySelector(".oz-summary-close");
-    if (closeBtn) {
-      closeBtn.addEventListener("click", () => {
-        if (!isLoading) {
-          closeSummaryOverlay();
-        }
-      });
-    }
+    closeBtn.addEventListener("click", () => {
+      if (!isLoading) {
+        closeSummaryOverlay();
+      }
+    });
   }
 
   const modal = summaryOverlay.querySelector(".oz-summary-modal");

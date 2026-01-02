@@ -49,15 +49,25 @@ function openllmEditingOverlay() {
   modal.className =
     "oz-ai-editing-modal " + (darkModeEnabled ? "oz-ai-editing-dark" : "oz-ai-editing-light");
 
-  modal.innerHTML = `
-    <div class="oz-ai-editing-title">
-      <span>Editing shortcut name</span>
-      <span class="oz-ai-editing-chip">Gemini</span>
-    </div>
-    <div class="oz-ai-editing-message">
-      Using an LLM to format your shortcut name...
-    </div>
-  `;
+  const titleWrap = document.createElement("div");
+  titleWrap.className = "oz-ai-editing-title";
+
+  const titleText = document.createElement("span");
+  titleText.textContent = "Editing shortcut name";
+
+  const chip = document.createElement("span");
+  chip.className = "oz-ai-editing-chip";
+  chip.textContent = "Gemini";
+
+  titleWrap.appendChild(titleText);
+  titleWrap.appendChild(chip);
+
+  const message = document.createElement("div");
+  message.className = "oz-ai-editing-message";
+  message.textContent = "Using an LLM to format your shortcut name...";
+
+  modal.appendChild(titleWrap);
+  modal.appendChild(message);
 
   backdrop.appendChild(modal);
   document.documentElement.appendChild(backdrop);

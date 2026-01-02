@@ -270,11 +270,16 @@
     }
 
     if (shortcuts.length === 0) {
-      customShortcutsList.innerHTML = '<p class="oz-help-sub">No custom shortcuts yet. Open the command bar and select "Add custom shortcut" to get started.</p>';
+      customShortcutsList.replaceChildren();
+      const empty = document.createElement("p");
+      empty.className = "oz-help-sub";
+      empty.textContent =
+        'No custom shortcuts yet. Open the command bar and select "Add custom shortcut" to get started.';
+      customShortcutsList.appendChild(empty);
       return;
     }
 
-    customShortcutsList.innerHTML = "";
+    customShortcutsList.replaceChildren();
 
     shortcuts.forEach((customShortcut, index) => {
       const card = document.createElement("div");

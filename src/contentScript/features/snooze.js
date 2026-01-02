@@ -497,77 +497,89 @@ export function openSnoozeOverlay() {
   const modal = document.createElement("div");
   modal.className = "oz-snooze-modal " + (darkModeEnabled ? "oz-snooze-dark" : "oz-snooze-light");
 
+  function buildHeader(kind) {
+    const header = document.createElement("div");
+    header.className = "oz-snooze-header";
+
+    const title = document.createElement("div");
+    title.className = "oz-snooze-title";
+    title.appendChild(document.createTextNode(kind));
+
+    const info = document.createElement("button");
+    info.type = "button";
+    info.className = "oz-snooze-info";
+    info.setAttribute("aria-label", `${kind} keyboard help`);
+    info.setAttribute("title", "Use j / k to navigate and Enter to select · Esc to close");
+    info.textContent = "?";
+    title.appendChild(info);
+
+    const close = document.createElement("button");
+    close.type = "button";
+    close.className = "oz-snooze-close";
+    close.setAttribute(
+      "aria-label",
+      kind === "Unsnooze" ? "Close unsnooze menu" : "Close snooze menu"
+    );
+    close.textContent = "Esc";
+
+    header.appendChild(title);
+    header.appendChild(close);
+    return header;
+  }
+
+  function buildButton(preset, label, secondaryText, extraClasses) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = ["oz-snooze-button", extraClasses].filter(Boolean).join(" ");
+    btn.setAttribute("data-oz-snooze", preset);
+
+    const labelEl = document.createElement("span");
+    labelEl.className = "oz-snooze-label";
+    labelEl.textContent = label;
+    btn.appendChild(labelEl);
+
+    if (secondaryText !== null && secondaryText !== undefined) {
+      const secondaryEl = document.createElement("span");
+      secondaryEl.className = "oz-snooze-secondary";
+      secondaryEl.textContent = secondaryText;
+      btn.appendChild(secondaryEl);
+    }
+
+    return btn;
+  }
+
   if (isScheduledView()) {
     // Ensure Outlook's own Snooze/Unsnooze menu has been initialized
     // so that the "Unsnooze" command exists when we try to trigger it.
     primeSnoozeDropdown();
-    modal.innerHTML = `
-      <div class="oz-snooze-header">
-        <div class="oz-snooze-title">
-          Unsnooze
-          <button
-            type="button"
-            class="oz-snooze-info"
-            aria-label="Unsnooze keyboard help"
-            title="Use j / k to navigate and Enter to select · Esc to close"
-          >
-            ?
-          </button>
-        </div>
-        <button type="button" class="oz-snooze-close" aria-label="Close unsnooze menu">Esc</button>
-      </div>
-      <div class="oz-snooze-section">
-        <button type="button" class="oz-snooze-button" data-oz-snooze="unsnooze">
-          <span class="oz-snooze-label">Unsnooze</span>
-          <span class="oz-snooze-secondary">Move back to Inbox</span>
-        </button>
-      </div>
-    `;
+
+    modal.appendChild(buildHeader("Unsnooze"));
+
+    const section = document.createElement("div");
+    section.className = "oz-snooze-section";
+    section.appendChild(buildButton("unsnooze", "Unsnooze", "Move back to Inbox"));
+    modal.appendChild(section);
   } else {
     // Just like the Unsnooze view, we want Outlook's own Snooze dropdown
     // to be opened at least once so that its preset DOM nodes (with the
     // concrete times like "5:00 AM") exist before we try to read them.
     // This briefly toggles the Snooze button and then closes it again.
     primeSnoozeDropdown();
-    modal.innerHTML = `
-      <div class="oz-snooze-header">
-        <div class="oz-snooze-title">
-          Snooze
-          <button
-            type="button"
-            class="oz-snooze-info"
-            aria-label="Snooze keyboard help"
-            title="Use j / k to navigate and Enter to select · Esc to close"
-          >
-            ?
-          </button>
-        </div>
-        <button type="button" class="oz-snooze-close" aria-label="Close snooze menu">Esc</button>
-      </div>
-      <div class="oz-snooze-section">
-        <button type="button" class="oz-snooze-button" data-oz-snooze="laterToday">
-          <span class="oz-snooze-label">Later today</span>
-          <span class="oz-snooze-secondary"></span>
-        </button>
-        <button type="button" class="oz-snooze-button" data-oz-snooze="tomorrow">
-          <span class="oz-snooze-label">Tomorrow</span>
-          <span class="oz-snooze-secondary"></span>
-        </button>
-        <button type="button" class="oz-snooze-button" data-oz-snooze="thisWeekend">
-          <span class="oz-snooze-label">This weekend</span>
-          <span class="oz-snooze-secondary"></span>
-        </button>
-        <button type="button" class="oz-snooze-button" data-oz-snooze="nextWeek">
-          <span class="oz-snooze-label">Next week</span>
-          <span class="oz-snooze-secondary"></span>
-        </button>
-      </div>
-      <div class="oz-snooze-section oz-snooze-section-divider">
-        <button type="button" class="oz-snooze-button oz-snooze-button-ghost" data-oz-snooze="chooseDate">
-          <span class="oz-snooze-label">Choose a date…</span>
-        </button>
-      </div>
-    `;
+
+    modal.appendChild(buildHeader("Snooze"));
+
+    const presets = document.createElement("div");
+    presets.className = "oz-snooze-section";
+    presets.appendChild(buildButton("laterToday", "Later today", ""));
+    presets.appendChild(buildButton("tomorrow", "Tomorrow", ""));
+    presets.appendChild(buildButton("thisWeekend", "This weekend", ""));
+    presets.appendChild(buildButton("nextWeek", "Next week", ""));
+    modal.appendChild(presets);
+
+    const choose = document.createElement("div");
+    choose.className = "oz-snooze-section oz-snooze-section-divider";
+    choose.appendChild(buildButton("chooseDate", "Choose a date…", null, "oz-snooze-button-ghost"));
+    modal.appendChild(choose);
   }
 
   backdrop.appendChild(modal);

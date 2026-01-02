@@ -634,7 +634,7 @@ function renderCommandList(query) {
 
   const filtered = getFilteredCommands(query);
   commandFiltered = filtered;
-  list.innerHTML = "";
+  list.replaceChildren();
   commandItems = [];
   commandActiveIndex = -1;
 
@@ -655,13 +655,28 @@ function renderCommandList(query) {
     const title = getCommandDisplayTitle(cmd);
     const subtitle = getCommandDisplaySubtitle(cmd);
     const shortcutHint = getCommandShortcutHint(cmd);
-    item.innerHTML = `
-      <div class="oz-command-item-main">
-        <div class="oz-command-item-title">${title}</div>
-        <div class="oz-command-item-subtitle">${subtitle}</div>
-      </div>
-      ${shortcutHint ? `<div class="oz-command-item-shortcut">${shortcutHint}</div>` : ""}
-    `;
+
+    const main = document.createElement("div");
+    main.className = "oz-command-item-main";
+
+    const titleEl = document.createElement("div");
+    titleEl.className = "oz-command-item-title";
+    titleEl.textContent = title;
+
+    const subtitleEl = document.createElement("div");
+    subtitleEl.className = "oz-command-item-subtitle";
+    subtitleEl.textContent = subtitle;
+
+    main.appendChild(titleEl);
+    main.appendChild(subtitleEl);
+    item.appendChild(main);
+
+    if (shortcutHint) {
+      const shortcutEl = document.createElement("div");
+      shortcutEl.className = "oz-command-item-shortcut";
+      shortcutEl.textContent = shortcutHint;
+      item.appendChild(shortcutEl);
+    }
     item.addEventListener("mouseenter", () => {
       setCommandSelection(index);
     });
@@ -708,20 +723,32 @@ export function openCommandOverlay() {
   modal.className =
     "oz-command-modal " + (darkModeEnabled ? "oz-command-dark" : "oz-command-light");
 
-  modal.innerHTML = `
-    <div class="oz-command-input-wrapper">
-      <span class="oz-command-input-icon">⌘</span>
-      <input
-        class="oz-command-input"
-        type="text"
-        placeholder="Type a command…"
-        autocomplete="off"
-        spellcheck="false"
-      />
-    </div>
-    <div class="oz-command-list"></div>
-    <div class="oz-command-empty"></div>
-  `;
+  const inputWrap = document.createElement("div");
+  inputWrap.className = "oz-command-input-wrapper";
+
+  const icon = document.createElement("span");
+  icon.className = "oz-command-input-icon";
+  icon.textContent = "⌘";
+
+  const input = document.createElement("input");
+  input.className = "oz-command-input";
+  input.type = "text";
+  input.placeholder = "Type a command…";
+  input.setAttribute("autocomplete", "off");
+  input.setAttribute("spellcheck", "false");
+
+  inputWrap.appendChild(icon);
+  inputWrap.appendChild(input);
+
+  const list = document.createElement("div");
+  list.className = "oz-command-list";
+
+  const empty = document.createElement("div");
+  empty.className = "oz-command-empty";
+
+  modal.appendChild(inputWrap);
+  modal.appendChild(list);
+  modal.appendChild(empty);
 
   backdrop.appendChild(modal);
   document.documentElement.appendChild(backdrop);
