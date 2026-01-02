@@ -109,4 +109,4 @@ You can force a larger version jump by including specific words in your commit m
 
 ---
 
-Copyright (C) 2025 Luke Colvin
+Copyright (C) 2026 Luke Colvin
