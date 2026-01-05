@@ -69,9 +69,6 @@ const firefoxManifest = {
         required: ["personalCommunications", "websiteContent"],
         optional: []
       }
-    },
-    gecko_android: {
-      strict_min_version: "142.0"
     }
   }
 };
