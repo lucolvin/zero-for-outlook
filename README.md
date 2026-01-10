@@ -4,8 +4,10 @@ Zero for Outlook adds configurable keyboard shortcuts and extends functionality 
 
 > [!CAUTION]
 > These extensions are still in early beta and are under active development. Expect breaking changes. Use at your own risk and so on.
+
 > [!TIP]
 > Find a bug? Open an [issue](https://github.com/lucolvin/zero-for-outlook/issues/new/choose).
+
 > [!NOTE]
 > The docs including this README are extremely out of date. A docs site is currently being created. And will be updated at [the docs site](https://docs.zero-extension.com/)
 
@@ -126,8 +128,8 @@ The extension is scoped to Outlook web only:
 #### Loading in Chrome (Developer Mode)
 
 1. Clone or download this repository
-2. Run `npm install` to install dependencies
-3. Run `npm run build` to build the extension
+2. Run `bun install` to install dependencies
+3. Run `bun run build` to build the extension
 4. Open Chrome and navigate to `chrome://extensions`
 5. Enable **Developer mode** (top-right toggle)
 6. Click **Load unpacked** and select the `dist/chrome` folder
@@ -136,8 +138,8 @@ The extension is scoped to Outlook web only:
 #### Loading in Firefox (Temporary Add-on)
 
 1. Clone or download this repository
-2. Run `npm install` to install dependencies
-3. Run `npm run build` to build the extension
+2. Run `bun install` to install dependencies
+3. Run `bun run build` to build the extension
 4. Open Firefox and navigate to `about:debugging#/runtime/this-firefox`
 5. Click **Load Temporary Add-on…**
 6. Select the `manifest.json` file in the `dist/firefox` folder
@@ -145,7 +147,7 @@ The extension is scoped to Outlook web only:
 
 #### Building for Distribution
 
-Run `npm run package` to create distribution-ready zip files:
+Run `bun run package` to create distribution-ready zip files:
 
 - `dist/zero-for-outlook-chrome.zip`
 - `dist/zero-for-outlook-firefox.zip`
@@ -203,8 +205,8 @@ zero-for-outlook/
 
 ### Development
 
-- **Build**: `npm run build` - Builds the content script with Vite and copies files to `dist/chrome/` and `dist/firefox/`
-- **Package**: `npm run package` - Builds and creates zip files for distribution
+- **Build**: `bun run build` - Builds the content script with Vite and copies files to `dist/chrome/` and `dist/firefox/`
+- **Package**: `bun run package` - Builds and creates zip files for distribution
 
 The project uses:
 
