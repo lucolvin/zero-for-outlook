@@ -9,6 +9,7 @@
     "https://outlook.live.com/*",
     "https://outlook.office.com/*",
     "https://outlook.office365.com/*",
+    "https://outlook.cloud.microsoft/*",
     "https://generativelanguage.googleapis.com/*"
   ],
   "content_scripts": [
@@ -16,7 +17,8 @@
       "matches": [
         "https://outlook.live.com/*",
         "https://outlook.office.com/*",
-        "https://outlook.office365.com/*"
+        "https://outlook.office365.com/*",
+        "https://outlook.cloud.microsoft/"
       ],
       "js": [
         "contentScript.vite.js"
