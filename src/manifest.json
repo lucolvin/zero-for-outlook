@@ -1,7 +1,7 @@
 {
   "name": "Zero for Outlook",
   "description": "Zero for Outlook adds configurable keyboard shortcuts and extends functionality of Outlook on the web.",
-  "version": "0.5.10",
+  "version": "0.5.11",
   "permissions": [
     "storage"
   ],
@@ -18,7 +18,7 @@
         "https://outlook.live.com/*",
         "https://outlook.office.com/*",
         "https://outlook.office365.com/*",
-        "https://outlook.cloud.microsoft/"
+        "https://outlook.cloud.microsoft/*"
       ],
       "js": [
         "contentScript.vite.js"
