@@ -2,6 +2,11 @@
 
 Zero for Outlook adds configurable keyboard shortcuts and extends functionality of Outlook on the web, making it more efficient and enjoyable to use.
 
+![Chrome Web Store Version](https://img.shields.io/chrome-web-store/v/gpjbinalhllobnkijndgahhlfgcpbhnc)
+![Mozilla Add-on Version](https://img.shields.io/amo/v/zero-for-outlook)
+
+
+
 > [!CAUTION]
 > These extensions are still in early beta and are under active development. Expect breaking changes. Use at your own risk and so on.
 
