@@ -1,4 +1,4 @@
-# Zero for Outlook (Firefox & Chrome Extension)
+# Zero for Outlook
 
 Zero for Outlook adds configurable keyboard shortcuts and extends functionality of Outlook on the web, making it more efficient and enjoyable to use.
 
