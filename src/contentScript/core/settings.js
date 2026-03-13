@@ -109,12 +109,12 @@ class SettingsManager {
                   ...items.commandShortcut
                 };
               }
-            if (items.blockedContentShortcut) {
-              this.blockedContentShortcut = {
-                ...DEFAULT_BLOCKED_CONTENT_SHORTCUT,
-                ...items.blockedContentShortcut
-              };
-            }
+              if (items.blockedContentShortcut) {
+                this.blockedContentShortcut = {
+                  ...DEFAULT_BLOCKED_CONTENT_SHORTCUT,
+                  ...items.blockedContentShortcut
+                };
+              }
               if (typeof items.vimEnabled === "boolean") {
                 this.vimEnabled = items.vimEnabled;
               }
