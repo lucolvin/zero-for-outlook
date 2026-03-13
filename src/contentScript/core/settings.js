@@ -17,10 +17,19 @@ export const DEFAULT_COMMAND_SHORTCUT = {
   key: "k"
 };
 
+export const DEFAULT_BLOCKED_CONTENT_SHORTCUT = {
+  ctrlKey: false,
+  altKey: false,
+  shiftKey: true,
+  metaKey: true,
+  key: "b"
+};
+
 class SettingsManager {
   constructor() {
     this.undoShortcut = { ...DEFAULT_UNDO_SHORTCUT };
     this.commandShortcut = { ...DEFAULT_COMMAND_SHORTCUT };
+    this.blockedContentShortcut = { ...DEFAULT_BLOCKED_CONTENT_SHORTCUT };
     this.vimEnabled = true;
     this.darkModeEnabled = true;
     this.inboxZeroEnabled = false;
@@ -55,6 +64,7 @@ class SettingsManager {
     return {
       undoShortcut: this.undoShortcut,
       commandShortcut: this.commandShortcut,
+      blockedContentShortcut: this.blockedContentShortcut,
       vimEnabled: this.vimEnabled,
       darkModeEnabled: this.darkModeEnabled,
       inboxZeroEnabled: this.inboxZeroEnabled,
@@ -73,6 +83,7 @@ class SettingsManager {
           {
             undoShortcut: DEFAULT_UNDO_SHORTCUT,
             commandShortcut: DEFAULT_COMMAND_SHORTCUT,
+            blockedContentShortcut: DEFAULT_BLOCKED_CONTENT_SHORTCUT,
             vimEnabled: true,
             darkModeEnabled: true,
             inboxZeroEnabled: false,
@@ -96,6 +107,12 @@ class SettingsManager {
                 this.commandShortcut = {
                   ...DEFAULT_COMMAND_SHORTCUT,
                   ...items.commandShortcut
+                };
+              }
+              if (items.blockedContentShortcut) {
+                this.blockedContentShortcut = {
+                  ...DEFAULT_BLOCKED_CONTENT_SHORTCUT,
+                  ...items.blockedContentShortcut
                 };
               }
               if (typeof items.vimEnabled === "boolean") {
@@ -150,6 +167,13 @@ class SettingsManager {
           this.commandShortcut = {
             ...DEFAULT_COMMAND_SHORTCUT,
             ...changes.commandShortcut.newValue
+          };
+          changed = true;
+        }
+        if (changes.blockedContentShortcut && changes.blockedContentShortcut.newValue) {
+          this.blockedContentShortcut = {
+            ...DEFAULT_BLOCKED_CONTENT_SHORTCUT,
+            ...changes.blockedContentShortcut.newValue
           };
           changed = true;
         }

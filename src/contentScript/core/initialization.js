@@ -3,6 +3,7 @@ import { browserApi } from "./browserApi.js";
 import {
   DEFAULT_UNDO_SHORTCUT,
   DEFAULT_COMMAND_SHORTCUT,
+  DEFAULT_BLOCKED_CONTENT_SHORTCUT,
   settings
 } from "./settings.js";
 import {
@@ -55,6 +56,7 @@ import { createKeyboardHandler } from "./keyboardHandler.js";
 // State
 let undoShortcut = { ...DEFAULT_UNDO_SHORTCUT };
 let commandShortcut = { ...DEFAULT_COMMAND_SHORTCUT };
+let blockedContentShortcut = { ...DEFAULT_BLOCKED_CONTENT_SHORTCUT };
 let vimEnabled = true;
 let inboxZeroEnabled = false;
 let customShortcuts = [];
@@ -67,6 +69,7 @@ export function loadSettings() {
         {
           undoShortcut: DEFAULT_UNDO_SHORTCUT,
           commandShortcut: DEFAULT_COMMAND_SHORTCUT,
+          blockedContentShortcut: DEFAULT_BLOCKED_CONTENT_SHORTCUT,
           vimEnabled: true,
           darkModeEnabled: true,
           inboxZeroEnabled: false,
@@ -90,6 +93,12 @@ export function loadSettings() {
               commandShortcut = {
                 ...DEFAULT_COMMAND_SHORTCUT,
                 ...items.commandShortcut
+              };
+            }
+            if (items.blockedContentShortcut) {
+              blockedContentShortcut = {
+                ...DEFAULT_BLOCKED_CONTENT_SHORTCUT,
+                ...items.blockedContentShortcut
               };
             }
             if (typeof items.vimEnabled === "boolean") {
@@ -163,6 +172,7 @@ export function initialize() {
       currentHandler = createKeyboardHandler({
         undoShortcut,
         commandShortcut,
+        blockedContentShortcut,
         vimEnabled,
         customShortcuts
       });
@@ -205,6 +215,13 @@ export function initialize() {
           commandShortcut = {
             ...DEFAULT_COMMAND_SHORTCUT,
             ...changes.commandShortcut.newValue
+          };
+          handlerNeedsUpdate = true;
+        }
+        if (changes.blockedContentShortcut && changes.blockedContentShortcut.newValue) {
+          blockedContentShortcut = {
+            ...DEFAULT_BLOCKED_CONTENT_SHORTCUT,
+            ...changes.blockedContentShortcut.newValue
           };
           handlerNeedsUpdate = true;
         }
