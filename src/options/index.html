@@ -87,6 +87,45 @@
           </div>
 
           <p id="status-command" class="oz-status" role="status" aria-live="polite"></p>
+
+          <div class="oz-divider"></div>
+
+          <div class="oz-shortcut-row">
+            <div class="oz-shortcut-info">
+              <div class="oz-label">Show blocked content</div>
+              <p class="oz-help-sub">
+                Click Outlook&rsquo;s &ldquo;Show blocked content&rdquo; button in the current message
+                (default: <kbd>Meta</kbd> + <kbd>Shift</kbd> + <kbd>B</kbd>).
+              </p>
+            </div>
+            <div class="oz-shortcut-controls">
+              <label for="blockedContentShortcut" class="oz-visually-hidden">
+                Show blocked content shortcut
+              </label>
+              <input
+                id="blockedContentShortcut"
+                type="text"
+                class="oz-shortcut-input"
+                autocomplete="off"
+                spellcheck="false"
+                placeholder="Press keys…"
+              />
+              <button
+                id="clearBlockedContent"
+                class="oz-button oz-button-ghost"
+                type="button"
+              >
+                Clear
+              </button>
+            </div>
+          </div>
+
+          <p
+            id="status-blocked-content"
+            class="oz-status"
+            role="status"
+            aria-live="polite"
+          ></p>
         </div>
       </section>
 
@@ -308,9 +347,9 @@
       </section>
 
       <footer class="oz-footer">
-        <span>Version 0.5.11</span>
+        <span>Version 0.5.12</span>
         <span>
-          Copyright (C) 2025 Luke Colvin · Zero for Outlook
+          Copyright (C) 2026 Luke Colvin · Zero for Outlook
           <a
             href="https://github.com/lucolvin/zero-for-outlook"
             target="_blank"

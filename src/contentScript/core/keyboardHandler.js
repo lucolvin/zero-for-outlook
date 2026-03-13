@@ -1,6 +1,7 @@
 // Central keyboard handler that coordinates all feature key handlers
 import { isEditableElement, shortcutMatches } from "./shortcuts.js";
 import { triggerUndo } from "../features/undo.js";
+import { triggerShowBlockedContent } from "../features/blockedContent.js";
 import {
   sendShiftArrow,
   moveSelection,
@@ -42,6 +43,7 @@ export function createKeyboardHandler(options) {
   const {
     undoShortcut,
     commandShortcut,
+    blockedContentShortcut,
     vimEnabled,
     customShortcuts
   } = options;
@@ -258,6 +260,13 @@ export function createKeyboardHandler(options) {
         event.preventDefault();
         event.stopPropagation();
         triggerUndo();
+        return;
+      }
+
+      if (blockedContentShortcut && shortcutMatches(event, blockedContentShortcut)) {
+        event.preventDefault();
+        event.stopPropagation();
+        triggerShowBlockedContent();
       }
     } catch (e) {
       // Never let errors break the page

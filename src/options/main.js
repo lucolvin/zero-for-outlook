@@ -17,17 +17,27 @@
     metaKey: true,
     key: "k"
   };
+  const DEFAULT_BLOCKED_CONTENT_SHORTCUT = {
+    ctrlKey: false,
+    altKey: false,
+    shiftKey: true,
+    metaKey: true,
+    key: "b"
+  };
 
   const shortcutInput = document.getElementById("undoShortcut");
   const commandShortcutInput = document.getElementById("commandShortcut");
+  const blockedContentShortcutInput = document.getElementById("blockedContentShortcut");
   const undoStatusEl = document.getElementById("status");
   const commandStatusEl = document.getElementById("status-command");
+  const blockedContentStatusEl = document.getElementById("status-blocked-content");
   const vimStatusEl = document.getElementById("status-vim");
   const darkStatusEl = document.getElementById("status-dark");
   const inboxZeroStatusEl = document.getElementById("status-inbox-zero");
   const geminiStatusEl = document.getElementById("status-gemini");
   const clearBtn = document.getElementById("clearUndo");
   const clearCommandBtn = document.getElementById("clearCommand");
+  const clearBlockedContentBtn = document.getElementById("clearBlockedContent");
   const vimToggle = document.getElementById("vimEnabled");
   const darkToggle = document.getElementById("darkModeEnabled");
   const inboxZeroToggle = document.getElementById("inboxZeroEnabled");
@@ -71,6 +81,10 @@
 
   function setCommandStatus(message) {
     setStatus(commandStatusEl, message);
+  }
+
+  function setBlockedContentStatus(message) {
+    setStatus(blockedContentStatusEl, message);
   }
 
   function setVimStatus(message) {
@@ -210,6 +224,23 @@
       });
     } catch (e) {
       setCommandStatus("Could not save command bar shortcut.");
+    }
+  }
+
+  function saveBlockedContentShortcut(shortcut) {
+    try {
+      browserApi.storage.sync.set({ blockedContentShortcut: shortcut }, () => {
+        if (browserApi.runtime && browserApi.runtime.lastError) {
+          setBlockedContentStatus("Could not save blocked content shortcut (storage error).");
+          return;
+        }
+        if (blockedContentShortcutInput) {
+          blockedContentShortcutInput.value = formatShortcut(shortcut);
+        }
+        setBlockedContentStatus("Blocked content shortcut saved.");
+      });
+    } catch (e) {
+      setBlockedContentStatus("Could not save blocked content shortcut.");
     }
   }
 
@@ -494,6 +525,7 @@
         {
           undoShortcut: DEFAULT_UNDO_SHORTCUT,
           commandShortcut: DEFAULT_COMMAND_SHORTCUT,
+          blockedContentShortcut: DEFAULT_BLOCKED_CONTENT_SHORTCUT,
           vimEnabled: true,
           darkModeEnabled: true,
           inboxZeroEnabled: false,
@@ -513,6 +545,12 @@
             const cmdShortcut =
               (items && items.commandShortcut) || DEFAULT_COMMAND_SHORTCUT;
             commandShortcutInput.value = formatShortcut(cmdShortcut);
+          }
+
+          if (blockedContentShortcutInput) {
+            const blockedShortcut =
+              (items && items.blockedContentShortcut) || DEFAULT_BLOCKED_CONTENT_SHORTCUT;
+            blockedContentShortcutInput.value = formatShortcut(blockedShortcut);
           }
 
           if (vimToggle) {
@@ -583,6 +621,17 @@
     saveCommandShortcut(emptyShortcut);
   }
 
+  function clearBlockedContentShortcut() {
+    const emptyShortcut = {
+      ctrlKey: false,
+      altKey: false,
+      shiftKey: false,
+      metaKey: false,
+      key: ""
+    };
+    saveBlockedContentShortcut(emptyShortcut);
+  }
+
   function clearGeminiApiKey() {
     if (geminiInput) {
       geminiInput.value = "";
@@ -615,6 +664,21 @@
 
   if (clearCommandBtn) {
     clearCommandBtn.addEventListener("click", clearCommandShortcut);
+  }
+
+  if (clearBlockedContentBtn) {
+    clearBlockedContentBtn.addEventListener("click", clearBlockedContentShortcut);
+  }
+
+  if (blockedContentShortcutInput) {
+    blockedContentShortcutInput.addEventListener(
+      "keydown",
+      createShortcutHandler(saveBlockedContentShortcut)
+    );
+    blockedContentShortcutInput.addEventListener("keyup", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+    });
   }
 
   if (vimToggle) {
