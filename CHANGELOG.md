@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Improved custom shortcut creation flow to handle edge cases and provide more info to the user
 - Disabled llm editing of custom shortcut titles when no API key is present
-- Resolved issue on Firefox affecting max scroll using vim keybindings
+- Resolved issue in Firefox affecting max scroll when using vim keybindings
 
 ### Features
 
