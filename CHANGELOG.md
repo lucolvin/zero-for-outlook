@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-4-19
+
+### Fixed
+
+- Improved custom shortcut creation flow to handle edge cases and provide more info to the user
+- Disabled llm editing of custom shortcut titles when no API key is present
+- Resolved issue on Firefox affecting max scroll using vim keybindings
+
+### Features
+
+- Refactored options page for cleaner layout
+- Add json import/export option for user settings and shortcuts
+- Add option to manually add custom shortcuts for advanced users
+
 ## [0.5.12] - 2026-3-13
 
 ### Feature
@@ -13,9 +27,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.5.11] - 2026-02-10
 
-### Bug
+### Fixed
 
-- Fixed domain detection logic
+- Resolved issue with domain detection logic
 
 ## [0.5.10] - 2026-02-10
 

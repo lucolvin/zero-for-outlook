@@ -777,13 +777,46 @@ function handleElementPickerKeyDown(event) {
   }
 }
 
+/**
+ * Selector for the control that opens a dropdown, when the user picked an item after opening the menu.
+ * Must be computed before {@link closeElementPicker} — that clears {@link menuTriggerElement}.
+ */
+function getDropdownTriggerSelector(triggerEl) {
+  if (!triggerEl) return null;
+  const primary = getElementSelector(triggerEl);
+  if (primary) return primary;
+  const id = triggerEl.id && triggerEl.id.trim();
+  if (id) {
+    return `#${CSS.escape(id)}`;
+  }
+  const ac = triggerEl.getAttribute("aria-controls");
+  if (ac && ac.trim()) {
+    const tag = triggerEl.tagName ? triggerEl.tagName.toLowerCase() : "button";
+    try {
+      const sel = `${tag}[aria-controls="${CSS.escape(ac.trim())}"]`;
+      if (document.querySelectorAll(sel).length === 1) {
+        return sel;
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
+  return null;
+}
+
 // Element selection and saving
 function selectElement(elementToSave) {
   const selector = getElementSelector(elementToSave);
   let description = getElementDescription(elementToSave);
-  
+
   if (!selector) return;
-  
+
+  // Capture dropdown opener before closeElementPicker (AI path calls it before save and would clear submenu state).
+  const submenuMenuTriggerSelector =
+    submenuMode && menuTriggerElement
+      ? getDropdownTriggerSelector(menuTriggerElement)
+      : null;
+
   // Collect element information for Gemini formatting
   const elementInfo = {
     selector: selector,
@@ -812,7 +845,9 @@ function selectElement(elementToSave) {
       const tagName = elementToSave.tagName ? elementToSave.tagName.toLowerCase() : "element";
       finalDescription = `Custom ${tagName} shortcut`;
     }
-    saveShortcutWithDescription(selector, finalDescription, elementToSave);
+    saveShortcutWithDescription(selector, finalDescription, elementToSave, {
+      submenuMenuTriggerSelector
+    });
     return;
   }
 
@@ -846,66 +881,85 @@ function selectElement(elementToSave) {
       }
     }
     
-    saveShortcutWithDescription(selector, finalDescription, elementToSave);
+    saveShortcutWithDescription(selector, finalDescription, elementToSave, {
+      submenuMenuTriggerSelector
+    });
   });
 }
 
-function saveShortcutWithDescription(selector, finalDescription, elementToSave) {
+function saveShortcutWithDescription(selector, finalDescription, elementToSave, options = {}) {
   if (!selector) return;
-  
-  // Generate a unique ID for this custom shortcut
+
   const id = `custom-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-  
-  // If we're in submenu mode, save the menu trigger selector too
+
+  const precomputedSubmenuTrigger =
+    options.submenuMenuTriggerSelector && String(options.submenuMenuTriggerSelector).trim()
+      ? String(options.submenuMenuTriggerSelector).trim()
+      : null;
+
   let menuTriggerSelector = null;
-  if (submenuMode && menuTriggerElement) {
-    menuTriggerSelector = getElementSelector(menuTriggerElement);
+  try {
+    if (precomputedSubmenuTrigger) {
+      menuTriggerSelector = precomputedSubmenuTrigger;
+    } else if (submenuMode && menuTriggerElement) {
+      menuTriggerSelector =
+        getDropdownTriggerSelector(menuTriggerElement) ||
+        getElementSelector(menuTriggerElement);
+    } else {
+      const inferred = inferMenuTriggerSelectorForOpenMenu(elementToSave);
+      if (inferred) {
+        menuTriggerSelector = inferred;
+      }
+    }
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.debug("Zero: Menu trigger inference failed (shortcut still saved):", e);
   }
-  
-  // Get current custom shortcuts from settings
-  const state = settings.getState();
-  const customShortcuts = state.customShortcuts || [];
-  
-  // Save the custom shortcut
+
   const newShortcut = {
     id,
     selector,
     description: finalDescription,
-    shortcut: null, // Will be configured in options page
-    menuTriggerSelector: menuTriggerSelector || null // Optional: selector for menu trigger
+    shortcut: null,
+    menuTriggerSelector: menuTriggerSelector || null
   };
 
-  const updatedShortcuts = [...customShortcuts, newShortcut];
-  
-  browserApi.storage.sync.set({ customShortcuts: updatedShortcuts }, () => {
+  // Read latest list from storage (same-tab writes do not fire storage.onChanged here)
+  browserApi.storage.sync.get({ customShortcuts: [] }, (items) => {
     if (browserApi.runtime && browserApi.runtime.lastError) {
       // eslint-disable-next-line no-console
-      console.debug("Zero: Could not save custom shortcut:", browserApi.runtime.lastError);
+      console.debug("Zero: Could not read shortcuts before save:", browserApi.runtime.lastError);
       return;
     }
-    
-    // Rebuild command list with new custom shortcut
-    rebuildCommandList();
-    
-    // Show success message
-    closeElementPicker();
-    closellmEditingOverlay();
-    
-    // Open options page to configure the shortcut with the shortcut ID
-    try {
-      browserApi.runtime.sendMessage(
-        {
-          type: "oz-open-options",
-          shortcutId: id
-        },
-        () => {
-          // Ignore response/errors
-        }
-      );
-    } catch (e) {
-      // eslint-disable-next-line no-console
-      console.debug("Zero: Could not open options page:", e);
-    }
+    const existing = Array.isArray(items.customShortcuts) ? items.customShortcuts : [];
+    const updatedShortcuts = [...existing, newShortcut];
+
+    browserApi.storage.sync.set({ customShortcuts: updatedShortcuts }, () => {
+      if (browserApi.runtime && browserApi.runtime.lastError) {
+        // eslint-disable-next-line no-console
+        console.debug("Zero: Could not save custom shortcut:", browserApi.runtime.lastError);
+        return;
+      }
+
+      settings.customShortcuts = updatedShortcuts;
+
+      rebuildCommandList();
+      closeElementPicker();
+      closellmEditingOverlay();
+
+      try {
+        browserApi.runtime.sendMessage(
+          {
+            type: "oz-open-options",
+            shortcutId: id
+          },
+          () => {}
+        );
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.debug("Zero: Could not open options page:", e);
+      }
+    });
   });
 }
 
@@ -967,136 +1021,489 @@ export function closeElementPicker() {
   document.removeEventListener("keydown", handleElementPickerKeyDown, true);
 }
 
-export function executeCustomShortcut(customShortcut) {
-  // If there's a menu trigger selector, open the menu first
-  if (customShortcut.menuTriggerSelector) {
-    const menuTrigger = document.querySelector(customShortcut.menuTriggerSelector);
-    if (menuTrigger) {
-      try {
-        // Check if menu is already open by checking if target element is visible
-        const element = document.querySelector(customShortcut.selector);
-        if (element) {
-          const rect = element.getBoundingClientRect();
-          const style = window.getComputedStyle(element);
-          if (rect.width > 0 && rect.height > 0 && 
-              style.display !== "none" &&
-              style.visibility !== "hidden") {
-            // Menu appears to already be open, just click the element
-            try {
-              /** @type {HTMLElement} */ (element).click();
-              return;
-            } catch (e) {
-              // eslint-disable-next-line no-console
-              console.debug("Zero: Could not click custom shortcut element (menu already open):", e);
-            }
-          }
-        }
-        
-        // Menu is not open, click the trigger to open it
-        // Use mouse events to ensure it works properly
-        const mouseDown = new MouseEvent("mousedown", {
-          bubbles: true,
-          cancelable: true,
-          view: window,
-          button: 0
-        });
-        const mouseUp = new MouseEvent("mouseup", {
-          bubbles: true,
-          cancelable: true,
-          view: window,
-          button: 0
-        });
-        const clickEvent = new MouseEvent("click", {
-          bubbles: true,
-          cancelable: true,
-          view: window,
-          button: 0
-        });
-        
-        menuTrigger.dispatchEvent(mouseDown);
-        menuTrigger.dispatchEvent(mouseUp);
-        menuTrigger.dispatchEvent(clickEvent);
-        
-        // Also try native click as fallback
-        /** @type {HTMLElement} */ (menuTrigger).click();
-        
-        // Wait for menu to open, then click the target element
-        let attempts = 0;
-        const maxAttempts = 40; // 2 seconds total
-        const tryClickTarget = () => {
-          attempts++;
-          const targetElement = document.querySelector(customShortcut.selector);
-          if (targetElement) {
-            const rect = targetElement.getBoundingClientRect();
-            const style = window.getComputedStyle(targetElement);
-            // Check if element is visible
-            if (rect.width > 0 && rect.height > 0 && 
-                style.display !== "none" &&
-                style.visibility !== "hidden") {
-              try {
-                // Element is visible, click it
-                /** @type {HTMLElement} */ (targetElement).click();
-                return;
-              } catch (e) {
-                // eslint-disable-next-line no-console
-                console.debug("Zero: Could not click custom shortcut element:", e);
-              }
-            }
-          }
-          
-          if (attempts < maxAttempts) {
-            window.setTimeout(tryClickTarget, 50);
-          } else {
-            // eslint-disable-next-line no-console
-            console.debug("Zero: Custom shortcut element did not become visible after opening menu", {
-              menuTriggerSelector: customShortcut.menuTriggerSelector,
-              targetSelector: customShortcut.selector
-            });
-          }
-        };
-        
-        // Start checking after a short delay to allow menu to open
-        window.setTimeout(tryClickTarget, 150);
-      } catch (e) {
-        // eslint-disable-next-line no-console
-        console.debug("Zero: Could not click menu trigger for custom shortcut:", e);
-        // Fallback: try clicking target directly
-        const element = document.querySelector(customShortcut.selector);
-        if (element) {
-          try {
-            /** @type {HTMLElement} */ (element).click();
-          } catch (e2) {
-            // eslint-disable-next-line no-console
-            console.debug("Zero: Could not click custom shortcut element (fallback):", e2);
-          }
-        }
-      }
-    } else {
-      // Menu trigger not found, try to click target directly anyway
-      // eslint-disable-next-line no-console
-      console.debug("Zero: Menu trigger not found:", customShortcut.menuTriggerSelector);
-      const element = document.querySelector(customShortcut.selector);
-      if (element) {
-        try {
-          /** @type {HTMLElement} */ (element).click();
-        } catch (e) {
-          // eslint-disable-next-line no-console
-          console.debug("Zero: Could not click custom shortcut element:", e);
+/**
+ * @param {Element | null} el
+ */
+function isElementEffectivelyVisible(el) {
+  if (!el || !el.getBoundingClientRect) return false;
+  const rect = el.getBoundingClientRect();
+  if (rect.width < 1 || rect.height < 1) return false;
+  const style = window.getComputedStyle(el);
+  if (style.display === "none" || style.visibility === "hidden") return false;
+  if (parseFloat(style.opacity) < 0.05) return false;
+  if (style.pointerEvents === "none") return false;
+
+  let node = el;
+  for (let i = 0; node && i < 40; i++) {
+    if (node.nodeType !== Node.ELEMENT_NODE) break;
+    if (node.getAttribute("aria-hidden") === "true") return false;
+    const st = window.getComputedStyle(node);
+    if (st.display === "none" || st.visibility === "hidden") return false;
+    if (parseFloat(st.opacity) < 0.05) return false;
+    node = node.parentElement;
+  }
+  return true;
+}
+
+/**
+ * When strict visibility fails (e.g. stale aria-hidden), still allow programmatic click if the
+ * element has a real layout box. Used only after we've opened menu triggers.
+ * @param {Element | null} el
+ */
+function isElementBarelyVisible(el) {
+  if (!el || !el.getBoundingClientRect) return false;
+  const rect = el.getBoundingClientRect();
+  if (rect.width < 1 || rect.height < 1) return false;
+  const style = window.getComputedStyle(el);
+  if (style.display === "none" || style.visibility === "hidden") return false;
+  return true;
+}
+
+/** Menu / flyout containers Outlook & Fluent often use (not always role="menu"). */
+const MENU_ANCESTOR_SELECTOR =
+  '[role="menu"], [role="listbox"], [role="menubar"], .ms-ContextualMenu-list, .ms-ContextualMenu-container, .ms-Callout[role="dialog"]';
+
+/**
+ * From innermost to outermost menu ancestors of target (for building a click chain).
+ * @param {Element | null} target
+ */
+function collectMenuAncestorsFromTarget(target) {
+  /** @type {Element[]} */
+  const menus = [];
+  let n = target;
+  while (n && n !== document.documentElement) {
+    const menu = n.closest(MENU_ANCESTOR_SELECTOR);
+    if (!menu) break;
+    if (!menus.includes(menu)) {
+      menus.push(menu);
+    }
+    n = menu.parentElement;
+  }
+  return menus;
+}
+
+/**
+ * Find controls whose aria-controls / aria-owns subtree contains the target.
+ * Outlook/Fluent often omit role="menu" or stable hooks; this walks all controllers in the document.
+ * Order: outer container first → inner submenus (so we open the root flyout before nested ones).
+ * @param {Element | null} target
+ */
+function findAllMenuTriggersContainingTarget(target) {
+  if (!target) return [];
+
+  /** @type {Array<{ btn: HTMLElement, menu: Element }>} */
+  const pairs = [];
+  const seenBtns = new Set();
+
+  const candidates = document.querySelectorAll("[aria-controls], [aria-owns]");
+  for (const node of candidates) {
+    if (!(node instanceof HTMLElement)) continue;
+
+    const idCandidates = [];
+    const ac = node.getAttribute("aria-controls");
+    if (ac && ac.trim()) {
+      idCandidates.push(ac.trim());
+    }
+    const ao = node.getAttribute("aria-owns");
+    if (ao && ao.trim()) {
+      for (const part of ao.trim().split(/\s+/)) {
+        if (part) {
+          idCandidates.push(part);
         }
       }
     }
-  } else {
-    // No menu trigger, just click the element directly
-    const element = document.querySelector(customShortcut.selector);
-    if (element) {
+
+    let matched = false;
+    for (const rawId of [...new Set(idCandidates)]) {
+      let menu = null;
       try {
-        /** @type {HTMLElement} */ (element).click();
+        menu = document.getElementById(rawId);
       } catch (e) {
-        // eslint-disable-next-line no-console
-        console.debug("Zero: Could not click custom shortcut element:", e);
+        continue;
+      }
+      if (!menu || !menu.contains(target)) continue;
+      if (!seenBtns.has(node)) {
+        seenBtns.add(node);
+        pairs.push({ btn: node, menu });
+      }
+      matched = true;
+      break;
+    }
+    if (matched) {
+      continue;
+    }
+  }
+
+  /** Prefer split chevron over primary segment when both target the same menu (ribbon). */
+  function splitTriggerOrder(btn) {
+    const id = (btn.getAttribute("data-automationid") || "").toLowerCase();
+    if (id.includes("splitbuttonmenu")) return 0;
+    if (id.includes("splitbuttonprimary")) return 2;
+    return 1;
+  }
+
+  pairs.sort((a, b) => {
+    if (a.menu !== b.menu) {
+      if (a.menu.contains(b.menu)) return -1;
+      if (b.menu.contains(a.menu)) return 1;
+    }
+    return splitTriggerOrder(a.btn) - splitTriggerOrder(b.btn);
+  });
+
+  return pairs.map((p) => p.btn);
+}
+
+/**
+ * Find the control that opens / owns this menu (Fluent / ARIA patterns).
+ * @param {Element} menuLike
+ */
+function resolveTriggerForMenu(menuLike) {
+  if (!menuLike || !menuLike.id) return null;
+  const esc = CSS.escape(menuLike.id);
+  let t = document.querySelector(`[aria-controls="${esc}"]`);
+  if (!t) {
+    t = document.querySelector(`[aria-owns="${esc}"]`);
+  }
+  if (t) {
+    return t;
+  }
+
+  const labelledBy = menuLike.getAttribute("aria-labelledby");
+  if (labelledBy) {
+    for (const rawId of labelledBy.trim().split(/\s+/)) {
+      const id = rawId.trim();
+      if (!id) continue;
+      const cand = document.getElementById(id);
+      if (
+        cand &&
+        (cand.matches("button") ||
+          cand.getAttribute("role") === "button" ||
+          cand.getAttribute("role") === "menuitem")
+      ) {
+        return cand;
       }
     }
   }
+
+  return null;
+}
+
+/**
+ * Fluent ribbon split buttons: menu lives under a SplitButton; the chevron (not the primary) opens the flyout.
+ * @param {Element | null} element
+ */
+function inferMenuTriggerFromSplitButton(element) {
+  if (!element) return null;
+  const menu = element.closest('[role="menu"], [role="listbox"]');
+  if (!menu) return null;
+
+  const splitRoot =
+    menu.closest(".ms-SplitButton") ||
+    menu.closest("[class*='SplitButton']") ||
+    menu.closest("[class*='splitButton']");
+  if (!splitRoot) return null;
+
+  const chevron = splitRoot.querySelector(
+    'button[data-automationid="splitButtonMenu"], [data-automationid="splitButtonMenu"], button[data-automationid*="splitButtonMenu"]'
+  );
+  if (chevron instanceof HTMLElement) {
+    try {
+      const sel = getElementSelector(chevron);
+      if (sel) return sel;
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.debug("Zero: Could not serialize split chevron selector:", e);
+    }
+  }
+
+  const buttons = Array.from(splitRoot.querySelectorAll("button"));
+  for (const btn of buttons) {
+    const cid = btn.getAttribute("aria-controls");
+    if (!cid) continue;
+    try {
+      const panel = document.getElementById(cid);
+      if (panel && (panel === menu || panel.contains(menu) || menu.contains(panel))) {
+        const sel = getElementSelector(btn);
+        if (sel) return sel;
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  for (const btn of buttons) {
+    const hp = btn.getAttribute("aria-haspopup");
+    if (hp === "menu" || hp === "true") {
+      try {
+        const sel = getElementSelector(btn);
+        if (sel) return sel;
+      } catch (e) {
+        // ignore
+      }
+    }
+  }
+
+  return null;
+}
+
+/**
+ * When saving from the picker, infer a stable selector for the control that opens the flyout
+ * (outermost menu first — one saved trigger often matches what users configure manually).
+ * @param {Element | null} element
+ */
+function inferMenuTriggerSelectorForOpenMenu(element) {
+  if (!element) return null;
+  // Prefer ribbon split-button chevron over the primary segment (aria-based search can return primary first).
+  try {
+    const split = inferMenuTriggerFromSplitButton(element);
+    if (split) {
+      return split;
+    }
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.debug("Zero: Split-button menu trigger inference failed:", e);
+  }
+
+  const byAria = findAllMenuTriggersContainingTarget(element);
+  if (byAria.length > 0) {
+    try {
+      const sel = getElementSelector(byAria[0]);
+      if (sel) {
+        return sel;
+      }
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.debug("Zero: Could not serialize outer menu trigger selector:", e);
+    }
+  }
+  const menus = collectMenuAncestorsFromTarget(element).reverse();
+  for (const menuEl of menus) {
+    const trigger = resolveTriggerForMenu(menuEl);
+    if (trigger) {
+      try {
+        return getElementSelector(trigger);
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.debug("Zero: Could not serialize menu trigger selector:", e);
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * Build controls to activate in order: optional explicit selector first, then outer → inner menus.
+ * @param {Element | null} target
+ * @param {string | null | undefined} explicitSelector
+ */
+function buildMenuTriggerChain(target, explicitSelector) {
+  /** @type {HTMLElement[]} */
+  const chain = [];
+  const seen = new Set();
+
+  function add(el) {
+    if (!el || !(el instanceof HTMLElement)) return;
+    if (seen.has(el)) return;
+    seen.add(el);
+    chain.push(el);
+  }
+
+  if (explicitSelector && explicitSelector.trim()) {
+    try {
+      const explicit = document.querySelector(explicitSelector.trim());
+      add(/** @type {HTMLElement} */ (explicit));
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.debug("Zero: Invalid menuTriggerSelector:", explicitSelector, e);
+    }
+  }
+
+  if (!target) return chain;
+
+  for (const btn of findAllMenuTriggersContainingTarget(target)) {
+    add(btn);
+  }
+
+  const menus = collectMenuAncestorsFromTarget(target).reverse();
+  for (const menu of menus) {
+    const tr = resolveTriggerForMenu(menu);
+    add(/** @type {HTMLElement} */ (tr));
+  }
+
+  return chain;
+}
+
+/**
+ * Choose which control to activate next on the path to the target.
+ * Prefer flyouts that are not yet expanded; if all report expanded, try a nested submenu opener.
+ * @param {HTMLElement[]} chain
+ */
+function pickNextMenuTrigger(chain) {
+  if (!chain.length) return null;
+  for (const t of chain) {
+    if (t.getAttribute("aria-expanded") !== "true") {
+      return t;
+    }
+  }
+  // Nested submenu: ribbon shows expanded=true but a menuitem still opens a child flyout
+  const subMenuItem = [...chain]
+    .reverse()
+    .find(
+      (t) =>
+        t.getAttribute("role") === "menuitem" &&
+        (t.getAttribute("aria-haspopup") === "true" ||
+          t.getAttribute("aria-haspopup") === "menu") &&
+        t.getAttribute("aria-expanded") !== "true"
+    );
+  if (subMenuItem) {
+    return subMenuItem;
+  }
+  // Do not re-click an already-expanded control — that often toggles the menu closed
+  return null;
+}
+
+/**
+ * @param {HTMLElement | null} trigger
+ */
+function clickMenuTriggerElement(trigger) {
+  if (!trigger) return;
+  try {
+    trigger.scrollIntoView({ block: "nearest", inline: "nearest" });
+  } catch (e) {
+    // ignore
+  }
+  try {
+    trigger.focus();
+  } catch (e) {
+    // ignore
+  }
+  const mouseDown = new MouseEvent("mousedown", {
+    bubbles: true,
+    cancelable: true,
+    view: window,
+    button: 0
+  });
+  const mouseUp = new MouseEvent("mouseup", {
+    bubbles: true,
+    cancelable: true,
+    view: window,
+    button: 0
+  });
+  const clickEvent = new MouseEvent("click", {
+    bubbles: true,
+    cancelable: true,
+    view: window,
+    button: 0
+  });
+  trigger.dispatchEvent(mouseDown);
+  trigger.dispatchEvent(mouseUp);
+  trigger.dispatchEvent(clickEvent);
+  try {
+    trigger.click();
+  } catch (e) {
+    // ignore
+  }
+}
+
+export function executeCustomShortcut(customShortcut) {
+  const selector = customShortcut && customShortcut.selector;
+  if (!selector || typeof selector !== "string") return;
+
+  /**
+   * @param {boolean} allowLooseVisibility After menus are opened, retry with relaxed checks.
+   */
+  const tryClickTarget = (allowLooseVisibility) => {
+    const el = document.querySelector(selector);
+    if (!el || !(el instanceof HTMLElement)) return false;
+    try {
+      el.scrollIntoView({ block: "nearest", inline: "nearest" });
+    } catch (e) {
+      // ignore
+    }
+    const strictOk = isElementEffectivelyVisible(el);
+    const looseOk =
+      allowLooseVisibility && !strictOk && isElementBarelyVisible(el);
+    if (!strictOk && !looseOk) return false;
+    try {
+      el.focus();
+    } catch (e) {
+      // ignore
+    }
+    try {
+      el.click();
+      return true;
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.debug("Zero: Could not click custom shortcut element:", e);
+      return false;
+    }
+  };
+
+  if (tryClickTarget(false)) {
+    return;
+  }
+
+  const menuTriggerSel = customShortcut.menuTriggerSelector;
+
+  let pollAttempts = 0;
+  const maxPolls = 120;
+  let openSteps = 0;
+  const maxOpenSteps = 28;
+
+  const step = () => {
+    const el = document.querySelector(selector);
+    if (!el) {
+      // eslint-disable-next-line no-console
+      console.debug("Zero: Custom shortcut selector matched nothing:", selector);
+      return;
+    }
+
+    const allowLooseVisibility =
+      openSteps > 0 || pollAttempts > 8;
+    if (tryClickTarget(allowLooseVisibility)) {
+      return;
+    }
+
+    // Rebuild the control chain after each click so nested menus / DOM updates are followed
+    if (openSteps < maxOpenSteps) {
+      const chain = buildMenuTriggerChain(el, menuTriggerSel);
+      const next = pickNextMenuTrigger(chain);
+      if (next) {
+        openSteps++;
+        clickMenuTriggerElement(next);
+        window.setTimeout(step, 165);
+        return;
+      }
+    }
+
+    pollAttempts++;
+    if (pollAttempts < maxPolls) {
+      window.setTimeout(step, 45);
+      return;
+    }
+
+    try {
+      const targetEl = document.querySelector(selector);
+      if (targetEl && targetEl instanceof HTMLElement) {
+        try {
+          targetEl.scrollIntoView({ block: "nearest", inline: "nearest" });
+        } catch (e2) {
+          // ignore
+        }
+        targetEl.click();
+      }
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.debug("Zero: Custom shortcut fallback click failed:", e);
+    }
+    // eslint-disable-next-line no-console
+    console.debug("Zero: Custom shortcut element did not become interactable in time", {
+      selector,
+      menuTriggerSelector: customShortcut.menuTriggerSelector
+    });
+  };
+
+  window.setTimeout(step, 0);
 }
 
 // Helper for keyboard handler

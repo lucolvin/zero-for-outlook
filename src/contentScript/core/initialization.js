@@ -173,8 +173,7 @@ export function initialize() {
         undoShortcut,
         commandShortcut,
         blockedContentShortcut,
-        vimEnabled,
-        customShortcuts
+        vimEnabled
       });
       window.addEventListener("keydown", currentHandler, true);
     }

@@ -3,8 +3,30 @@
 import {
   getMessageRows,
   getCurrentRowIndex,
-  focusMessageRow
+  focusMessageRow,
+  getMessageListContainer
 } from "../core/messageList.js";
+
+/**
+ * @param {"down" | "up"} direction
+ * @param {boolean} shiftKey
+ */
+function createArrowKeyEvent(direction, shiftKey) {
+  const key = direction === "down" ? "ArrowDown" : "ArrowUp";
+  const keyCode = direction === "down" ? 40 : 38;
+  return new KeyboardEvent("keydown", {
+    key,
+    code: key,
+    keyCode,
+    which: keyCode,
+    shiftKey,
+    ctrlKey: false,
+    altKey: false,
+    metaKey: false,
+    bubbles: true,
+    cancelable: true
+  });
+}
 
 let vimContext = "auto"; // "auto" | "sidebar"
 
@@ -17,52 +39,46 @@ export function getVimContext() {
 }
 
 export function sendShiftArrow(direction) {
-  const key = direction === "down" ? "ArrowDown" : "ArrowUp";
-  const keyCode = direction === "down" ? 40 : 38;
-
   /** @type {Element | null} */
   const targetEl = document.activeElement || document.body;
   if (!targetEl) return;
 
-  const evt = new KeyboardEvent("keydown", {
-    key,
-    code: key,
-    keyCode,
-    which: keyCode,
-    shiftKey: true,
-    ctrlKey: false,
-    altKey: false,
-    metaKey: false,
-    bubbles: true,
-    cancelable: true
-  });
-
-  targetEl.dispatchEvent(evt);
+  targetEl.dispatchEvent(createArrowKeyEvent(direction, true));
 }
 
+/**
+ * Move the message list selection like ArrowDown/ArrowUp.
+ * Outlook virtualizes rows: only a window of rows exists in the DOM, so stepping by
+ * row index would stop after ~N items. Dispatching arrow keys matches native behavior
+ * and keeps scrolling (notably on Firefox, which often keeps a smaller DOM window).
+ */
 export function moveSelection(direction) {
-  const rows = getMessageRows();
-  if (!rows.length) return;
+  const container = getMessageListContainer();
+  if (!container) return;
 
-  let index = getCurrentRowIndex(rows);
-  if (index === -1) {
-    index = direction === "down" ? 0 : rows.length - 1;
-  } else if (direction === "down") {
-    index = Math.min(rows.length - 1, index + 1);
-  } else {
-    index = Math.max(0, index - 1);
+  const focusInList =
+    document.activeElement && container.contains(document.activeElement);
+
+  if (!focusInList) {
+    const rows = getMessageRows();
+    if (!rows.length) return;
+
+    let index = getCurrentRowIndex(rows);
+    if (index === -1) {
+      index = direction === "down" ? 0 : rows.length - 1;
+      focusMessageRow(rows[index]);
+      return;
+    }
+
+    // Selection is known but focus is in the reading pane (etc.): anchor focus on the row, then step once.
+    focusMessageRow(rows[index]);
+    const targetEl = document.activeElement || document.body;
+    targetEl.dispatchEvent(createArrowKeyEvent(direction, false));
+    return;
   }
 
-  const targetRow = /** @type {HTMLElement} */ (rows[index]);
-  if (!targetRow) return;
-
-  targetRow.click();
-  if (typeof targetRow.focus === "function") {
-    targetRow.focus();
-  }
-  if (typeof targetRow.scrollIntoView === "function") {
-    targetRow.scrollIntoView({ block: "nearest" });
-  }
+  const targetEl = document.activeElement || document.body;
+  targetEl.dispatchEvent(createArrowKeyEvent(direction, false));
 }
 
 export function getNavItems() {

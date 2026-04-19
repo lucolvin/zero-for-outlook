@@ -1,7 +1,7 @@
 // Command bar feature module
 import { browserApi } from "../core/browserApi.js";
 import { settings } from "../core/settings.js";
-import { formatShortcutDisplay } from "../core/shortcuts.js";
+import { formatShortcutDisplay, shortcutMatches } from "../core/shortcuts.js";
 import { triggerUndo } from "./undo.js";
 import {
   openSnoozeAndApplyPreset,
@@ -782,6 +782,14 @@ export function openCommandOverlay() {
 export function handleCommandOverlayKeydown(event) {
   if (!commandOverlay) return false;
   const key = (event.key || "").toLowerCase();
+
+  const state = settings.getState();
+  if (state.commandShortcut && shortcutMatches(event, state.commandShortcut)) {
+    event.preventDefault();
+    event.stopPropagation();
+    closeCommandOverlay();
+    return true;
+  }
 
   if (key === "escape") {
     event.preventDefault();

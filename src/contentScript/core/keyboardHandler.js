@@ -38,14 +38,14 @@ import {
   isElementPickerActive
 } from "../features/elementPicker.js";
 import { hasSelectedMessage } from "./messageList.js";
+import { settings } from "./settings.js";
 
 export function createKeyboardHandler(options) {
   const {
     undoShortcut,
     commandShortcut,
     blockedContentShortcut,
-    vimEnabled,
-    customShortcuts
+    vimEnabled
   } = options;
 
   return function onKeyDown(event) {
@@ -98,15 +98,26 @@ export function createKeyboardHandler(options) {
         return;
       }
 
-      // Check for custom shortcuts before other handlers
-      if (!isEditableElement(targetNode)) {
-        for (const customShortcut of customShortcuts) {
-          if (customShortcut.shortcut && shortcutMatches(event, customShortcut.shortcut)) {
-            event.preventDefault();
-            event.stopPropagation();
-            executeCustomShortcut(customShortcut);
-            return;
-          }
+      // Command bar shortcut works even while composing/editing (overrides Outlook Cmd+K → Insert link, etc.)
+      if (commandShortcut && shortcutMatches(event, commandShortcut)) {
+        event.preventDefault();
+        event.stopPropagation();
+        if (isCommandOverlayOpen()) {
+          closeCommandOverlay();
+        } else {
+          openCommandOverlay();
+        }
+        return;
+      }
+
+      // Custom shortcuts also work while composing/editing; other extension shortcuts do not (see below).
+      const customShortcuts = settings.getState().customShortcuts || [];
+      for (const customShortcut of customShortcuts) {
+        if (customShortcut.shortcut && shortcutMatches(event, customShortcut.shortcut)) {
+          event.preventDefault();
+          event.stopPropagation();
+          executeCustomShortcut(customShortcut);
+          return;
         }
       }
 
@@ -243,17 +254,6 @@ export function createKeyboardHandler(options) {
           }
           return;
         }
-      }
-
-      if (commandShortcut && shortcutMatches(event, commandShortcut)) {
-        event.preventDefault();
-        event.stopPropagation();
-        if (isCommandOverlayOpen()) {
-          closeCommandOverlay();
-        } else {
-          openCommandOverlay();
-        }
-        return;
       }
 
       if (undoShortcut && shortcutMatches(event, undoShortcut)) {

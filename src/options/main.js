@@ -46,12 +46,185 @@
   const clearGeminiBtn = document.getElementById("clearGeminiKey");
   const customShortcutsList = document.getElementById("customShortcutsList");
   const customStatusEl = document.getElementById("status-custom");
-  const customShortcutsSection = document.getElementById("custom-shortcuts-section");
-  const customShortcutsPage = document.getElementById("custom-shortcuts-page");
-  const manageCustomShortcutsBtn = document.getElementById("manageCustomShortcuts");
-  const backToMainBtn = document.getElementById("backToMain");
+  const manualAddCustomShortcutBtn = document.getElementById("manualAddCustomShortcut");
   const aiTitleEditingToggle = document.getElementById("aiTitleEditingEnabled");
   const aiTitleEditingStatusEl = document.getElementById("status-ai-title-editing");
+  const MANUAL_SHORTCUT_WARNING_KEY = "manualShortcutAdvancedWarningShown";
+
+  const PAGE_LEDES = {
+    general:
+      "Configure keyboard shortcuts, navigation, appearance, and optional AI features.",
+    custom: "Manage custom shortcuts and optional LLM-generated names.",
+    ai: "Optional Gemini integration for summarizing the current email.",
+    about: "How the extension works, privacy, and links.",
+    "import-export": "Back up or restore your extension settings as a JSON file."
+  };
+
+  const tabButtons = document.querySelectorAll(".oz-tab[data-panel]");
+
+  function setPageLede(panelId) {
+    const el = document.getElementById("oz-page-lede");
+    if (!el) return;
+    const text = PAGE_LEDES[panelId] || PAGE_LEDES.general;
+    el.textContent = text;
+  }
+
+  function exportSettingsAndShortcuts() {
+    try {
+      browserApi.storage.sync.get(null, (items) => {
+        if (browserApi.runtime && browserApi.runtime.lastError) {
+          window.alert(
+            "Could not read settings: " + (browserApi.runtime.lastError.message || "storage error")
+          );
+          return;
+        }
+        const payload = {
+          meta: {
+            exportVersion: 1,
+            exportedAt: new Date().toISOString(),
+            extension: "zero-for-outlook"
+          },
+          sync: items && typeof items === "object" ? items : {}
+        };
+        const json = JSON.stringify(payload, null, 2);
+        const blob = new Blob([json], { type: "application/json;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        const date = new Date().toISOString().slice(0, 10);
+        a.href = url;
+        a.download = `zero-for-outlook-settings-${date}.json`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      });
+    } catch (e) {
+      window.alert("Export failed.");
+    }
+  }
+
+  function extractSyncPayloadFromImport(parsed) {
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return null;
+    }
+    if (parsed.sync && typeof parsed.sync === "object" && !Array.isArray(parsed.sync)) {
+      return parsed.sync;
+    }
+    const hintKeys = [
+      "undoShortcut",
+      "commandShortcut",
+      "blockedContentShortcut",
+      "vimEnabled",
+      "darkModeEnabled",
+      "inboxZeroEnabled",
+      "optionsBarHidden",
+      "customShortcuts",
+      "geminiApiKey",
+      "aiTitleEditingEnabled",
+      "manualShortcutAdvancedWarningShown"
+    ];
+    if (hintKeys.some((k) => Object.prototype.hasOwnProperty.call(parsed, k))) {
+      return parsed;
+    }
+    return null;
+  }
+
+  function applyImportedSyncPayload(syncPayload) {
+    browserApi.storage.sync.clear(() => {
+      if (browserApi.runtime && browserApi.runtime.lastError) {
+        window.alert(
+          "Could not clear settings before import: " +
+            (browserApi.runtime.lastError.message || "storage error")
+        );
+        return;
+      }
+      browserApi.storage.sync.set(syncPayload, () => {
+        if (browserApi.runtime && browserApi.runtime.lastError) {
+          window.alert(
+            "Could not save imported settings: " +
+              (browserApi.runtime.lastError.message || "storage error")
+          );
+          return;
+        }
+        restoreOptions();
+        loadCustomShortcuts();
+        window.alert("Settings imported successfully.");
+      });
+    });
+  }
+
+  function importSettingsFromJsonText(text) {
+    let parsed;
+    try {
+      parsed = JSON.parse(text);
+    } catch (e) {
+      window.alert("This file is not valid JSON.");
+      return;
+    }
+    const syncPayload = extractSyncPayloadFromImport(parsed);
+    if (!syncPayload || typeof syncPayload !== "object") {
+      window.alert(
+        "Unrecognized backup format. Use a JSON file exported from Zero for Outlook (or a plain sync object with known keys)."
+      );
+      return;
+    }
+    if (
+      !window.confirm(
+        "Replace all extension settings with this file? Current settings will be removed. This cannot be undone."
+      )
+    ) {
+      return;
+    }
+    applyImportedSyncPayload(syncPayload);
+  }
+
+  function wireImportSettingsUi() {
+    const trigger = document.getElementById("importSettingsTrigger");
+    const fileInput = document.getElementById("importSettingsFile");
+    if (!trigger || !fileInput) return;
+
+    trigger.addEventListener("click", () => {
+      fileInput.click();
+    });
+
+    fileInput.addEventListener("change", () => {
+      const file = fileInput.files && fileInput.files[0];
+      fileInput.value = "";
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const text = typeof e.target?.result === "string" ? e.target.result : "";
+        if (!text) {
+          window.alert("Could not read file.");
+          return;
+        }
+        importSettingsFromJsonText(text);
+      };
+      reader.onerror = () => {
+        window.alert("Could not read file.");
+      };
+      reader.readAsText(file);
+    });
+  }
+
+  function activatePanel(panelId) {
+    if (!panelId) return;
+
+    tabButtons.forEach((tab) => {
+      const active = tab.getAttribute("data-panel") === panelId;
+      tab.classList.toggle("oz-tab-active", active);
+      tab.setAttribute("aria-selected", active ? "true" : "false");
+    });
+
+    document.querySelectorAll(".oz-panel").forEach((panel) => {
+      const id = panel.id && panel.id.startsWith("panel-") ? panel.id.slice("panel-".length) : "";
+      const active = id === panelId;
+      panel.classList.toggle("oz-panel-active", active);
+    });
+
+    setPageLede(panelId);
+  }
 
   function formatShortcut(shortcut) {
     if (!shortcut || !shortcut.key) return "Not set";
@@ -181,6 +354,26 @@
     }
   }
 
+  /** LLM shortcut names require a non-empty Gemini API key in the field (saved or unsaved). */
+  function syncAiTitleEditingToggleGate() {
+    if (!aiTitleEditingToggle || !geminiInput) return;
+    const hasKey = !!geminiInput.value.trim();
+    aiTitleEditingToggle.disabled = !hasKey;
+    if (!hasKey && aiTitleEditingToggle.checked) {
+      aiTitleEditingToggle.checked = false;
+      try {
+        browserApi.storage.sync.set({ aiTitleEditingEnabled: false }, () => {
+          if (browserApi.runtime && browserApi.runtime.lastError) {
+            return;
+          }
+          setAiTitleEditingStatus("LLM title editing disabled (add a Gemini API key to enable).");
+        });
+      } catch (e) {
+        // ignore
+      }
+    }
+  }
+
   function saveGeminiApiKey(value) {
     try {
       browserApi.storage.sync.set({ geminiApiKey: value || "" }, () => {
@@ -189,6 +382,7 @@
           return;
         }
         setGeminiStatus(value ? "Gemini API key saved." : "Gemini API key cleared.");
+        syncAiTitleEditingToggleGate();
       });
     } catch (e) {
       setGeminiStatus("Could not save Gemini API key.");
@@ -305,7 +499,7 @@
       const empty = document.createElement("p");
       empty.className = "oz-help-sub";
       empty.textContent =
-        'No custom shortcuts yet. Open the command bar and select "Add custom shortcut" to get started.';
+        'No custom shortcuts yet. Open the command bar and select "Add custom shortcut", or click "Add manually" above.';
       customShortcutsList.appendChild(empty);
       return;
     }
@@ -368,15 +562,50 @@
       selectorLabel.className = "oz-label";
       selectorLabel.textContent = "Selector:";
 
-      const selectorDisplay = document.createElement("code");
-      selectorDisplay.className = "oz-selector-display";
-      selectorDisplay.textContent = customShortcut.selector || "";
+      const selectorInput = document.createElement("input");
+      selectorInput.type = "text";
+      selectorInput.className = "oz-shortcut-input";
+      selectorInput.placeholder = "CSS selector (example: button[aria-label='Archive'])";
+      selectorInput.value = customShortcut.selector || "";
+      selectorInput.setAttribute("data-shortcut-id", customShortcut.id);
+      selectorInput.setAttribute("data-field", "selector");
+
+      selectorInput.addEventListener("change", () => {
+        const trimmed = selectorInput.value.trim();
+        saveCustomShortcutField(customShortcut.id, "selector", trimmed);
+      });
 
       selectorRow.appendChild(selectorLabel);
-      selectorRow.appendChild(selectorDisplay);
+      selectorRow.appendChild(selectorInput);
+
+      const menuTriggerRow = document.createElement("div");
+      menuTriggerRow.className = "oz-shortcut-row oz-custom-shortcut-row";
+      menuTriggerRow.style.marginBottom = "12px";
+
+      const menuTriggerLabel = document.createElement("label");
+      menuTriggerLabel.className = "oz-label";
+      menuTriggerLabel.textContent = "Menu trigger:";
+
+      const menuTriggerInput = document.createElement("input");
+      menuTriggerInput.type = "text";
+      menuTriggerInput.className = "oz-shortcut-input";
+      menuTriggerInput.placeholder =
+        "Filled when you pick the control (e.g. ribbon split-button chevron) — or type manually";
+      menuTriggerInput.value = customShortcut.menuTriggerSelector || "";
+      menuTriggerInput.setAttribute("data-shortcut-id", customShortcut.id);
+      menuTriggerInput.setAttribute("data-field", "menuTriggerSelector");
+
+      menuTriggerInput.addEventListener("change", () => {
+        const v = menuTriggerInput.value.trim();
+        saveCustomShortcutField(customShortcut.id, "menuTriggerSelector", v || null);
+      });
+
+      menuTriggerRow.appendChild(menuTriggerLabel);
+      menuTriggerRow.appendChild(menuTriggerInput);
 
       const shortcutRow = document.createElement("div");
       shortcutRow.className = "oz-shortcut-row oz-custom-shortcut-row";
+      shortcutRow.style.marginBottom = "12px";
 
       const shortcutLabel = document.createElement("label");
       shortcutLabel.className = "oz-label";
@@ -404,6 +633,7 @@
 
       card.appendChild(nameRow);
       card.appendChild(selectorRow);
+      card.appendChild(menuTriggerRow);
       card.appendChild(shortcutRow);
 
       customShortcutsList.appendChild(card);
@@ -468,7 +698,13 @@
               setCustomStatus("Could not save (storage error).");
               return;
             }
-            setCustomStatus("Name saved.");
+            if (field === "selector") {
+              setCustomStatus("Selector saved.");
+            } else if (field === "menuTriggerSelector") {
+              setCustomStatus("Menu trigger saved.");
+            } else {
+              setCustomStatus("Name saved.");
+            }
           });
         }
       });
@@ -516,6 +752,72 @@
       });
     } catch (e) {
       setCustomStatus("Could not delete shortcut.");
+    }
+  }
+
+  function addManualCustomShortcut() {
+    try {
+      browserApi.storage.sync.get(
+        {
+          customShortcuts: [],
+          [MANUAL_SHORTCUT_WARNING_KEY]: false
+        },
+        (items) => {
+          if (browserApi.runtime && browserApi.runtime.lastError) {
+            setCustomStatus("Could not add shortcut (storage error).");
+            return;
+          }
+
+          const shortcuts = Array.isArray(items.customShortcuts) ? items.customShortcuts : [];
+          const hasShownWarning = !!items[MANUAL_SHORTCUT_WARNING_KEY];
+
+          if (!hasShownWarning) {
+            alert(
+              "Manual custom shortcuts are an advanced feature. Use valid CSS selectors and test carefully."
+            );
+          }
+
+          const newShortcut = {
+            id: `custom-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
+            selector: "",
+            description: "Manual shortcut",
+            shortcut: null,
+            menuTriggerSelector: null
+          };
+
+          const nextShortcuts = [...shortcuts, newShortcut];
+          browserApi.storage.sync.set(
+            {
+              customShortcuts: nextShortcuts,
+              [MANUAL_SHORTCUT_WARNING_KEY]: true
+            },
+            () => {
+              if (browserApi.runtime && browserApi.runtime.lastError) {
+                setCustomStatus("Could not add shortcut (storage error).");
+                return;
+              }
+              loadCustomShortcuts(() => {
+                const card = document.querySelector(
+                  `.oz-custom-shortcut-card[data-shortcut-id="${newShortcut.id}"]`
+                );
+                if (card) {
+                  card.scrollIntoView({ behavior: "smooth", block: "center" });
+                  const nameInput = card.querySelector('input[data-field="name"]');
+                  if (nameInput && typeof nameInput.focus === "function") {
+                    nameInput.focus();
+                    if (typeof nameInput.select === "function") {
+                      nameInput.select();
+                    }
+                  }
+                }
+              });
+              setCustomStatus("Manual shortcut created.");
+            }
+          );
+        }
+      );
+    } catch (e) {
+      setCustomStatus("Could not add shortcut.");
     }
   }
 
@@ -578,16 +880,22 @@
             inboxZeroToggle.checked = inboxZeroEnabled;
           }
 
+          const geminiKey = (items && items.geminiApiKey) || "";
           if (geminiInput) {
-            geminiInput.value = (items && items.geminiApiKey) || "";
+            geminiInput.value = geminiKey;
           }
 
-          const aiTitleEditingEnabled =
+          const hasGeminiKey = !!String(geminiKey).trim();
+          const storedAiTitleEditing =
             items && typeof items.aiTitleEditingEnabled === "boolean"
               ? items.aiTitleEditingEnabled
               : true;
           if (aiTitleEditingToggle) {
-            aiTitleEditingToggle.checked = aiTitleEditingEnabled;
+            aiTitleEditingToggle.disabled = !hasGeminiKey;
+            aiTitleEditingToggle.checked = hasGeminiKey && storedAiTitleEditing;
+            if (!hasGeminiKey && storedAiTitleEditing) {
+              browserApi.storage.sync.set({ aiTitleEditingEnabled: false }, () => {});
+            }
           }
 
           // Load custom shortcuts
@@ -705,6 +1013,9 @@
   if (aiTitleEditingToggle) {
     aiTitleEditingToggle.addEventListener("change", (e) => {
       const target = /** @type {HTMLInputElement} */ (e.target);
+      if (target.disabled) {
+        return;
+      }
       saveAiTitleEditingEnabled(!!target.checked);
     });
   }
@@ -720,6 +1031,9 @@
   }
 
   if (geminiInput) {
+    geminiInput.addEventListener("input", () => {
+      syncAiTitleEditingToggleGate();
+    });
     geminiInput.addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
         e.preventDefault();
@@ -729,52 +1043,23 @@
     });
   }
 
-  function showCustomShortcutsPage() {
-    if (customShortcutsSection) {
-      customShortcutsSection.style.display = "none";
-    }
-    if (customShortcutsPage) {
-      customShortcutsPage.style.display = "block";
-      // Load shortcuts when showing the page
-      loadCustomShortcuts();
-    }
-  }
-
-  function hideCustomShortcutsPage() {
-    if (customShortcutsPage) {
-      customShortcutsPage.style.display = "none";
-    }
-    if (customShortcutsSection) {
-      customShortcutsSection.style.display = "block";
-    }
-  }
-
   function scrollToShortcut(shortcutId) {
-    // First ensure shortcuts are loaded, then scroll
+    activatePanel("custom");
     loadCustomShortcuts(() => {
-      // Wait a bit for DOM to update
       setTimeout(() => {
-        // Show the custom shortcuts page first
-        showCustomShortcutsPage();
-        
-        // Wait a bit more for the page to be shown, then find and scroll to the card
-        setTimeout(() => {
-          // Find the card with the matching shortcut ID (using data-shortcut-id attribute on the card)
-          const card = document.querySelector('.oz-custom-shortcut-card[data-shortcut-id="' + shortcutId + '"]');
-          if (card) {
-            // Scroll to the card
-            card.scrollIntoView({ behavior: "smooth", block: "center" });
-            // Highlight the card briefly
-            card.style.transition = "box-shadow 0.3s ease";
-            card.style.boxShadow = "0 0 0 3px rgba(59, 130, 246, 0.5)";
-            setTimeout(() => {
-              card.style.boxShadow = "";
-            }, 2000);
-          }
-          // Clear the stored shortcut ID
-          browserApi.storage.local.remove("scrollToShortcutId");
-        }, 200);
-      }, 100);
+        const card = document.querySelector(
+          '.oz-custom-shortcut-card[data-shortcut-id="' + shortcutId + '"]'
+        );
+        if (card) {
+          card.scrollIntoView({ behavior: "smooth", block: "center" });
+          card.style.transition = "box-shadow 0.3s ease";
+          card.style.boxShadow = "0 0 0 3px rgba(59, 130, 246, 0.5)";
+          setTimeout(() => {
+            card.style.boxShadow = "";
+          }, 2000);
+        }
+        browserApi.storage.local.remove("scrollToShortcutId");
+      }, 200);
     });
   }
 
@@ -799,14 +1084,25 @@
       clearAllBtn.addEventListener("click", clearAllCustomShortcuts);
     }
 
-    // Add navigation handlers
-    if (manageCustomShortcutsBtn) {
-      manageCustomShortcutsBtn.addEventListener("click", showCustomShortcutsPage);
+    if (manualAddCustomShortcutBtn) {
+      manualAddCustomShortcutBtn.addEventListener("click", addManualCustomShortcut);
     }
 
-    if (backToMainBtn) {
-      backToMainBtn.addEventListener("click", hideCustomShortcutsPage);
+    tabButtons.forEach((tab) => {
+      tab.addEventListener("click", () => {
+        const panelId = tab.getAttribute("data-panel");
+        if (panelId) {
+          activatePanel(panelId);
+        }
+      });
+    });
+
+    const exportSettingsBtn = document.getElementById("exportSettingsJson");
+    if (exportSettingsBtn) {
+      exportSettingsBtn.addEventListener("click", exportSettingsAndShortcuts);
     }
+
+    wireImportSettingsUi();
   });
 
   // Listen for custom shortcuts changes (e.g., when added from content script)
