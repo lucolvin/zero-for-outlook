@@ -44,31 +44,145 @@ function findUnsubscribeLinkInCurrentEmail() {
 
     /** @type {HTMLElement | null} */
     let bestMatch = null;
+    let bestScore = 0;
 
-    const anchors = Array.from(root.querySelectorAll("a[href]"));
     const lowerIncludes = (value, needle) =>
       typeof value === "string" && value.toLowerCase().includes(needle);
+    const normalize = (value) =>
+      typeof value === "string" ? value.toLowerCase().replace(/\s+/g, " ").trim() : "";
+    const clip = (value, max = 1400) => {
+      if (!value) return "";
+      return value.length > max ? value.slice(0, max) : value;
+    };
+    const getContextText = (el) => {
+      if (!el) return "";
+      const selfText = normalize(el.innerText || el.textContent || "");
+      const parentText = normalize(el.parentElement?.innerText || el.parentElement?.textContent || "");
+      const grandParentText = normalize(
+        el.parentElement?.parentElement?.innerText ||
+          el.parentElement?.parentElement?.textContent ||
+          ""
+      );
+      // Combine nearby blocks because many templates use generic anchor text like "here".
+      return clip(`${selfText} ${parentText} ${grandParentText}`.trim());
+    };
 
-    for (const node of anchors) {
+    const textPhrases = [
+      { phrase: "unsubscribe", score: 80 },
+      { phrase: "wish to unsubscribe", score: 92 },
+      { phrase: "no longer wish to receive", score: 90 },
+      { phrase: "no longer want to receive", score: 90 },
+      { phrase: "be removed from our list", score: 90 },
+      { phrase: "removed from our list", score: 88 },
+      { phrase: "unsubscribe link", score: 92 },
+      { phrase: "opt out", score: 75 },
+      { phrase: "remove me", score: 70 },
+      { phrase: "remove from this list", score: 86 },
+      { phrase: "remove from our list", score: 86 },
+      { phrase: "receive emails from us", score: 55 },
+      { phrase: "stop receiving", score: 68 },
+      { phrase: "stop getting", score: 68 },
+      { phrase: "email preferences", score: 64 },
+      { phrase: "manage preferences", score: 62 },
+      { phrase: "notification settings", score: 58 },
+      { phrase: "manage subscription", score: 58 },
+      { phrase: "update preferences", score: 56 },
+      { phrase: "change preferences", score: 56 },
+      { phrase: "communication preferences", score: 54 }
+    ];
+
+    const hrefPhrases = [
+      { phrase: "unsubscribe", score: 100 },
+      { phrase: "encryptedunsubscribe", score: 100 },
+      { phrase: "optout", score: 96 },
+      { phrase: "opt-out", score: 96 },
+      { phrase: "remove", score: 78 },
+      { phrase: "preferences", score: 70 },
+      { phrase: "subscription", score: 66 },
+      { phrase: "email-settings", score: 64 },
+      { phrase: "notifications", score: 60 },
+      { phrase: "list-manage", score: 62 }
+    ];
+
+    const negativePhrases = [
+      "resubscribe",
+      "subscribe now",
+      "subscription plans",
+      "upgrade",
+      "privacy policy",
+      "view in browser"
+    ];
+    const looksLikeMailtoUnsub = (hrefValue) => {
+      const href = normalize(hrefValue);
+      return href.startsWith("mailto:") && (href.includes("unsubscribe") || href.includes("remove"));
+    };
+
+    const candidates = Array.from(
+      root.querySelectorAll("a[href], button, [role='button'], [data-action], [onclick]")
+    );
+
+    for (const node of candidates) {
       const el = /** @type {HTMLElement} */ (node);
       if (!el) continue;
 
-      const text = (el.innerText || el.textContent || "").trim();
-      const href = el.getAttribute("href") || "";
-      const aria = el.getAttribute("aria-label") || "";
+      const text = normalize(el.innerText || el.textContent || "");
+      const href = normalize(el.getAttribute("href") || "");
+      const aria = normalize(el.getAttribute("aria-label") || "");
+      const title = normalize(el.getAttribute("title") || "");
+      const contextText = getContextText(el);
+      const allText = `${text} ${aria} ${title} ${contextText}`.trim();
 
-      const isUnsub =
-        lowerIncludes(text, "unsubscribe") ||
-        lowerIncludes(href, "unsubscribe") ||
-        lowerIncludes(aria, "unsubscribe");
+      if (!allText && !href) continue;
 
-      if (isUnsub) {
+      let score = 0;
+
+      for (const entry of textPhrases) {
+        if (lowerIncludes(allText, entry.phrase)) {
+          score = Math.max(score, entry.score);
+        }
+      }
+
+      for (const entry of hrefPhrases) {
+        if (lowerIncludes(href, entry.phrase)) {
+          score = Math.max(score, entry.score);
+        }
+      }
+
+      if (looksLikeMailtoUnsub(href)) {
+        score = Math.max(score, 92);
+      }
+
+      // Generic labels like "here" are often unsubscribe links only when the nearby copy says so.
+      if (text === "here" || text === "click here") {
+        if (lowerIncludes(contextText, "unsubscribe") || lowerIncludes(contextText, "opt out")) {
+          score = Math.max(score, 88);
+        }
+      }
+
+      // Template pattern: "update your preferences ... unsubscribe link here"
+      if (lowerIncludes(contextText, "update your preferences")) {
+        score -= 15;
+      }
+      if (
+        (text === "here" || lowerIncludes(text, "update your profile")) &&
+        lowerIncludes(contextText, "wish to unsubscribe")
+      ) {
+        score = Math.max(score, 93);
+      }
+
+      for (const bad of negativePhrases) {
+        if (lowerIncludes(allText, bad) || lowerIncludes(href, bad)) {
+          score -= 50;
+        }
+      }
+
+      if (score > bestScore) {
+        bestScore = score;
         bestMatch = el;
-        break;
       }
     }
 
-    return bestMatch;
+    return bestScore > 0 ? bestMatch : null;
   } catch (e) {
     // best-effort only
   }
