@@ -233,27 +233,4 @@ To add more shortcuts or features:
 4. **Add options UI** in `src/options/` if configuration is needed
 5. **Update settings** in `src/contentScript/core/settings.js` if new settings are needed
 
-### Automated Versioning
-
-This repository uses GitHub Actions to automatically manage version tags.
-
-**How it works:**
-
-- **Triggers on Push**: Runs every time you push code to `main`
-- **Calculates Version**: It looks at your previous tags. If the last tag was `v1.0.0`, it automatically bumps it to `v1.0.1` (a "patch" update)
-- **Tags & Pushes**: It creates the new tag in the repo automatically
-
-You can force a larger version jump by including specific words in your commit message:
-
-- `#major` (jumps from v1.0.0 to v2.0.0)
-- `#minor` (jumps from v1.0.0 to v1.1.0)
-
----
-
-## ToDo
-
-[Current ToDo List](https://docmost.lukeslabs.xyz/share/19xhhfhgcp/p/to-do-lzhwFvot9q)
-
----
-
 Copyright (C) 2026 Luke Colvin
