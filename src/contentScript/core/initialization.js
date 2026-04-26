@@ -59,7 +59,7 @@ let undoShortcut = { ...DEFAULT_UNDO_SHORTCUT };
 let commandShortcut = { ...DEFAULT_COMMAND_SHORTCUT };
 let blockedContentShortcut = { ...DEFAULT_BLOCKED_CONTENT_SHORTCUT };
 let vimEnabled = true;
-let inboxZeroEnabled = false;
+let inboxZeroEnabled = true;
 let customShortcuts = [];
 let aiTitleEditingEnabled = true;
 
@@ -73,7 +73,7 @@ export function loadSettings() {
           blockedContentShortcut: DEFAULT_BLOCKED_CONTENT_SHORTCUT,
           vimEnabled: true,
           darkModeEnabled: true,
-          inboxZeroEnabled: false,
+          inboxZeroEnabled: true,
           archivePopupEnabled: true,
           optionsBarHidden: false,
           customShortcuts: [],

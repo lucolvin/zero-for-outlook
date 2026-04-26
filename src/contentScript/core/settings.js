@@ -36,7 +36,7 @@ class SettingsManager {
     this.accentColor = '#6366f1';
     this.popupOpacity = 95;
     this.backdropBlurEnabled = true;
-    this.inboxZeroEnabled = false;
+    this.inboxZeroEnabled = true;
     this.archivePopupEnabled = true;
     this.optionsBarHidden = false;
     this.vimContext = "auto";
@@ -100,7 +100,7 @@ class SettingsManager {
             accentColor: '#6366f1',
             popupOpacity: 95,
             backdropBlurEnabled: true,
-            inboxZeroEnabled: false,
+            inboxZeroEnabled: true,
             archivePopupEnabled: true,
             optionsBarHidden: false,
             customShortcuts: [],

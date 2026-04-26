@@ -1104,7 +1104,7 @@
           accentColor: '#6366f1',
           popupOpacity: 95,
           backdropBlurEnabled: true,
-          inboxZeroEnabled: false,
+          inboxZeroEnabled: true,
           archivePopupEnabled: true,
           geminiApiKey: "",
           customShortcuts: [],
@@ -1145,7 +1145,7 @@
           const oledEnabled =
             items && typeof items.oledModeEnabled === "boolean"
               ? items.oledModeEnabled
-              : false;
+              : true;
           
           updateThemeUI(darkEnabled);
           updateOledUI(oledEnabled);
