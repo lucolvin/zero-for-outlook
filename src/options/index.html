@@ -61,6 +61,39 @@
               type="button"
               class="oz-tab"
               role="tab"
+              id="tab-appearance"
+              aria-selected="false"
+              aria-controls="panel-appearance"
+              data-panel="appearance"
+            >
+              <span class="oz-tab-icon" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path
+                    d="M14.2 4.2a2.8 2.8 0 0 1 4 0l1.6 1.6a2.8 2.8 0 0 1 0 4l-8.9 8.9a3 3 0 0 1-2.1.9H6.9a1.7 1.7 0 0 1-1.7-1.7v-1.9a3 3 0 0 1 .9-2.1l8.1-8.1Z"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linejoin="round"
+                  />
+                  <path
+                    d="M12.8 5.6 18.4 11.2"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                  />
+                  <path
+                    d="M5.5 16.5h3.8"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                  />
+                </svg>
+              </span>
+              <span class="oz-tab-label">Appearance</span>
+            </button>
+            <button
+              type="button"
+              class="oz-tab"
+              role="tab"
               id="tab-custom"
               aria-selected="false"
               aria-controls="panel-custom"
@@ -188,19 +221,61 @@
             </span>
             GitHub</a
           >
-          <span class="oz-sidebar-version">v0.6.1</span>
+          <span class="oz-sidebar-version">v0.7.0</span>
         </div>
       </aside>
 
       <div class="oz-main-column">
-        <main class="oz-main">
-          <header class="oz-main-header">
-            <h1 class="oz-page-title">Settings</h1>
-            <p class="oz-page-lede" id="oz-page-lede">
-              Configure keyboard shortcuts, navigation, appearance, and optional AI features.
-            </p>
-          </header>
+        <div class="oz-page-header" id="oz-page-header">
+          <div class="oz-page-header-left">
+            <div class="oz-page-icon" id="oz-page-icon" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path
+                  d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+                <path
+                  d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1Z"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </div>
+            <div class="oz-page-header-text">
+              <h1 class="oz-page-title" id="oz-page-title">General</h1>
+              <p class="oz-page-subtitle" id="oz-page-subtitle">
+                Configure keyboard shortcuts, navigation, and optional AI features.
+              </p>
+            </div>
+          </div>
+          <div class="oz-page-header-right">
+            <span class="oz-save-status" id="oz-save-status">All changes saved</span>
+            <button type="button" class="oz-button oz-button-secondary oz-reset-btn oz-hidden" id="oz-reset-btn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M21 3v5h-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M3 21v-5h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              Reset
+            </button>
+            <button type="button" class="oz-button oz-button-secondary oz-save-btn" id="oz-save-btn" disabled>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <polyline points="17 21 17 13 7 13 7 21" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <polyline points="7 3 7 8 15 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              Save
+            </button>
+          </div>
+        </div>
 
+        <main class="oz-main">
           <div class="oz-panels">
             <!-- General -->
             <section
@@ -346,21 +421,141 @@
 
               <div class="oz-panel-card">
                 <div class="oz-section-head">
-                  <h2 class="oz-section-title">Appearance</h2>
-                  <p class="oz-section-desc">Choose light or dark theme for this page and the snooze popup.</p>
+                  <h2 class="oz-section-title">Archive behavior</h2>
+                  <p class="oz-section-desc">
+                    Choose whether Outlook's archive popup toast appears after archiving an email.
+                  </p>
                 </div>
                 <div class="oz-form-stack">
                   <div class="oz-form-row oz-form-row-last">
                     <div class="oz-form-meta">
-                      <div class="oz-label">Theme</div>
-                      <p class="oz-help-sub">Applies to this options page and snooze/unsnooze popup.</p>
+                      <div class="oz-label">Archive popup</div>
+                      <p class="oz-help-sub">Shows or hides the "Archived" popup with Undo action.</p>
                     </div>
                     <div class="oz-form-control">
                       <label class="oz-toggle">
-                        <input id="darkModeEnabled" type="checkbox" class="oz-toggle-input" />
-                        <span class="oz-toggle-label">Dark mode</span>
+                        <input id="archivePopupEnabled" type="checkbox" class="oz-toggle-input" />
+                        <span class="oz-toggle-label">Show archive popup</span>
                       </label>
+                      <p id="status-archive-popup" class="oz-status" role="status" aria-live="polite"></p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- Appearance -->
+            <section
+              id="panel-appearance"
+              class="oz-panel"
+              role="tabpanel"
+              aria-labelledby="tab-appearance"
+            >
+              <div class="oz-panel-card">
+                <div class="oz-section-head">
+                  <h2 class="oz-section-title">Appearance</h2>
+                  <p class="oz-section-desc">Customize the look and feel of Zero for Outlook.</p>
+                </div>
+                <div class="oz-form-stack">
+                  <div class="oz-form-row">
+                    <div class="oz-form-meta">
+                      <div class="oz-label">Accent Color</div>
+                      <p class="oz-help-sub">Select an accent color to customize the appearance of the extension.</p>
+                    </div>
+                    <div class="oz-form-control">
+                      <div class="oz-accent-colors" role="radiogroup" aria-label="Accent color">
+                        <button type="button" class="oz-accent-color oz-accent-color-active" data-color="#6366f1" style="background-color: #6366f1" aria-label="Indigo" title="Indigo"></button>
+                        <button type="button" class="oz-accent-color" data-color="#ec4899" style="background-color: #ec4899" aria-label="Pink" title="Pink"></button>
+                        <button type="button" class="oz-accent-color" data-color="#f97316" style="background-color: #f97316" aria-label="Orange" title="Orange"></button>
+                        <button type="button" class="oz-accent-color" data-color="#eab308" style="background-color: #eab308" aria-label="Yellow" title="Yellow"></button>
+                        <button type="button" class="oz-accent-color" data-color="#10b981" style="background-color: #10b981" aria-label="Green" title="Green"></button>
+                        <button type="button" class="oz-accent-color" data-color="#14b8a6" style="background-color: #14b8a6" aria-label="Teal" title="Teal"></button>
+                        <button type="button" class="oz-accent-color" data-color="#3b82f6" style="background-color: #3b82f6" aria-label="Blue" title="Blue"></button>
+                        <button type="button" class="oz-accent-color oz-accent-color-custom" data-color="custom" aria-label="Custom" title="Custom">
+                          <span class="oz-accent-color-custom-dot" aria-hidden="true">
+                            <span class="oz-accent-color-custom-dot-inner">+</span>
+                          </span>
+                        </button>
+                      </div>
+                      <p id="status-accent" class="oz-status" role="status" aria-live="polite"></p>
+                    </div>
+                  </div>
+                  
+                  <div class="oz-form-row">
+                    <div class="oz-form-meta">
+                      <div class="oz-label">Toggle theme</div>
+                      <p class="oz-help-sub">Theme preference is saved for the current user only.</p>
+                    </div>
+                    <div class="oz-form-control">
+                      <div class="oz-theme-toggle">
+                        <button type="button" id="lightModeBtn" class="oz-theme-btn" data-theme="light">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.5"/>
+                            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                          </svg>
+                          Light
+                        </button>
+                        <button type="button" id="darkModeBtn" class="oz-theme-btn oz-theme-btn-active" data-theme="dark">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                          </svg>
+                          Dark
+                        </button>
+                      </div>
                       <p id="status-dark" class="oz-status" role="status" aria-live="polite"></p>
+                    </div>
+                  </div>
+                  
+                  <div class="oz-form-row">
+                    <div class="oz-form-meta">
+                      <div class="oz-label">OLED Mode</div>
+                      <p class="oz-help-sub">Use true-black backgrounds for OLED displays. Only active with the Default application theme in dark mode.</p>
+                    </div>
+                    <div class="oz-form-control">
+                      <div class="oz-oled-toggle">
+                        <button type="button" id="oledEnabledBtn" class="oz-oled-btn" data-enabled="true">
+                          Enabled
+                        </button>
+                        <button type="button" id="oledDisabledBtn" class="oz-oled-btn oz-oled-btn-active" data-enabled="false">
+                          Disabled
+                        </button>
+                      </div>
+                      <p id="status-oled" class="oz-status" role="status" aria-live="polite"></p>
+                    </div>
+                  </div>
+
+                  <div class="oz-form-row">
+                    <div class="oz-form-meta">
+                      <div class="oz-label">Popup Opacity</div>
+                      <p class="oz-help-sub">Adjust the transparency of overlays (command bar, summary, snooze).</p>
+                    </div>
+                    <div class="oz-form-control">
+                      <div class="oz-slider-control">
+                        <input 
+                          type="range" 
+                          id="popupOpacity" 
+                          class="oz-slider" 
+                          min="70" 
+                          max="100" 
+                          value="95" 
+                          step="5"
+                          aria-label="Popup opacity percentage"
+                        />
+                        <span class="oz-slider-value" id="popupOpacityValue">95%</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="oz-form-row oz-form-row-last">
+                    <div class="oz-form-meta">
+                      <div class="oz-label">Backdrop Blur</div>
+                      <p class="oz-help-sub">Enable or disable the blur effect behind command bar and overlays.</p>
+                    </div>
+                    <div class="oz-form-control">
+                      <label class="oz-toggle">
+                        <input id="backdropBlurEnabled" type="checkbox" class="oz-toggle-input" />
+                        <span class="oz-toggle-label">Enable backdrop blur</span>
+                      </label>
                     </div>
                   </div>
                 </div>
@@ -641,6 +836,30 @@
             </section>
           </div>
         </main>
+
+        <div class="oz-accent-modal-overlay oz-hidden" id="accentCustomModalOverlay" aria-hidden="true">
+          <div class="oz-accent-modal" role="dialog" aria-modal="true" aria-labelledby="accentCustomModalTitle">
+            <button type="button" class="oz-accent-modal-close" id="accentCustomModalClose" aria-label="Close">×</button>
+            <h3 class="oz-accent-modal-title" id="accentCustomModalTitle">Custom Accent Color</h3>
+            <p class="oz-accent-modal-desc">Enter a custom color code in hex format (for example: #3b82f6).</p>
+            <label for="accentCustomColorInput" class="oz-accent-modal-label">Color value</label>
+            <input
+              id="accentCustomColorInput"
+              type="text"
+              class="oz-shortcut-input oz-accent-modal-input"
+              placeholder="#3b82f6"
+              autocomplete="off"
+              spellcheck="false"
+            />
+            <p class="oz-accent-modal-error oz-hidden" id="accentCustomModalError">
+              Enter a valid hex color like #3b82f6 or #abc.
+            </p>
+            <div class="oz-accent-modal-actions">
+              <button type="button" class="oz-button oz-button-secondary" id="accentCustomModalCancel">Cancel</button>
+              <button type="button" class="oz-button oz-button-primary" id="accentCustomModalApply">Apply</button>
+            </div>
+          </div>
+        </div>
 
         <footer class="oz-footer">
           <span>Copyright (C) 2026 Luke Colvin · Zero for Outlook</span>

@@ -161,9 +161,9 @@
 }
 
 .oz-command-modal.oz-command-dark .oz-command-item-active {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.24), rgba(129, 140, 248, 0.24));
+  background: linear-gradient(135deg, var(--oz-accent-muted, rgba(59, 130, 246, 0.24)), var(--oz-accent-muted, rgba(129, 140, 248, 0.24)));
 }
 
 .oz-command-modal.oz-command-light .oz-command-item-active {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.14), rgba(129, 140, 248, 0.16));
+  background: linear-gradient(135deg, var(--oz-accent-muted, rgba(59, 130, 246, 0.14)), var(--oz-accent-muted, rgba(129, 140, 248, 0.16)));
 }

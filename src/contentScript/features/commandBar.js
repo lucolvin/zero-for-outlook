@@ -70,22 +70,20 @@ function findUnsubscribeLinkInCurrentEmail() {
     const textPhrases = [
       { phrase: "unsubscribe", score: 80 },
       { phrase: "wish to unsubscribe", score: 92 },
+      { phrase: "unsubscribe link", score: 92 },
       { phrase: "no longer wish to receive", score: 90 },
       { phrase: "no longer want to receive", score: 90 },
       { phrase: "be removed from our list", score: 90 },
       { phrase: "removed from our list", score: 88 },
-      { phrase: "unsubscribe link", score: 92 },
-      { phrase: "opt out", score: 75 },
-      { phrase: "remove me", score: 70 },
+      { phrase: "opt out", score: 78 },
+      { phrase: "remove me", score: 72 },
       { phrase: "remove from this list", score: 86 },
       { phrase: "remove from our list", score: 86 },
-      { phrase: "receive emails from us", score: 55 },
-      { phrase: "stop receiving", score: 68 },
-      { phrase: "stop getting", score: 68 },
+      { phrase: "stop receiving", score: 70 },
+      { phrase: "stop getting", score: 70 },
       { phrase: "email preferences", score: 64 },
       { phrase: "manage preferences", score: 62 },
       { phrase: "notification settings", score: 58 },
-      { phrase: "manage subscription", score: 58 },
       { phrase: "update preferences", score: 56 },
       { phrase: "change preferences", score: 56 },
       { phrase: "communication preferences", score: 54 }
@@ -152,22 +150,32 @@ function findUnsubscribeLinkInCurrentEmail() {
         score = Math.max(score, 92);
       }
 
-      // Generic labels like "here" are often unsubscribe links only when the nearby copy says so.
+      const hasCancelVerb = /\b(cancel|cancell?ation|stop|end|terminate)\b/i.test(contextText);
+      const hasSubscriptionNoun =
+        /\b(subscription|mailing list|newsletter|emails?|edm)\b/i.test(contextText);
+      const hasRemovalIntent =
+        /\b(unsubscribe|opt[- ]?out|remove(?:d)? from (?:our|this) list|remove me)\b/i.test(
+          contextText
+        );
+
+      if (hasRemovalIntent) {
+        score = Math.max(score, 90);
+      }
+
+      if (hasCancelVerb && hasSubscriptionNoun) {
+        score = Math.max(score, 90);
+      }
+
+      // Generic labels like "here" are often actionable only via surrounding copy.
       if (text === "here" || text === "click here") {
-        if (lowerIncludes(contextText, "unsubscribe") || lowerIncludes(contextText, "opt out")) {
-          score = Math.max(score, 88);
+        if (hasRemovalIntent || (hasCancelVerb && hasSubscriptionNoun)) {
+          score = Math.max(score, 90);
         }
       }
 
-      // Template pattern: "update your preferences ... unsubscribe link here"
+      // Preference links can be valid but are often less direct than true unsubscribe links.
       if (lowerIncludes(contextText, "update your preferences")) {
         score -= 15;
-      }
-      if (
-        (text === "here" || lowerIncludes(text, "update your profile")) &&
-        lowerIncludes(contextText, "wish to unsubscribe")
-      ) {
-        score = Math.max(score, 93);
       }
 
       for (const bad of negativePhrases) {
@@ -491,6 +499,34 @@ export function rebuildCommandList() {
       }
     },
     {
+      id: "toggle-archive-popup",
+      title: "Hide archive popup",
+      subtitle: 'Hide the "Archived" popup toast shown after archiving',
+      action: () => {
+        try {
+          const state = settings.getState();
+          const newValue = !state.archivePopupEnabled;
+          browserApi.storage.sync.set({ archivePopupEnabled: newValue }, () => {
+            if (browserApi.runtime && browserApi.runtime.lastError) {
+              // eslint-disable-next-line no-console
+              console.debug(
+                "Zero: Could not toggle archive popup setting:",
+                browserApi.runtime.lastError
+              );
+              return;
+            }
+            settings.archivePopupEnabled = newValue;
+            if (isCommandOverlayOpen()) {
+              refreshCommandList();
+            }
+          });
+        } catch (e) {
+          // eslint-disable-next-line no-console
+          console.debug("Zero: Could not toggle archive popup setting:", e);
+        }
+      }
+    },
+    {
       id: "toggle-options-bar",
       title: "Hide/show Outlook options",
       subtitle: "Toggle visibility of Outlook options bar and header",
@@ -619,6 +655,13 @@ function getCommandDisplayTitle(cmd) {
       return "Hide Outlook options";
     }
   }
+  if (cmd.id === "toggle-archive-popup") {
+    if (state.archivePopupEnabled) {
+      return "Hide archive popup";
+    } else {
+      return "Show archive popup";
+    }
+  }
   if (cmd.id === "toggle-dark-mode") {
     if (state.darkModeEnabled) {
       return "Switch to light mode";
@@ -644,6 +687,13 @@ function getCommandDisplaySubtitle(cmd) {
       return "Show the Outlook options bar and header";
     } else {
       return "Hide the Outlook options bar and header";
+    }
+  }
+  if (cmd.id === "toggle-archive-popup") {
+    if (state.archivePopupEnabled) {
+      return 'Hide the "Archived" popup toast after archiving an email';
+    } else {
+      return 'Show the "Archived" popup toast after archiving an email';
     }
   }
   if (cmd.id === "toggle-dark-mode") {
@@ -705,6 +755,27 @@ function ensureCommandBarStyles() {
   style.id = "oz-command-style";
   style.textContent = commandBarStyles;
   document.documentElement.appendChild(style);
+}
+
+function applyAccentColor(element, color) {
+  if (!element || !color) return;
+  
+  const hoverColors = {
+    '#6366f1': '#4f46e5',
+    '#ec4899': '#db2777',
+    '#f97316': '#ea580c',
+    '#eab308': '#ca8a04',
+    '#10b981': '#059669',
+    '#14b8a6': '#0d9488',
+    '#3b82f6': '#2563eb'
+  };
+  
+  const hoverColor = hoverColors[color] || color;
+  const mutedColor = `${color}33`;
+  
+  element.style.setProperty('--oz-accent', color);
+  element.style.setProperty('--oz-accent-hover', hoverColor);
+  element.style.setProperty('--oz-accent-muted', mutedColor);
 }
 
 // Overlay management
@@ -828,14 +899,28 @@ export function openCommandOverlay() {
 
   const state = settings.getState();
   const darkModeEnabled = state.darkModeEnabled;
+  const oledModeEnabled = !!state.oledModeEnabled;
+  const accentColor = state.accentColor || '#6366f1';
+  const popupOpacity = (state.popupOpacity || 95) / 100;
+  const backdropBlurEnabled = state.backdropBlurEnabled !== false;
 
   const backdrop = document.createElement("div");
   backdrop.className =
     "oz-command-backdrop " + (darkModeEnabled ? "oz-command-dark" : "oz-command-light");
+  // Keep backdrop visually neutral; only optional blur should affect the page behind.
+  backdrop.style.background = "transparent";
+  backdrop.style.backdropFilter = backdropBlurEnabled ? "blur(14px) saturate(130%)" : "none";
+  backdrop.style.webkitBackdropFilter = backdropBlurEnabled ? "blur(14px) saturate(130%)" : "none";
 
   const modal = document.createElement("div");
   modal.className =
     "oz-command-modal " + (darkModeEnabled ? "oz-command-dark" : "oz-command-light");
+  modal.style.opacity = popupOpacity;
+  if (darkModeEnabled && oledModeEnabled) {
+    modal.style.backgroundColor = "#000000";
+  }
+  
+  applyAccentColor(modal, accentColor);
 
   const inputWrap = document.createElement("div");
   inputWrap.className = "oz-command-input-wrapper";
@@ -964,6 +1049,10 @@ export function updateCommandOverlayTheme() {
   if (!commandOverlay) return;
   const state = settings.getState();
   const darkModeEnabled = state.darkModeEnabled;
+  const oledModeEnabled = !!state.oledModeEnabled;
+  const accentColor = state.accentColor || "#6366f1";
+  const popupOpacity = (state.popupOpacity || 95) / 100;
+  const backdropBlurEnabled = state.backdropBlurEnabled !== false;
   
   const backdrop = commandOverlay;
   const modal = backdrop.querySelector(".oz-command-modal");
@@ -971,8 +1060,14 @@ export function updateCommandOverlayTheme() {
 
   backdrop.className =
     "oz-command-backdrop " + (darkModeEnabled ? "oz-command-dark" : "oz-command-light");
+  backdrop.style.background = "transparent";
+  backdrop.style.backdropFilter = backdropBlurEnabled ? "blur(14px) saturate(130%)" : "none";
+  backdrop.style.webkitBackdropFilter = backdropBlurEnabled ? "blur(14px) saturate(130%)" : "none";
   modal.className =
     "oz-command-modal " + (darkModeEnabled ? "oz-command-dark" : "oz-command-light");
+  modal.style.opacity = popupOpacity;
+  modal.style.backgroundColor = darkModeEnabled && oledModeEnabled ? "#000000" : "";
+  applyAccentColor(modal, accentColor);
 }
 
 // Helper for keyboard handler

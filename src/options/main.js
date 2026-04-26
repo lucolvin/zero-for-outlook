@@ -33,14 +33,35 @@
   const blockedContentStatusEl = document.getElementById("status-blocked-content");
   const vimStatusEl = document.getElementById("status-vim");
   const darkStatusEl = document.getElementById("status-dark");
+  const accentStatusEl = document.getElementById("status-accent");
+  const oledStatusEl = document.getElementById("status-oled");
+  const opacityStatusEl = document.getElementById("status-opacity");
   const inboxZeroStatusEl = document.getElementById("status-inbox-zero");
+  const archivePopupStatusEl = document.getElementById("status-archive-popup");
   const geminiStatusEl = document.getElementById("status-gemini");
+  const popupOpacitySlider = document.getElementById("popupOpacity");
+  const popupOpacityValue = document.getElementById("popupOpacityValue");
   const clearBtn = document.getElementById("clearUndo");
   const clearCommandBtn = document.getElementById("clearCommand");
   const clearBlockedContentBtn = document.getElementById("clearBlockedContent");
   const vimToggle = document.getElementById("vimEnabled");
-  const darkToggle = document.getElementById("darkModeEnabled");
+  const lightModeBtn = document.getElementById("lightModeBtn");
+  const darkModeBtn = document.getElementById("darkModeBtn");
+  const oledEnabledBtn = document.getElementById("oledEnabledBtn");
+  const oledDisabledBtn = document.getElementById("oledDisabledBtn");
+  const accentColorButtons = document.querySelectorAll(".oz-accent-color");
+  const accentCustomModalOverlay = document.getElementById("accentCustomModalOverlay");
+  const accentCustomColorInput = document.getElementById("accentCustomColorInput");
+  const accentCustomModalApply = document.getElementById("accentCustomModalApply");
+  const accentCustomModalCancel = document.getElementById("accentCustomModalCancel");
+  const accentCustomModalClose = document.getElementById("accentCustomModalClose");
+  const accentCustomModalError = document.getElementById("accentCustomModalError");
+  const backdropBlurToggle = document.getElementById("backdropBlurEnabled");
   const inboxZeroToggle = document.getElementById("inboxZeroEnabled");
+  const archivePopupToggle = document.getElementById("archivePopupEnabled");
+  const saveBtn = document.getElementById("oz-save-btn");
+  const resetBtn = document.getElementById("oz-reset-btn");
+  const saveStatus = document.getElementById("oz-save-status");
   const geminiInput = document.getElementById("geminiApiKey");
   const saveGeminiBtn = document.getElementById("saveGeminiKey");
   const clearGeminiBtn = document.getElementById("clearGeminiKey");
@@ -51,22 +72,84 @@
   const aiTitleEditingStatusEl = document.getElementById("status-ai-title-editing");
   const MANUAL_SHORTCUT_WARNING_KEY = "manualShortcutAdvancedWarningShown";
 
-  const PAGE_LEDES = {
-    general:
-      "Configure keyboard shortcuts, navigation, appearance, and optional AI features.",
-    custom: "Manage custom shortcuts and optional LLM-generated names.",
-    ai: "Optional Gemini integration for summarizing the current email.",
-    about: "How the extension works, privacy, and links.",
-    "import-export": "Back up or restore your extension settings as a JSON file."
+  // Pending changes object
+  let pendingChanges = {};
+  let hasUnsavedChanges = false;
+
+  const PAGE_INFO = {
+    general: {
+      title: "General",
+      subtitle: "Configure keyboard shortcuts, navigation, and archive behavior.",
+      icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>`
+    },
+    appearance: {
+      title: "Appearance",
+      subtitle: "Customize the look and feel of Zero for Outlook.",
+      icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M14.2 4.2a2.8 2.8 0 0 1 4 0l1.6 1.6a2.8 2.8 0 0 1 0 4l-8.9 8.9a3 3 0 0 1-2.1.9H6.9a1.7 1.7 0 0 1-1.7-1.7v-1.9a3 3 0 0 1 .9-2.1l8.1-8.1Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+        <path d="M12.8 5.6 18.4 11.2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <path d="M5.5 16.5h3.8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>`
+    },
+    custom: {
+      title: "Custom shortcuts",
+      subtitle: "Manage custom shortcuts and optional LLM-generated names.",
+      icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="2" y="6" width="20" height="12" rx="2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M7 10h2.5M11.5 10h5.5M7 14h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>`
+    },
+    ai: {
+      title: "AI",
+      subtitle: "Optional Gemini integration for summarizing the current email.",
+      icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3L12 3Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M5 3v4M3 5h4M19 17v4M17 19h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>`
+    },
+    about: {
+      title: "About",
+      subtitle: "How the extension works, privacy, and links.",
+      icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M12 16v-4M12 8h.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>`
+    },
+    "import-export": {
+      title: "Import / Export",
+      subtitle: "Back up or restore your extension settings as a JSON file.",
+      icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 4v16M8 8l4-4 4 4M8 16l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>`
+    }
   };
 
   const tabButtons = document.querySelectorAll(".oz-tab[data-panel]");
+  const PRESET_ACCENT_COLORS = new Set([
+    "#6366f1",
+    "#ec4899",
+    "#f97316",
+    "#eab308",
+    "#10b981",
+    "#14b8a6",
+    "#3b82f6"
+  ]);
+  const HEX_COLOR_REGEX = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
 
-  function setPageLede(panelId) {
-    const el = document.getElementById("oz-page-lede");
-    if (!el) return;
-    const text = PAGE_LEDES[panelId] || PAGE_LEDES.general;
-    el.textContent = text;
+  function setPageHeader(panelId) {
+    const info = PAGE_INFO[panelId] || PAGE_INFO.general;
+    
+    const titleEl = document.getElementById("oz-page-title");
+    if (titleEl) titleEl.textContent = info.title;
+    
+    const subtitleEl = document.getElementById("oz-page-subtitle");
+    if (subtitleEl) subtitleEl.textContent = info.subtitle;
+    
+    const iconEl = document.getElementById("oz-page-icon");
+    if (iconEl) iconEl.innerHTML = info.icon;
   }
 
   function exportSettingsAndShortcuts() {
@@ -117,6 +200,7 @@
       "vimEnabled",
       "darkModeEnabled",
       "inboxZeroEnabled",
+      "archivePopupEnabled",
       "optionsBarHidden",
       "customShortcuts",
       "geminiApiKey",
@@ -223,7 +307,7 @@
       panel.classList.toggle("oz-panel-active", active);
     });
 
-    setPageLede(panelId);
+    setPageHeader(panelId);
   }
 
   function formatShortcut(shortcut) {
@@ -268,6 +352,73 @@
     setStatus(darkStatusEl, message);
   }
 
+  function setAccentStatus(message) {
+    setStatus(accentStatusEl, message);
+  }
+
+  function setOledStatus(message) {
+    setStatus(oledStatusEl, message);
+  }
+
+  function setOpacityStatus(message) {
+    setStatus(opacityStatusEl, message);
+  }
+
+  function markUnsavedChanges() {
+    hasUnsavedChanges = true;
+    if (saveStatus) {
+      saveStatus.textContent = "Unsaved changes";
+      saveStatus.style.color = "var(--oz-accent)";
+    }
+    if (saveBtn) {
+      saveBtn.disabled = false;
+    }
+    if (resetBtn) {
+      resetBtn.classList.remove("oz-hidden");
+    }
+  }
+
+  function markChangesSaved() {
+    hasUnsavedChanges = false;
+    pendingChanges = {};
+    if (saveStatus) {
+      saveStatus.textContent = "All changes saved";
+      saveStatus.style.color = "var(--oz-accent)";
+    }
+    if (saveBtn) {
+      saveBtn.disabled = true;
+    }
+    if (resetBtn) {
+      resetBtn.classList.add("oz-hidden");
+    }
+  }
+
+  function resetAllPendingChanges() {
+    if (!hasUnsavedChanges) return;
+
+    // Restore original values from storage
+    try {
+      browserApi.storage.sync.get(null, (items) => {
+        if (browserApi.runtime && browserApi.runtime.lastError) {
+          return;
+        }
+
+        // Restore all UI elements to their saved values
+        restoreOptions();
+        
+        // Clear pending changes
+        markChangesSaved();
+      });
+    } catch (e) {
+      console.error("Could not reset changes:", e);
+    }
+  }
+
+  function updatePendingChange(key, value) {
+    pendingChanges[key] = value;
+    markUnsavedChanges();
+  }
+
   function setGeminiStatus(message) {
     setStatus(geminiStatusEl, message);
   }
@@ -276,82 +427,231 @@
     setStatus(inboxZeroStatusEl, message);
   }
 
+  function setArchivePopupStatus(message) {
+    setStatus(archivePopupStatusEl, message);
+  }
+
   function setCustomStatus(message) {
     setStatus(customStatusEl, message);
   }
 
-  function saveVimEnabled(enabled) {
+  function saveAllPendingChanges() {
+    if (!hasUnsavedChanges || Object.keys(pendingChanges).length === 0) {
+      return;
+    }
+
+    if (saveStatus) {
+      saveStatus.textContent = "Saving...";
+      saveStatus.style.color = "var(--oz-accent)";
+    }
+
     try {
-      browserApi.storage.sync.set({ vimEnabled: enabled }, () => {
+      browserApi.storage.sync.set(pendingChanges, () => {
         if (browserApi.runtime && browserApi.runtime.lastError) {
-          setVimStatus("Could not update vim setting (storage error).");
+          if (saveStatus) {
+            saveStatus.textContent = "Save failed";
+            saveStatus.style.color = "#ef4444";
+          }
           return;
         }
-        setVimStatus(enabled ? "Vim navigation enabled." : "Vim navigation disabled.");
+
+        // Apply changes that need immediate visual updates
+        if (pendingChanges.darkModeEnabled !== undefined) {
+          const oledEnabled = pendingChanges.oledModeEnabled !== undefined 
+            ? pendingChanges.oledModeEnabled 
+            : (document.body.classList.contains('oz-oled-mode'));
+          applyTheme(pendingChanges.darkModeEnabled, oledEnabled);
+          updateThemeUI(pendingChanges.darkModeEnabled);
+        }
+
+        if (pendingChanges.oledModeEnabled !== undefined) {
+          const darkEnabled = pendingChanges.darkModeEnabled !== undefined
+            ? pendingChanges.darkModeEnabled
+            : document.body.classList.contains('oz-theme-dark');
+          applyTheme(darkEnabled, pendingChanges.oledModeEnabled);
+          updateOledUI(pendingChanges.oledModeEnabled);
+        }
+
+        if (pendingChanges.accentColor) {
+          applyAccentColor(pendingChanges.accentColor);
+          updateAccentColorUI(pendingChanges.accentColor);
+        }
+
+        markChangesSaved();
       });
     } catch (e) {
-      setVimStatus("Could not update vim setting.");
+      if (saveStatus) {
+        saveStatus.textContent = "Save failed";
+        saveStatus.style.color = "#ef4444";
+      }
     }
   }
 
-  function applyTheme(darkEnabled) {
+  function applyTheme(darkEnabled, oledEnabled = false) {
     const html = document.documentElement;
     const body = document.body;
     if (!html || !body) return;
     if (darkEnabled) {
       html.classList.add("oz-theme-dark");
       body.classList.add("oz-theme-dark");
+      if (oledEnabled) {
+        html.classList.add("oz-oled-mode");
+        body.classList.add("oz-oled-mode");
+      } else {
+        html.classList.remove("oz-oled-mode");
+        body.classList.remove("oz-oled-mode");
+      }
     } else {
       html.classList.remove("oz-theme-dark");
       body.classList.remove("oz-theme-dark");
+      html.classList.remove("oz-oled-mode");
+      body.classList.remove("oz-oled-mode");
     }
   }
 
-  function saveDarkModeEnabled(enabled) {
-    try {
-      browserApi.storage.sync.set({ darkModeEnabled: enabled }, () => {
-        if (browserApi.runtime && browserApi.runtime.lastError) {
-          setDarkStatus("Could not update dark mode (storage error).");
-          return;
-        }
-        applyTheme(enabled);
-        setDarkStatus(enabled ? "Dark mode enabled." : "Dark mode disabled.");
-      });
-    } catch (e) {
-      setDarkStatus("Could not update dark mode.");
+  function hexToRgb(hex) {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+      r: parseInt(result[1], 16),
+      g: parseInt(result[2], 16),
+      b: parseInt(result[3], 16)
+    } : null;
+  }
+
+  function applyAccentColor(color) {
+    const root = document.documentElement;
+    if (!root || !color) return;
+    
+    root.style.setProperty('--oz-accent', color);
+    
+    const rgb = hexToRgb(color);
+    if (rgb) {
+      root.style.setProperty('--oz-accent-rgb', `${rgb.r}, ${rgb.g}, ${rgb.b}`);
+    }
+    
+    const hoverColors = {
+      '#6366f1': '#4f46e5',
+      '#ec4899': '#db2777',
+      '#f97316': '#ea580c',
+      '#eab308': '#ca8a04',
+      '#10b981': '#059669',
+      '#14b8a6': '#0d9488',
+      '#3b82f6': '#2563eb'
+    };
+    
+    const hoverColor = hoverColors[color] || color;
+    root.style.setProperty('--oz-accent-hover', hoverColor);
+    
+    const isDark = document.body.classList.contains('oz-theme-dark');
+    if (isDark) {
+      root.style.setProperty('--oz-accent-muted', `${color}22`);
+    } else {
+      root.style.setProperty('--oz-accent-muted', `${color}1F`);
     }
   }
 
-  function saveInboxZeroEnabled(enabled) {
-    try {
-      browserApi.storage.sync.set({ inboxZeroEnabled: enabled }, () => {
-        if (browserApi.runtime && browserApi.runtime.lastError) {
-          setInboxZeroStatus("Could not update inbox zero setting (storage error).");
-          return;
-        }
-        setInboxZeroStatus(enabled ? "celebration enabled." : "celebration disabled.");
-      });
-    } catch (e) {
-      setInboxZeroStatus("Could not update inbox zero setting.");
+  function updateAccentColorUI(color) {
+    const normalizedColor = typeof color === "string" ? color.toLowerCase() : "";
+    const isCustom = normalizedColor && !PRESET_ACCENT_COLORS.has(normalizedColor);
+
+    accentColorButtons.forEach(btn => {
+      const buttonColor = btn.getAttribute("data-color");
+      const shouldActivate = isCustom ? buttonColor === "custom" : buttonColor === normalizedColor;
+      if (shouldActivate) {
+        btn.classList.add('oz-accent-color-active');
+      } else {
+        btn.classList.remove('oz-accent-color-active');
+      }
+    });
+  }
+
+  function normalizeHexColor(value) {
+    const text = String(value || "").trim();
+    const withHash = text.startsWith("#") ? text : `#${text}`;
+    if (!HEX_COLOR_REGEX.test(withHash)) return null;
+    if (withHash.length === 4) {
+      return `#${withHash[1]}${withHash[1]}${withHash[2]}${withHash[2]}${withHash[3]}${withHash[3]}`.toLowerCase();
+    }
+    return withHash.toLowerCase();
+  }
+
+  function getCurrentAccentColor() {
+    if (pendingChanges.accentColor) {
+      return String(pendingChanges.accentColor).toLowerCase();
+    }
+    return (
+      getComputedStyle(document.documentElement).getPropertyValue("--oz-accent").trim().toLowerCase() || "#6366f1"
+    );
+  }
+
+  function openCustomAccentModal() {
+    if (!accentCustomModalOverlay || !accentCustomColorInput) return;
+    accentCustomColorInput.value = "";
+    accentCustomModalOverlay.classList.remove("oz-hidden");
+    accentCustomModalOverlay.setAttribute("aria-hidden", "false");
+    if (accentCustomModalError) {
+      accentCustomModalError.classList.add("oz-hidden");
+    }
+    requestAnimationFrame(() => {
+      accentCustomColorInput.focus();
+      accentCustomColorInput.select();
+    });
+  }
+
+  function closeCustomAccentModal() {
+    if (!accentCustomModalOverlay) return;
+    accentCustomModalOverlay.classList.add("oz-hidden");
+    accentCustomModalOverlay.setAttribute("aria-hidden", "true");
+    if (accentCustomModalError) {
+      accentCustomModalError.classList.add("oz-hidden");
+    }
+  }
+
+  function applyCustomAccentFromModal() {
+    if (!accentCustomColorInput) return;
+    const normalized = normalizeHexColor(accentCustomColorInput.value);
+    if (!normalized) {
+      if (accentCustomModalError) {
+        accentCustomModalError.classList.remove("oz-hidden");
+      }
+      return;
+    }
+    if (accentCustomModalError) {
+      accentCustomModalError.classList.add("oz-hidden");
+    }
+    updatePendingChange("accentColor", normalized);
+    applyAccentColor(normalized);
+    updateAccentColorUI(normalized);
+    closeCustomAccentModal();
+  }
+
+
+  function updateThemeUI(darkEnabled) {
+    if (lightModeBtn && darkModeBtn) {
+      if (darkEnabled) {
+        lightModeBtn.classList.remove('oz-theme-btn-active');
+        darkModeBtn.classList.add('oz-theme-btn-active');
+      } else {
+        lightModeBtn.classList.add('oz-theme-btn-active');
+        darkModeBtn.classList.remove('oz-theme-btn-active');
+      }
+    }
+  }
+
+  function updateOledUI(enabled) {
+    if (oledEnabledBtn && oledDisabledBtn) {
+      if (enabled) {
+        oledEnabledBtn.classList.add('oz-oled-btn-active');
+        oledDisabledBtn.classList.remove('oz-oled-btn-active');
+      } else {
+        oledEnabledBtn.classList.remove('oz-oled-btn-active');
+        oledDisabledBtn.classList.add('oz-oled-btn-active');
+      }
     }
   }
 
   function setAiTitleEditingStatus(message) {
     setStatus(aiTitleEditingStatusEl, message);
-  }
-
-  function saveAiTitleEditingEnabled(enabled) {
-    try {
-      browserApi.storage.sync.set({ aiTitleEditingEnabled: enabled }, () => {
-        if (browserApi.runtime && browserApi.runtime.lastError) {
-          setAiTitleEditingStatus("Could not update LLM title editing setting (storage error).");
-          return;
-        }
-        setAiTitleEditingStatus(enabled ? "LLM title editing enabled." : "LLM title editing disabled.");
-      });
-    } catch (e) {
-      setAiTitleEditingStatus("Could not update LLM title editing setting.");
-    }
   }
 
   /** LLM shortcut names require a non-empty Gemini API key in the field (saved or unsaved). */
@@ -390,51 +690,21 @@
   }
 
   function saveShortcut(shortcut) {
-    try {
-      browserApi.storage.sync.set({ undoShortcut: shortcut }, () => {
-        if (browserApi.runtime && browserApi.runtime.lastError) {
-          setUndoStatus("Could not save shortcut (storage error).");
-          return;
-        }
-        shortcutInput.value = formatShortcut(shortcut);
-        setUndoStatus("Shortcut saved.");
-      });
-    } catch (e) {
-      setUndoStatus("Could not save shortcut.");
-    }
+    updatePendingChange('undoShortcut', shortcut);
+    shortcutInput.value = formatShortcut(shortcut);
   }
 
   function saveCommandShortcut(shortcut) {
-    try {
-      browserApi.storage.sync.set({ commandShortcut: shortcut }, () => {
-        if (browserApi.runtime && browserApi.runtime.lastError) {
-          setCommandStatus("Could not save command bar shortcut (storage error).");
-          return;
-        }
-        if (commandShortcutInput) {
-          commandShortcutInput.value = formatShortcut(shortcut);
-        }
-        setCommandStatus("Command bar shortcut saved.");
-      });
-    } catch (e) {
-      setCommandStatus("Could not save command bar shortcut.");
+    updatePendingChange('commandShortcut', shortcut);
+    if (commandShortcutInput) {
+      commandShortcutInput.value = formatShortcut(shortcut);
     }
   }
 
   function saveBlockedContentShortcut(shortcut) {
-    try {
-      browserApi.storage.sync.set({ blockedContentShortcut: shortcut }, () => {
-        if (browserApi.runtime && browserApi.runtime.lastError) {
-          setBlockedContentStatus("Could not save blocked content shortcut (storage error).");
-          return;
-        }
-        if (blockedContentShortcutInput) {
-          blockedContentShortcutInput.value = formatShortcut(shortcut);
-        }
-        setBlockedContentStatus("Blocked content shortcut saved.");
-      });
-    } catch (e) {
-      setBlockedContentStatus("Could not save blocked content shortcut.");
+    updatePendingChange('blockedContentShortcut', shortcut);
+    if (blockedContentShortcutInput) {
+      blockedContentShortcutInput.value = formatShortcut(shortcut);
     }
   }
 
@@ -830,7 +1100,12 @@
           blockedContentShortcut: DEFAULT_BLOCKED_CONTENT_SHORTCUT,
           vimEnabled: true,
           darkModeEnabled: true,
+          oledModeEnabled: false,
+          accentColor: '#6366f1',
+          popupOpacity: 95,
+          backdropBlurEnabled: true,
           inboxZeroEnabled: false,
+          archivePopupEnabled: true,
           geminiApiKey: "",
           customShortcuts: [],
           aiTitleEditingEnabled: true
@@ -867,10 +1142,35 @@
             items && typeof items.darkModeEnabled === "boolean"
               ? items.darkModeEnabled
               : true;
-          if (darkToggle) {
-            darkToggle.checked = darkEnabled;
+          const oledEnabled =
+            items && typeof items.oledModeEnabled === "boolean"
+              ? items.oledModeEnabled
+              : false;
+          
+          updateThemeUI(darkEnabled);
+          updateOledUI(oledEnabled);
+          applyTheme(darkEnabled, oledEnabled);
+
+          const accentColor = (items && items.accentColor) || '#6366f1';
+          applyAccentColor(accentColor);
+          updateAccentColorUI(accentColor);
+
+          const popupOpacity = (items && typeof items.popupOpacity === "number") 
+            ? items.popupOpacity 
+            : 95;
+          if (popupOpacitySlider) {
+            popupOpacitySlider.value = popupOpacity;
           }
-          applyTheme(darkEnabled);
+          if (popupOpacityValue) {
+            popupOpacityValue.textContent = popupOpacity + "%";
+          }
+
+          const backdropBlurEnabled = (items && typeof items.backdropBlurEnabled === "boolean")
+            ? items.backdropBlurEnabled
+            : true;
+          if (backdropBlurToggle) {
+            backdropBlurToggle.checked = backdropBlurEnabled;
+          }
 
           const inboxZeroEnabled =
             items && typeof items.inboxZeroEnabled === "boolean"
@@ -878,6 +1178,14 @@
               : false;
           if (inboxZeroToggle) {
             inboxZeroToggle.checked = inboxZeroEnabled;
+          }
+
+          const archivePopupEnabled =
+            items && typeof items.archivePopupEnabled === "boolean"
+              ? items.archivePopupEnabled
+              : true;
+          if (archivePopupToggle) {
+            archivePopupToggle.checked = archivePopupEnabled;
           }
 
           const geminiKey = (items && items.geminiApiKey) || "";
@@ -898,8 +1206,8 @@
             }
           }
 
-          // Load custom shortcuts
           loadCustomShortcuts();
+          markChangesSaved();
         }
       );
     } catch (e) {
@@ -992,21 +1300,136 @@
   if (vimToggle) {
     vimToggle.addEventListener("change", (e) => {
       const target = /** @type {HTMLInputElement} */ (e.target);
-      saveVimEnabled(!!target.checked);
+      updatePendingChange('vimEnabled', !!target.checked);
     });
   }
 
-  if (darkToggle) {
-    darkToggle.addEventListener("change", (e) => {
+  if (lightModeBtn) {
+    lightModeBtn.addEventListener("click", () => {
+      updatePendingChange('darkModeEnabled', false);
+      updateThemeUI(false);
+      const oledEnabled = oledEnabledBtn && oledEnabledBtn.classList.contains('oz-oled-btn-active');
+      applyTheme(false, oledEnabled);
+    });
+  }
+
+  if (darkModeBtn) {
+    darkModeBtn.addEventListener("click", () => {
+      updatePendingChange('darkModeEnabled', true);
+      updateThemeUI(true);
+      const oledEnabled = oledEnabledBtn && oledEnabledBtn.classList.contains('oz-oled-btn-active');
+      applyTheme(true, oledEnabled);
+    });
+  }
+
+  if (oledEnabledBtn) {
+    oledEnabledBtn.addEventListener("click", () => {
+      updatePendingChange('oledModeEnabled', true);
+      updateOledUI(true);
+      const darkEnabled = darkModeBtn && darkModeBtn.classList.contains('oz-theme-btn-active');
+      applyTheme(darkEnabled, true);
+    });
+  }
+
+  if (oledDisabledBtn) {
+    oledDisabledBtn.addEventListener("click", () => {
+      updatePendingChange('oledModeEnabled', false);
+      updateOledUI(false);
+      const darkEnabled = darkModeBtn && darkModeBtn.classList.contains('oz-theme-btn-active');
+      applyTheme(darkEnabled, false);
+    });
+  }
+
+  accentColorButtons.forEach(btn => {
+    btn.addEventListener("click", () => {
+      const color = btn.getAttribute("data-color");
+      if (color === "custom") {
+        openCustomAccentModal();
+        return;
+      }
+      if (color) {
+        updatePendingChange('accentColor', color);
+        applyAccentColor(color);
+        updateAccentColorUI(color);
+      }
+    });
+  });
+
+  if (accentCustomModalApply) {
+    accentCustomModalApply.addEventListener("click", () => {
+      applyCustomAccentFromModal();
+    });
+  }
+
+  if (accentCustomModalCancel) {
+    accentCustomModalCancel.addEventListener("click", () => {
+      closeCustomAccentModal();
+    });
+  }
+
+  if (accentCustomModalClose) {
+    accentCustomModalClose.addEventListener("click", () => {
+      closeCustomAccentModal();
+    });
+  }
+
+  if (accentCustomColorInput) {
+    accentCustomColorInput.addEventListener("input", () => {
+      if (accentCustomModalError) {
+        accentCustomModalError.classList.add("oz-hidden");
+      }
+    });
+    accentCustomColorInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        applyCustomAccentFromModal();
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        closeCustomAccentModal();
+      }
+    });
+  }
+
+  if (accentCustomModalOverlay) {
+    accentCustomModalOverlay.addEventListener("click", (e) => {
+      if (e.target === accentCustomModalOverlay) {
+        closeCustomAccentModal();
+      }
+    });
+  }
+
+  if (popupOpacitySlider) {
+    popupOpacitySlider.addEventListener("input", (e) => {
+      const value = parseInt(e.target.value, 10);
+      if (popupOpacityValue) {
+        popupOpacityValue.textContent = value + "%";
+      }
+    });
+
+    popupOpacitySlider.addEventListener("change", (e) => {
+      const value = parseInt(e.target.value, 10);
+      updatePendingChange('popupOpacity', value);
+    });
+  }
+
+  if (backdropBlurToggle) {
+    backdropBlurToggle.addEventListener("change", (e) => {
       const target = /** @type {HTMLInputElement} */ (e.target);
-      saveDarkModeEnabled(!!target.checked);
+      updatePendingChange('backdropBlurEnabled', !!target.checked);
     });
   }
 
   if (inboxZeroToggle) {
     inboxZeroToggle.addEventListener("change", (e) => {
       const target = /** @type {HTMLInputElement} */ (e.target);
-      saveInboxZeroEnabled(!!target.checked);
+      updatePendingChange('inboxZeroEnabled', !!target.checked);
+    });
+  }
+
+  if (archivePopupToggle) {
+    archivePopupToggle.addEventListener("change", (e) => {
+      const target = /** @type {HTMLInputElement} */ (e.target);
+      updatePendingChange('archivePopupEnabled', !!target.checked);
     });
   }
 
@@ -1016,7 +1439,19 @@
       if (target.disabled) {
         return;
       }
-      saveAiTitleEditingEnabled(!!target.checked);
+      updatePendingChange('aiTitleEditingEnabled', !!target.checked);
+    });
+  }
+
+  if (saveBtn) {
+    saveBtn.addEventListener("click", () => {
+      saveAllPendingChanges();
+    });
+  }
+
+  if (resetBtn) {
+    resetBtn.addEventListener("click", () => {
+      resetAllPendingChanges();
     });
   }
 
@@ -1096,6 +1531,12 @@
         }
       });
     });
+
+    const activeTab = document.querySelector('.oz-tab.oz-tab-active[data-panel]');
+    const initialPanelId = activeTab && activeTab.getAttribute("data-panel");
+    if (initialPanelId) {
+      activatePanel(initialPanelId);
+    }
 
     const exportSettingsBtn = document.getElementById("exportSettingsJson");
     if (exportSettingsBtn) {

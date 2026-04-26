@@ -32,7 +32,12 @@ class SettingsManager {
     this.blockedContentShortcut = { ...DEFAULT_BLOCKED_CONTENT_SHORTCUT };
     this.vimEnabled = true;
     this.darkModeEnabled = true;
+    this.oledModeEnabled = false;
+    this.accentColor = '#6366f1';
+    this.popupOpacity = 95;
+    this.backdropBlurEnabled = true;
     this.inboxZeroEnabled = false;
+    this.archivePopupEnabled = true;
     this.optionsBarHidden = false;
     this.vimContext = "auto";
     this.customShortcuts = [];
@@ -67,7 +72,12 @@ class SettingsManager {
       blockedContentShortcut: this.blockedContentShortcut,
       vimEnabled: this.vimEnabled,
       darkModeEnabled: this.darkModeEnabled,
+      oledModeEnabled: this.oledModeEnabled,
+      accentColor: this.accentColor,
+      popupOpacity: this.popupOpacity,
+      backdropBlurEnabled: this.backdropBlurEnabled,
       inboxZeroEnabled: this.inboxZeroEnabled,
+      archivePopupEnabled: this.archivePopupEnabled,
       optionsBarHidden: this.optionsBarHidden,
       vimContext: this.vimContext,
       customShortcuts: this.customShortcuts,
@@ -86,7 +96,12 @@ class SettingsManager {
             blockedContentShortcut: DEFAULT_BLOCKED_CONTENT_SHORTCUT,
             vimEnabled: true,
             darkModeEnabled: true,
+            oledModeEnabled: false,
+            accentColor: '#6366f1',
+            popupOpacity: 95,
+            backdropBlurEnabled: true,
             inboxZeroEnabled: false,
+            archivePopupEnabled: true,
             optionsBarHidden: false,
             customShortcuts: [],
             aiTitleEditingEnabled: true
@@ -121,8 +136,23 @@ class SettingsManager {
               if (typeof items.darkModeEnabled === "boolean") {
                 this.darkModeEnabled = items.darkModeEnabled;
               }
+              if (typeof items.oledModeEnabled === "boolean") {
+                this.oledModeEnabled = items.oledModeEnabled;
+              }
+              if (typeof items.accentColor === "string") {
+                this.accentColor = items.accentColor;
+              }
+              if (typeof items.popupOpacity === "number") {
+                this.popupOpacity = items.popupOpacity;
+              }
+              if (typeof items.backdropBlurEnabled === "boolean") {
+                this.backdropBlurEnabled = items.backdropBlurEnabled;
+              }
               if (typeof items.inboxZeroEnabled === "boolean") {
                 this.inboxZeroEnabled = items.inboxZeroEnabled;
+              }
+              if (typeof items.archivePopupEnabled === "boolean") {
+                this.archivePopupEnabled = items.archivePopupEnabled;
               }
               if (typeof items.optionsBarHidden === "boolean") {
                 this.optionsBarHidden = items.optionsBarHidden;
@@ -185,8 +215,28 @@ class SettingsManager {
           this.darkModeEnabled = changes.darkModeEnabled.newValue;
           changed = true;
         }
+        if (changes.oledModeEnabled && typeof changes.oledModeEnabled.newValue === "boolean") {
+          this.oledModeEnabled = changes.oledModeEnabled.newValue;
+          changed = true;
+        }
+        if (changes.accentColor && typeof changes.accentColor.newValue === "string") {
+          this.accentColor = changes.accentColor.newValue;
+          changed = true;
+        }
+        if (changes.popupOpacity && typeof changes.popupOpacity.newValue === "number") {
+          this.popupOpacity = changes.popupOpacity.newValue;
+          changed = true;
+        }
+        if (changes.backdropBlurEnabled && typeof changes.backdropBlurEnabled.newValue === "boolean") {
+          this.backdropBlurEnabled = changes.backdropBlurEnabled.newValue;
+          changed = true;
+        }
         if (changes.inboxZeroEnabled && typeof changes.inboxZeroEnabled.newValue === "boolean") {
           this.inboxZeroEnabled = changes.inboxZeroEnabled.newValue;
+          changed = true;
+        }
+        if (changes.archivePopupEnabled && typeof changes.archivePopupEnabled.newValue === "boolean") {
+          this.archivePopupEnabled = changes.archivePopupEnabled.newValue;
           changed = true;
         }
         if (changes.optionsBarHidden && typeof changes.optionsBarHidden.newValue === "boolean") {

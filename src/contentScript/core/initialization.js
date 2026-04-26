@@ -20,6 +20,7 @@ import {
   getDarkModeEnabled,
   setDarkModeEnabled
 } from "../features/darkMode.js";
+import { setArchivePopupEnabled } from "../features/archivePopup.js";
 import {
   rebuildCommandList,
   refreshCommandList,
@@ -73,6 +74,7 @@ export function loadSettings() {
           vimEnabled: true,
           darkModeEnabled: true,
           inboxZeroEnabled: false,
+          archivePopupEnabled: true,
           optionsBarHidden: false,
           customShortcuts: [],
           aiTitleEditingEnabled: true
@@ -109,6 +111,11 @@ export function loadSettings() {
             }
             if (typeof items.inboxZeroEnabled === "boolean") {
               inboxZeroEnabled = items.inboxZeroEnabled;
+            }
+            if (typeof items.archivePopupEnabled === "boolean") {
+              setArchivePopupEnabled(items.archivePopupEnabled);
+            } else {
+              setArchivePopupEnabled(true);
             }
             if (typeof items.optionsBarHidden === "boolean") {
               setOptionsBarHidden(items.optionsBarHidden);
@@ -266,6 +273,12 @@ export function initialize() {
           } else {
             stopInboxZeroObserver();
           }
+          if (isCommandOverlayOpen()) {
+            refreshCommandList();
+          }
+        }
+        if (changes.archivePopupEnabled && typeof changes.archivePopupEnabled.newValue === "boolean") {
+          setArchivePopupEnabled(changes.archivePopupEnabled.newValue);
           if (isCommandOverlayOpen()) {
             refreshCommandList();
           }

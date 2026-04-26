@@ -5,6 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 0.7.0
+
+### Features
+
+- Added toggle to options page and command bar to hide/show email archived popup
+- Moved appearance options to their own page
+- **Major UI Redesign**:
+  - Added modern header bar with page icon, title, and save button
+  - Implemented gradient backgrounds with accent color integration
+  - Added modern accent color picker with 7 color options
+  - Added OLED Mode toggle for true-black backgrounds on OLED displays
+  - Added popup opacity slider (70-100%) for command bar and overlays
+  - Added backdrop blur toggle to enable/disable blur effect behind overlays
+  - Redesigned theme toggle with modern button interface
+  - Full-width content layout with better spacing
+- Applied accent colors consistently across extension (options page, command bar, summary popup, snooze overlay)
+- Enhanced overall styling with more modern, polished UI design
+
+### Fixed
+
+- Improve the unsubscribe logic even more to handle more edge cases
+- Inbox zero celebration now only triggers on real inbox `> 0 -> 0` transitions, preventing repeated popups when navigating between folders (for example archive to inbox)
+
+### Changed
+
+- Replaced inbox zero confetti with a fullscreen streak overlay
+- Added inbox zero streak tracking with persistent day-to-day counts
+- **Improved Save Behavior**:
+  - Changes are now batched and only saved when Save button is clicked
+  - No status shown when all changes are saved (cleaner UI)
+  - Added Reset button that appears with unsaved changes to revert all pending changes
+  - Visual feedback for unsaved changes
+
 ## 0.6.1
 
 ### Feature

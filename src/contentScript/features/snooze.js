@@ -249,6 +249,27 @@ export function openSnoozeAndApplyPreset(preset) {
   return { ok: true };
 }
 
+function applyAccentColor(element, color) {
+  if (!element || !color) return;
+  
+  const hoverColors = {
+    '#6366f1': '#4f46e5',
+    '#ec4899': '#db2777',
+    '#f97316': '#ea580c',
+    '#eab308': '#ca8a04',
+    '#10b981': '#059669',
+    '#14b8a6': '#0d9488',
+    '#3b82f6': '#2563eb'
+  };
+  
+  const hoverColor = hoverColors[color] || color;
+  const mutedColor = `${color}33`;
+  
+  element.style.setProperty('--oz-accent', color);
+  element.style.setProperty('--oz-accent-hover', hoverColor);
+  element.style.setProperty('--oz-accent-muted', mutedColor);
+}
+
 // Styles
 function ensureSnoozeStyles() {
   if (document.getElementById("oz-snooze-style")) return;
@@ -396,9 +417,9 @@ function ensureSnoozeStyles() {
 }
 
 .oz-snooze-button:hover {
-  border-color: rgba(96, 165, 250, 0.95);
+  border-color: var(--oz-accent, rgba(96, 165, 250, 0.95));
   box-shadow:
-    0 0 0 1px rgba(37, 99, 235, 0.5),
+    0 0 0 1px var(--oz-accent-muted, rgba(37, 99, 235, 0.5)),
     0 10px 28px rgba(15, 23, 42, 0.9);
   transform: translateY(-0.5px);
 }
@@ -423,9 +444,9 @@ function ensureSnoozeStyles() {
 }
 
 .oz-snooze-button.oz-snooze-selected {
-  border-color: rgba(37, 99, 235, 0.95);
+  border-color: var(--oz-accent, rgba(37, 99, 235, 0.95));
   box-shadow:
-    0 0 0 2px rgba(59, 130, 246, 0.55),
+    0 0 0 2px var(--oz-accent-muted, rgba(59, 130, 246, 0.55)),
     0 10px 28px rgba(15, 23, 42, 0.9);
 }
 `;
@@ -490,12 +511,25 @@ export function openSnoozeOverlay() {
   }
   const state = settings.getState();
   const darkModeEnabled = state.darkModeEnabled;
+  const oledModeEnabled = !!state.oledModeEnabled;
+  const accentColor = state.accentColor || '#6366f1';
+  const popupOpacity = (state.popupOpacity || 95) / 100;
+  const backdropBlurEnabled = state.backdropBlurEnabled !== false;
   
   const backdrop = document.createElement("div");
   backdrop.className = "oz-snooze-backdrop " + (darkModeEnabled ? "oz-snooze-dark" : "oz-snooze-light");
+  backdrop.style.background = "transparent";
+  backdrop.style.backdropFilter = backdropBlurEnabled ? "blur(14px) saturate(130%)" : "none";
+  backdrop.style.webkitBackdropFilter = backdropBlurEnabled ? "blur(14px) saturate(130%)" : "none";
 
   const modal = document.createElement("div");
   modal.className = "oz-snooze-modal " + (darkModeEnabled ? "oz-snooze-dark" : "oz-snooze-light");
+  modal.style.opacity = popupOpacity;
+  if (darkModeEnabled && oledModeEnabled) {
+    modal.style.backgroundColor = "#000000";
+  }
+  
+  applyAccentColor(modal, accentColor);
 
   function buildHeader(kind) {
     const header = document.createElement("div");
@@ -622,6 +656,10 @@ export function updateSnoozeOverlayTheme() {
   if (!snoozeOverlay) return;
   const state = settings.getState();
   const darkModeEnabled = state.darkModeEnabled;
+  const oledModeEnabled = !!state.oledModeEnabled;
+  const accentColor = state.accentColor || '#6366f1';
+  const popupOpacity = (state.popupOpacity || 95) / 100;
+  const backdropBlurEnabled = state.backdropBlurEnabled !== false;
   
   const backdrop = snoozeOverlay;
   const modal = backdrop.querySelector(".oz-snooze-modal");
@@ -629,8 +667,15 @@ export function updateSnoozeOverlayTheme() {
 
   backdrop.className =
     "oz-snooze-backdrop " + (darkModeEnabled ? "oz-snooze-dark" : "oz-snooze-light");
+  backdrop.style.background = "transparent";
+  backdrop.style.backdropFilter = backdropBlurEnabled ? "blur(14px) saturate(130%)" : "none";
+  backdrop.style.webkitBackdropFilter = backdropBlurEnabled ? "blur(14px) saturate(130%)" : "none";
   modal.className =
     "oz-snooze-modal " + (darkModeEnabled ? "oz-snooze-dark" : "oz-snooze-light");
+  modal.style.opacity = popupOpacity;
+  modal.style.backgroundColor = darkModeEnabled && oledModeEnabled ? "#000000" : "";
+  
+  applyAccentColor(modal, accentColor);
 }
 
 // Helper for keyboard handler to check if overlay is open
