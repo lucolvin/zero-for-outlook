@@ -70,7 +70,27 @@
   const manualAddCustomShortcutBtn = document.getElementById("manualAddCustomShortcut");
   const aiTitleEditingToggle = document.getElementById("aiTitleEditingEnabled");
   const aiTitleEditingStatusEl = document.getElementById("status-ai-title-editing");
+  const accountStatusEl = document.getElementById("status-account");
+  const accountSignInBtn = document.getElementById("accountSignIn");
+  const accountSignOutBtn = document.getElementById("accountSignOut");
+  const accountSyncNowBtn = document.getElementById("accountSyncNow");
+  const accountStatusLabel = document.getElementById("accountStatusLabel");
+  const accountLastSynced = document.getElementById("accountLastSynced");
+  const sidebarAccountName = document.getElementById("sidebarAccountName");
+  const sidebarAccountAvatar = document.getElementById("sidebarAccountAvatar");
+  const accountCloudSyncToggle = document.getElementById("accountCloudSyncToggle");
+  const accountCloudSyncHelp = document.getElementById("accountCloudSyncHelp");
+  const accountCloudOptInToggle = document.getElementById("accountCloudOptInToggle");
+  const accountCloudOptInHelp = document.getElementById("accountCloudOptInHelp");
+  const accountOnboardingOverlay = document.getElementById("accountOnboardingOverlay");
+  const accountOnboardingSignIn = document.getElementById("accountOnboardingSignIn");
+  const accountOnboardingContinue = document.getElementById("accountOnboardingContinue");
+  const accountOnboardingOptOut = document.getElementById("accountOnboardingOptOut");
+  const CLOUD_ACCOUNT_OPT_IN_KEY = "ozCloudAccountOptIn";
+  const LEGACY_LOCAL_ONLY_KEY = "ozLocalOnlyMode";
   const MANUAL_SHORTCUT_WARNING_KEY = "manualShortcutAdvancedWarningShown";
+
+  let accountOnboardingEscHandler = null;
 
   // Pending changes object
   let pendingChanges = {};
@@ -110,6 +130,14 @@
         <path d="M5 3v4M3 5h4M19 17v4M17 19h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>`
     },
+    account: {
+      title: "Account",
+      subtitle: "Sign in and sync extension settings with your cloud account.",
+      icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M20 21a8 8 0 1 0-16 0" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="1.5"/>
+      </svg>`
+    },
     about: {
       title: "About",
       subtitle: "How the extension works, privacy, and links.",
@@ -127,7 +155,7 @@
     }
   };
 
-  const tabButtons = document.querySelectorAll(".oz-tab[data-panel]");
+  const tabButtons = document.querySelectorAll("[data-panel]");
   const PRESET_ACCENT_COLORS = new Set([
     "#6366f1",
     "#ec4899",
@@ -297,7 +325,12 @@
 
     tabButtons.forEach((tab) => {
       const active = tab.getAttribute("data-panel") === panelId;
-      tab.classList.toggle("oz-tab-active", active);
+      const isAccountTab = tab.classList.contains("oz-sidebar-account-tab");
+      if (isAccountTab) {
+        tab.classList.toggle("oz-sidebar-account-tab-active", active);
+      } else {
+        tab.classList.toggle("oz-tab-active", active);
+      }
       tab.setAttribute("aria-selected", active ? "true" : "false");
     });
 
@@ -435,9 +468,229 @@
     setStatus(customStatusEl, message);
   }
 
+  function setAccountStatus(message) {
+    setStatus(accountStatusEl, message);
+  }
+
+  function runtimeMessage(message) {
+    return new Promise((resolve) => {
+      try {
+        if (!browserApi.runtime || !browserApi.runtime.sendMessage) {
+          resolve({ ok: false, error: "Runtime messaging unavailable." });
+          return;
+        }
+        browserApi.runtime.sendMessage(message, (response) => {
+          if (browserApi.runtime && browserApi.runtime.lastError) {
+            resolve({ ok: false, error: browserApi.runtime.lastError.message || "Message failed." });
+            return;
+          }
+          resolve(response || { ok: false, error: "No response." });
+        });
+      } catch (e) {
+        resolve({ ok: false, error: "Message failed." });
+      }
+    });
+  }
+
+  function formatDateTime(ms) {
+    if (!ms || Number.isNaN(ms)) return "Never";
+    try {
+      return new Date(ms).toLocaleString();
+    } catch (e) {
+      return "Never";
+    }
+  }
+
+  function closeAccountOnboardingModal() {
+    if (accountOnboardingEscHandler) {
+      document.removeEventListener("keydown", accountOnboardingEscHandler, true);
+      accountOnboardingEscHandler = null;
+    }
+    if (accountOnboardingOverlay) {
+      accountOnboardingOverlay.classList.add("oz-hidden");
+      accountOnboardingOverlay.setAttribute("aria-hidden", "true");
+    }
+  }
+
+  function openAccountOnboardingModal() {
+    if (!accountOnboardingOverlay) return;
+    if (accountOnboardingOptOut) {
+      accountOnboardingOptOut.checked = false;
+    }
+    accountOnboardingOverlay.classList.remove("oz-hidden");
+    accountOnboardingOverlay.setAttribute("aria-hidden", "false");
+    accountOnboardingEscHandler = (e) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        closeAccountOnboardingModal();
+      }
+    };
+    document.addEventListener("keydown", accountOnboardingEscHandler, true);
+    if (accountOnboardingSignIn) {
+      accountOnboardingSignIn.focus();
+    }
+  }
+
+  function readCloudAccountOptIn() {
+    return new Promise((resolve) => {
+      try {
+        browserApi.storage.local.get(null, (items) => {
+          if (browserApi.runtime && browserApi.runtime.lastError) {
+            resolve(false);
+            return;
+          }
+          const store = items || {};
+          if (Object.prototype.hasOwnProperty.call(store, CLOUD_ACCOUNT_OPT_IN_KEY)) {
+            resolve(!!store[CLOUD_ACCOUNT_OPT_IN_KEY]);
+            return;
+          }
+          if (Object.prototype.hasOwnProperty.call(store, LEGACY_LOCAL_ONLY_KEY)) {
+            const migratedOptIn = !store[LEGACY_LOCAL_ONLY_KEY];
+            try {
+              browserApi.storage.local.remove(LEGACY_LOCAL_ONLY_KEY);
+            } catch (removeErr) {
+              // Ignore
+            }
+            browserApi.storage.local.set({ [CLOUD_ACCOUNT_OPT_IN_KEY]: migratedOptIn }, () => {
+              resolve(migratedOptIn);
+            });
+            return;
+          }
+          resolve(false);
+        });
+      } catch (e) {
+        resolve(false);
+      }
+    });
+  }
+
+  async function applyCloudAccountOptOut() {
+    await new Promise((resolve, reject) => {
+      try {
+        browserApi.storage.local.set({ [CLOUD_ACCOUNT_OPT_IN_KEY]: false }, () => {
+          if (browserApi.runtime && browserApi.runtime.lastError) {
+            reject(new Error(browserApi.runtime.lastError.message));
+            return;
+          }
+          resolve();
+        });
+      } catch (err) {
+        reject(err);
+      }
+    });
+    closeAccountOnboardingModal();
+    await runtimeMessage({ type: "oz-auth-signout" });
+    setAccountStatus("Cloud account is off. Settings stay on this device.");
+    await refreshAccountStatus();
+  }
+
+  async function maybeShowAccountOnboardingModal() {
+    const cloudOptIn = await readCloudAccountOptIn();
+    if (!cloudOptIn) {
+      return;
+    }
+    const status = await runtimeMessage({ type: "oz-auth-get-status" });
+    if (status && status.signedIn) {
+      return;
+    }
+    openAccountOnboardingModal();
+  }
+
+  async function refreshAccountStatus() {
+    const cloudOptIn = await readCloudAccountOptIn();
+    if (accountCloudOptInToggle) {
+      accountCloudOptInToggle.checked = cloudOptIn;
+    }
+
+    const status = await runtimeMessage({ type: "oz-auth-get-status" });
+    const signedIn = !!status?.signedIn;
+    const cloudSyncEnabled = !!(status && status.cloudSyncEnabled);
+    const profileName =
+      (status && status.profile && typeof status.profile.name === "string" && status.profile.name.trim()) ||
+      "Account";
+    const profileImage =
+      (status &&
+        status.profile &&
+        typeof status.profile.imageUrl === "string" &&
+        status.profile.imageUrl.trim()) ||
+      "icons/icon-48.png";
+
+    if (accountStatusLabel) {
+      accountStatusLabel.textContent = signedIn ? "Signed in" : "Not signed in";
+    }
+    if (sidebarAccountName) {
+      sidebarAccountName.textContent = signedIn ? profileName : "Account";
+    }
+    if (sidebarAccountAvatar) {
+      if (signedIn) {
+        sidebarAccountAvatar.src = profileImage;
+        sidebarAccountAvatar.alt = `${profileName} profile picture`;
+        sidebarAccountAvatar.classList.remove("oz-hidden");
+      } else {
+        sidebarAccountAvatar.src = "";
+        sidebarAccountAvatar.alt = "";
+        sidebarAccountAvatar.classList.add("oz-hidden");
+      }
+    }
+    if (accountSignOutBtn) {
+      accountSignOutBtn.disabled = !signedIn;
+    }
+    if (accountSignInBtn) {
+      accountSignInBtn.disabled = !cloudOptIn;
+    }
+    if (accountSyncNowBtn) {
+      accountSyncNowBtn.disabled = !cloudOptIn || !signedIn || !cloudSyncEnabled;
+    }
+    if (accountCloudSyncToggle) {
+      accountCloudSyncToggle.disabled = !cloudOptIn || !signedIn;
+      accountCloudSyncToggle.checked = cloudOptIn && signedIn && cloudSyncEnabled;
+    }
+    if (accountCloudOptInHelp) {
+      accountCloudOptInHelp.textContent = cloudOptIn
+        ? "Sign-in and sync below are available. Turn this off to use the extension without a cloud account."
+        : "Turn this on to enable sign-in, sync, and optional reminders while you are not signed in.";
+    }
+    if (accountCloudSyncHelp) {
+      if (!cloudOptIn) {
+        accountCloudSyncHelp.textContent =
+          "Enable cloud account above to use sync with your signed-in session.";
+      } else if (signedIn) {
+        accountCloudSyncHelp.textContent =
+          "When enabled, settings sync with your account. Turn off to keep changes on this device only.";
+      } else {
+        accountCloudSyncHelp.textContent =
+          "Sign in first. Then you can choose whether to enable cloud sync.";
+      }
+    }
+
+    try {
+      browserApi.storage.local.get({ ozLastSyncedAt: 0 }, (items) => {
+        if (accountLastSynced) {
+          accountLastSynced.textContent = formatDateTime(items.ozLastSyncedAt || 0);
+        }
+      });
+    } catch (e) {
+      if (accountLastSynced) {
+        accountLastSynced.textContent = "Never";
+      }
+    }
+
+    if (status?.claimState === "claimed") {
+      setAccountStatus("Sign-in complete.");
+    } else if (status?.claimState === "pending") {
+      setAccountStatus("Waiting for sign-in confirmation...");
+    } else if (status?.claimError) {
+      setAccountStatus(status.claimError);
+    }
+
+    if (signedIn && accountOnboardingOverlay && !accountOnboardingOverlay.classList.contains("oz-hidden")) {
+      closeAccountOnboardingModal();
+    }
+  }
+
   function saveAllPendingChanges() {
     if (!hasUnsavedChanges || Object.keys(pendingChanges).length === 0) {
-      return;
+      return Promise.resolve({ ok: true, skipped: true });
     }
 
     if (saveStatus) {
@@ -445,46 +698,51 @@
       saveStatus.style.color = "var(--oz-accent)";
     }
 
-    try {
-      browserApi.storage.sync.set(pendingChanges, () => {
-        if (browserApi.runtime && browserApi.runtime.lastError) {
-          if (saveStatus) {
-            saveStatus.textContent = "Save failed";
-            saveStatus.style.color = "#ef4444";
+    return new Promise((resolve) => {
+      try {
+        browserApi.storage.sync.set(pendingChanges, () => {
+          if (browserApi.runtime && browserApi.runtime.lastError) {
+            if (saveStatus) {
+              saveStatus.textContent = "Save failed";
+              saveStatus.style.color = "#ef4444";
+            }
+            resolve({ ok: false, error: browserApi.runtime.lastError.message || "Save failed." });
+            return;
           }
-          return;
-        }
 
-        // Apply changes that need immediate visual updates
-        if (pendingChanges.darkModeEnabled !== undefined) {
-          const oledEnabled = pendingChanges.oledModeEnabled !== undefined 
-            ? pendingChanges.oledModeEnabled 
-            : (document.body.classList.contains('oz-oled-mode'));
-          applyTheme(pendingChanges.darkModeEnabled, oledEnabled);
-          updateThemeUI(pendingChanges.darkModeEnabled);
-        }
+          // Apply changes that need immediate visual updates
+          if (pendingChanges.darkModeEnabled !== undefined) {
+            const oledEnabled = pendingChanges.oledModeEnabled !== undefined 
+              ? pendingChanges.oledModeEnabled 
+              : (document.body.classList.contains('oz-oled-mode'));
+            applyTheme(pendingChanges.darkModeEnabled, oledEnabled);
+            updateThemeUI(pendingChanges.darkModeEnabled);
+          }
 
-        if (pendingChanges.oledModeEnabled !== undefined) {
-          const darkEnabled = pendingChanges.darkModeEnabled !== undefined
-            ? pendingChanges.darkModeEnabled
-            : document.body.classList.contains('oz-theme-dark');
-          applyTheme(darkEnabled, pendingChanges.oledModeEnabled);
-          updateOledUI(pendingChanges.oledModeEnabled);
-        }
+          if (pendingChanges.oledModeEnabled !== undefined) {
+            const darkEnabled = pendingChanges.darkModeEnabled !== undefined
+              ? pendingChanges.darkModeEnabled
+              : document.body.classList.contains('oz-theme-dark');
+            applyTheme(darkEnabled, pendingChanges.oledModeEnabled);
+            updateOledUI(pendingChanges.oledModeEnabled);
+          }
 
-        if (pendingChanges.accentColor) {
-          applyAccentColor(pendingChanges.accentColor);
-          updateAccentColorUI(pendingChanges.accentColor);
-        }
+          if (pendingChanges.accentColor) {
+            applyAccentColor(pendingChanges.accentColor);
+            updateAccentColorUI(pendingChanges.accentColor);
+          }
 
-        markChangesSaved();
-      });
-    } catch (e) {
-      if (saveStatus) {
-        saveStatus.textContent = "Save failed";
-        saveStatus.style.color = "#ef4444";
+          markChangesSaved();
+          resolve({ ok: true });
+        });
+      } catch (e) {
+        if (saveStatus) {
+          saveStatus.textContent = "Save failed";
+          saveStatus.style.color = "#ef4444";
+        }
+        resolve({ ok: false, error: "Save failed." });
       }
-    }
+    });
   }
 
   function applyTheme(darkEnabled, oledEnabled = false) {
@@ -1444,8 +1702,24 @@
   }
 
   if (saveBtn) {
-    saveBtn.addEventListener("click", () => {
-      saveAllPendingChanges();
+    saveBtn.addEventListener("click", async () => {
+      const saveResult = await saveAllPendingChanges();
+      if (!saveResult || !saveResult.ok) {
+        return;
+      }
+
+      const cloudOptIn = await readCloudAccountOptIn();
+      if (!cloudOptIn) {
+        setAccountStatus("Saved locally.");
+        return;
+      }
+
+      const pushResult = await runtimeMessage({ type: "oz-sync-push" });
+      if (pushResult && pushResult.ok) {
+        setAccountStatus("Saved locally and pushed to cloud.");
+      } else if (pushResult && pushResult.error && pushResult.error !== "Not signed in.") {
+        setAccountStatus(`Saved locally. Cloud push failed: ${pushResult.error}`);
+      }
     });
   }
 
@@ -1474,6 +1748,164 @@
         e.preventDefault();
         e.stopPropagation();
         saveGeminiApiKey(geminiInput.value.trim());
+      }
+    });
+  }
+
+  if (accountSignInBtn) {
+    accountSignInBtn.addEventListener("click", async () => {
+      const result = await runtimeMessage({ type: "oz-auth-open-signin", preferTab: false });
+      if (result && result.ok) {
+        const openedTab = result.window === "tab";
+        setAccountStatus(
+          openedTab
+            ? "Opened sign-in in a new tab. Complete sign-in, then return here."
+            : "Sign-in window opened. Complete sign-in, then return here."
+        );
+      } else {
+        setAccountStatus((result && result.error) || "Could not open sign-in.");
+      }
+      refreshAccountStatus();
+    });
+  }
+
+  if (accountCloudOptInToggle) {
+    accountCloudOptInToggle.addEventListener("change", async (e) => {
+      const target = /** @type {HTMLInputElement} */ (e.target);
+      const on = !!target.checked;
+      if (!on) {
+        try {
+          await applyCloudAccountOptOut();
+        } catch (err) {
+          target.checked = true;
+          setAccountStatus("Could not turn off cloud account.");
+        }
+        return;
+      }
+      try {
+        await new Promise((resolve, reject) => {
+          try {
+            browserApi.storage.local.set({ [CLOUD_ACCOUNT_OPT_IN_KEY]: true }, () => {
+              if (browserApi.runtime && browserApi.runtime.lastError) {
+                reject(new Error(browserApi.runtime.lastError.message));
+                return;
+              }
+              resolve();
+            });
+          } catch (err) {
+            reject(err);
+          }
+        });
+      } catch (err) {
+        target.checked = false;
+        setAccountStatus("Could not enable cloud account.");
+        return;
+      }
+      setAccountStatus("Cloud account enabled. You can sign in and sync below.");
+      await refreshAccountStatus();
+      await maybeShowAccountOnboardingModal();
+    });
+  }
+
+  if (accountCloudSyncToggle) {
+    accountCloudSyncToggle.addEventListener("change", async (e) => {
+      const target = /** @type {HTMLInputElement} */ (e.target);
+      const enabled = !!target.checked;
+      const result = await runtimeMessage({ type: "oz-set-cloud-sync-enabled", enabled });
+      if (!result || !result.ok) {
+        target.checked = !enabled;
+        setAccountStatus((result && result.error) || "Could not update cloud sync.");
+      } else {
+        setAccountStatus(
+          enabled
+            ? "Cloud sync enabled."
+            : "Cloud sync disabled. Changes stay on this device until you enable sync again."
+        );
+      }
+      refreshAccountStatus();
+    });
+  }
+
+  if (accountOnboardingContinue) {
+    accountOnboardingContinue.addEventListener("click", () => {
+      if (accountOnboardingOptOut && accountOnboardingOptOut.checked) {
+        if (accountOnboardingOptOut) {
+          accountOnboardingOptOut.checked = false;
+        }
+        void applyCloudAccountOptOut().catch(() => {
+          closeAccountOnboardingModal();
+        });
+      } else {
+        closeAccountOnboardingModal();
+      }
+    });
+  }
+
+  if (accountOnboardingSignIn) {
+    accountOnboardingSignIn.addEventListener("click", async () => {
+      const result = await runtimeMessage({ type: "oz-auth-open-signin", preferTab: false });
+      closeAccountOnboardingModal();
+      if (result && result.ok) {
+        const openedTab = result.window === "tab";
+        setAccountStatus(
+          openedTab
+            ? "Opened sign-in in a new tab. Complete sign-in, then return here."
+            : "Sign-in window opened. Complete sign-in, then return here."
+        );
+      } else {
+        setAccountStatus((result && result.error) || "Could not open sign-in.");
+      }
+      refreshAccountStatus();
+    });
+  }
+
+  if (accountSignOutBtn) {
+    accountSignOutBtn.addEventListener("click", async () => {
+      const result = await runtimeMessage({
+        type: "oz-auth-signout",
+        clerkLogout: true
+      });
+      if (result && result.ok) {
+        setAccountStatus("Signed out.");
+      } else {
+        setAccountStatus((result && result.error) || "Could not sign out.");
+      }
+      await refreshAccountStatus();
+      await maybeShowAccountOnboardingModal();
+    });
+  }
+
+  if (accountSyncNowBtn) {
+    accountSyncNowBtn.addEventListener("click", async () => {
+      let result = await runtimeMessage({ type: "oz-sync-now" });
+      if (result && result.requiresConfirmation) {
+        const confirmed = window.confirm(
+          "This browser already has local settings that differ from cloud settings. Overwrite local settings with cloud settings?"
+        );
+        if (!confirmed) {
+          setAccountStatus("Sync cancelled.");
+          return;
+        }
+        result = await runtimeMessage({
+          type: "oz-sync-now",
+          overwriteLocal: true
+        });
+      }
+      if (result && result.ok) {
+        try {
+          browserApi.storage.local.set({ ozLastSyncedAt: Date.now() }, () => {
+            refreshAccountStatus();
+          });
+        } catch (e) {
+          refreshAccountStatus();
+        }
+        if (result.mode === "overwrite_local") {
+          setAccountStatus("Cloud settings applied to this browser.");
+        } else {
+          setAccountStatus("Cloud settings pulled.");
+        }
+      } else {
+        setAccountStatus((result && result.error) || "Sync failed.");
       }
     });
   }
@@ -1532,7 +1964,9 @@
       });
     });
 
-    const activeTab = document.querySelector('.oz-tab.oz-tab-active[data-panel]');
+    const activeTab =
+      document.querySelector(".oz-tab.oz-tab-active[data-panel]") ||
+      document.querySelector(".oz-sidebar-account-tab-active[data-panel]");
     const initialPanelId = activeTab && activeTab.getAttribute("data-panel");
     if (initialPanelId) {
       activatePanel(initialPanelId);
@@ -1544,11 +1978,21 @@
     }
 
     wireImportSettingsUi();
+    refreshAccountStatus().then(() => {
+      return maybeShowAccountOnboardingModal();
+    });
+    setInterval(() => {
+      refreshAccountStatus();
+    }, 4000);
   });
 
   // Listen for custom shortcuts changes (e.g., when added from content script)
   try {
     browserApi.storage.onChanged.addListener((changes, areaName) => {
+      if (areaName === "sync" && !hasUnsavedChanges) {
+        restoreOptions();
+      }
+
       if (areaName === "sync" && changes.customShortcuts) {
         loadCustomShortcuts(() => {
           // After shortcuts are loaded, check if we need to scroll to a new one
@@ -1562,6 +2006,10 @@
         });
       }
       
+      if (areaName === "local" && changes[CLOUD_ACCOUNT_OPT_IN_KEY]) {
+        void refreshAccountStatus().then(() => maybeShowAccountOnboardingModal());
+      }
+
       // Also check for scrollToShortcutId in local storage (when a new shortcut is added)
       if (areaName === "local" && changes.scrollToShortcutId) {
         const newShortcutId = changes.scrollToShortcutId.newValue;

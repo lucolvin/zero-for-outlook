@@ -123,6 +123,19 @@ function saveInboxZeroStreakData(nextData) {
   });
 }
 
+function pushCloudSyncForStreak() {
+  try {
+    if (!browserApi.runtime || !browserApi.runtime.sendMessage) {
+      return;
+    }
+    browserApi.runtime.sendMessage({ type: "oz-sync-push" }, () => {
+      // best effort only
+    });
+  } catch (e) {
+    // best effort only
+  }
+}
+
 function ensureInboxZeroStyles() {
   if (document.getElementById("oz-inbox-zero-style")) return;
   const style = document.createElement("style");
@@ -403,6 +416,7 @@ async function recordInboxZeroHitAndShowOverlay() {
       lastHitDate: today,
       lastOverlayDate: nextOverlayDate
     });
+    pushCloudSyncForStreak();
 
     if (!hasShownToday) {
       lastOverlayShownDateInMemory = today;

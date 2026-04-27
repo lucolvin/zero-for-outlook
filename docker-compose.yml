@@ -1,0 +1,36 @@
+# Loads `.env` from this directory (repo root). From here: `docker compose up --build`
+#
+# Web: http://localhost:4173  API: http://localhost:8787
+
+services:
+  api:
+    build:
+      context: ./site
+      dockerfile: Dockerfile
+      target: api
+    ports:
+      - "8787:8787"
+    env_file:
+      - .env
+    environment:
+      API_PORT: "8787"
+
+  web:
+    build:
+      context: ./site
+      dockerfile: Dockerfile
+      target: web
+      args:
+        VITE_CLERK_PUBLISHABLE_KEY: ${VITE_CLERK_PUBLISHABLE_KEY}
+        VITE_AUTH_SITE_URL: ${VITE_AUTH_SITE_URL:-http://localhost:4173}
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8787}
+        VITE_FIREBASE_API_KEY: ${VITE_FIREBASE_API_KEY}
+        VITE_FIREBASE_AUTH_DOMAIN: ${VITE_FIREBASE_AUTH_DOMAIN}
+        VITE_FIREBASE_PROJECT_ID: ${VITE_FIREBASE_PROJECT_ID}
+        VITE_FIREBASE_STORAGE_BUCKET: ${VITE_FIREBASE_STORAGE_BUCKET}
+        VITE_FIREBASE_MESSAGING_SENDER_ID: ${VITE_FIREBASE_MESSAGING_SENDER_ID}
+        VITE_FIREBASE_APP_ID: ${VITE_FIREBASE_APP_ID}
+    ports:
+      - "4173:80"
+    depends_on:
+      - api

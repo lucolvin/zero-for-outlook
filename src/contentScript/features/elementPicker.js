@@ -1,5 +1,6 @@
 // Element picker feature module
 import { browserApi } from "../core/browserApi.js";
+import { escapeCss } from "../core/cssEscape.js";
 import { settings } from "../core/settings.js";
 import { rebuildCommandList } from "./commandBar.js";
 import { isCommandOverlayOpen, closeCommandOverlay } from "./commandBar.js";
@@ -100,7 +101,7 @@ function getElementSelector(element) {
     // Strategy 1 for buttons: aria-label (most reliable for Outlook)
     const ariaLabel = element.getAttribute("aria-label");
     if (ariaLabel && ariaLabel.trim()) {
-      const testSelector = `${tagName}[aria-label="${CSS.escape(ariaLabel)}"]`;
+      const testSelector = `${tagName}[aria-label="${escapeCss(ariaLabel)}"]`;
       const matches = document.querySelectorAll(testSelector);
       if (matches.length === 1) {
         return testSelector;
@@ -110,7 +111,7 @@ function getElementSelector(element) {
     // Strategy 2 for buttons: title attribute
     const title = element.getAttribute("title");
     if (title && title.trim()) {
-      const testSelector = `${tagName}[title="${CSS.escape(title)}"]`;
+      const testSelector = `${tagName}[title="${escapeCss(title)}"]`;
       const matches = document.querySelectorAll(testSelector);
       if (matches.length === 1) {
         return testSelector;
@@ -120,7 +121,7 @@ function getElementSelector(element) {
     // Strategy 3 for buttons: name attribute
     const name = element.getAttribute("name");
     if (name && name.trim()) {
-      const testSelector = `${tagName}[name="${CSS.escape(name)}"]`;
+      const testSelector = `${tagName}[name="${escapeCss(name)}"]`;
       const matches = document.querySelectorAll(testSelector);
       if (matches.length === 1) {
         return testSelector;
@@ -130,7 +131,7 @@ function getElementSelector(element) {
     // Strategy 4 for buttons: role + aria-label combination
     const role = element.getAttribute("role");
     if (role && ariaLabel && ariaLabel.trim()) {
-      const testSelector = `${tagName}[role="${CSS.escape(role)}"][aria-label="${CSS.escape(ariaLabel)}"]`;
+      const testSelector = `${tagName}[role="${escapeCss(role)}"][aria-label="${escapeCss(ariaLabel)}"]`;
       const matches = document.querySelectorAll(testSelector);
       if (matches.length === 1) {
         return testSelector;
@@ -148,10 +149,10 @@ function getElementSelector(element) {
       if (matchingByText.length === 1) {
         // Use aria-label or title if available, otherwise use text-based selector
         if (ariaLabel && ariaLabel.trim()) {
-          return `${tagName}[aria-label="${CSS.escape(ariaLabel)}"]`;
+          return `${tagName}[aria-label="${escapeCss(ariaLabel)}"]`;
         }
         if (title && title.trim()) {
-          return `${tagName}[title="${CSS.escape(title)}"]`;
+          return `${tagName}[title="${escapeCss(title)}"]`;
         }
       }
     }
@@ -161,13 +162,13 @@ function getElementSelector(element) {
       const idValue = element.id.trim();
       // Skip purely numeric IDs (like "11000") as they're likely dynamic
       if (!/^\d+$/.test(idValue)) {
-        return `#${CSS.escape(idValue)}`;
+        return `#${escapeCss(idValue)}`;
       }
     }
   } else {
     // For non-buttons, use ID first (original behavior)
     if (element.id && element.id.trim()) {
-      return `#${CSS.escape(element.id)}`;
+      return `#${escapeCss(element.id)}`;
     }
   }
 
@@ -176,7 +177,7 @@ function getElementSelector(element) {
     attr.name.startsWith('data-') && attr.value
   );
   for (const attr of dataAttrs) {
-    const testSelector = `${tagName}[${attr.name}="${CSS.escape(attr.value)}"]`;
+    const testSelector = `${tagName}[${attr.name}="${escapeCss(attr.value)}"]`;
     const matches = document.querySelectorAll(testSelector);
     if (matches.length === 1) {
       return testSelector;
@@ -187,7 +188,7 @@ function getElementSelector(element) {
   if (!isButtonOrInteractive) {
     const ariaLabel = element.getAttribute("aria-label");
     if (ariaLabel && ariaLabel.trim()) {
-      const testSelector = `${tagName}[aria-label="${CSS.escape(ariaLabel)}"]`;
+      const testSelector = `${tagName}[aria-label="${escapeCss(ariaLabel)}"]`;
       const matches = document.querySelectorAll(testSelector);
       if (matches.length === 1) {
         return testSelector;
@@ -198,7 +199,7 @@ function getElementSelector(element) {
   // Strategy 4: name attribute (good for forms)
   const name = element.getAttribute("name");
   if (name && name.trim() && !isButtonOrInteractive) {
-    const testSelector = `${tagName}[name="${CSS.escape(name)}"]`;
+    const testSelector = `${tagName}[name="${escapeCss(name)}"]`;
     const matches = document.querySelectorAll(testSelector);
     if (matches.length === 1) {
       return testSelector;
@@ -210,7 +211,7 @@ function getElementSelector(element) {
     const role = element.getAttribute("role");
     const ariaLabel = element.getAttribute("aria-label");
     if (role && ariaLabel && ariaLabel.trim()) {
-      const testSelector = `${tagName}[role="${CSS.escape(role)}"][aria-label="${CSS.escape(ariaLabel)}"]`;
+      const testSelector = `${tagName}[role="${escapeCss(role)}"][aria-label="${escapeCss(ariaLabel)}"]`;
       const matches = document.querySelectorAll(testSelector);
       if (matches.length === 1) {
         return testSelector;
@@ -222,7 +223,7 @@ function getElementSelector(element) {
   if (!isButtonOrInteractive) {
     const title = element.getAttribute("title");
     if (title && title.trim()) {
-      const testSelector = `${tagName}[title="${CSS.escape(title)}"]`;
+      const testSelector = `${tagName}[title="${escapeCss(title)}"]`;
       const matches = document.querySelectorAll(testSelector);
       if (matches.length === 1) {
         return testSelector;
@@ -239,7 +240,7 @@ function getElementSelector(element) {
       // Build selector from parent ID down to element
       const path = getPathFromParent(current, element);
       if (path) {
-        const testSelector = `#${CSS.escape(current.id)} ${path}`;
+        const testSelector = `#${escapeCss(current.id)} ${path}`;
         const matches = document.querySelectorAll(testSelector);
         if (matches.length === 1) {
           return testSelector;
@@ -252,7 +253,7 @@ function getElementSelector(element) {
       if (attr.name.startsWith('data-') && attr.value) {
         const path = getPathFromParent(current, element);
         if (path) {
-          const testSelector = `${current.tagName.toLowerCase()}[${attr.name}="${CSS.escape(attr.value)}"] ${path}`;
+          const testSelector = `${current.tagName.toLowerCase()}[${attr.name}="${escapeCss(attr.value)}"] ${path}`;
           const matches = document.querySelectorAll(testSelector);
           if (matches.length === 1) {
             return testSelector;
@@ -270,7 +271,7 @@ function getElementSelector(element) {
     const classes = element.className.trim().split(/\s+/).filter(c => c && !c.includes('_'));
     if (classes.length > 0) {
       // Try first meaningful class
-      const testSelector = `${tagName}.${CSS.escape(classes[0])}`;
+      const testSelector = `${tagName}.${escapeCss(classes[0])}`;
       const matches = document.querySelectorAll(testSelector);
       if (matches.length === 1) {
         return testSelector;
@@ -278,7 +279,7 @@ function getElementSelector(element) {
       // If multiple matches, add nth-of-type
       const index = Array.from(element.parentElement?.children || []).indexOf(element);
       if (index >= 0) {
-        return `${tagName}.${CSS.escape(classes[0])}:nth-of-type(${index + 1})`;
+        return `${tagName}.${escapeCss(classes[0])}:nth-of-type(${index + 1})`;
       }
     }
   }
@@ -534,6 +535,18 @@ function findActionableElement(element) {
   return null;
 }
 
+/** @param {Element} element */
+function getDomClassString(element) {
+  if (!element || !element.className) return "";
+  if (typeof element.className === "string") return element.className;
+  // SVGAnimatedString (SVG/MathML): .includes would throw if used as string
+  const svgClass = /** @type {SVGElement} */ (element).className;
+  if (svgClass && typeof svgClass.baseVal === "string") {
+    return svgClass.baseVal;
+  }
+  return "";
+}
+
 function mightOpenMenu(element) {
   if (!element) return false;
   
@@ -556,11 +569,12 @@ function mightOpenMenu(element) {
   // Check for common Outlook menu button patterns
   const ariaExpanded = element.getAttribute("aria-expanded");
   if (ariaExpanded === "false" || ariaExpanded === null) {
-    // Might expand to show a menu
-    const hasDropdownClass = element.className && 
-      (element.className.includes("dropdown") || 
-       element.className.includes("menu") ||
-       element.getAttribute("data-toggle") === "dropdown");
+    const classStr = getDomClassString(element);
+    const hasDropdownClass =
+      !!classStr &&
+      (classStr.includes("dropdown") ||
+        classStr.includes("menu") ||
+        element.getAttribute("data-toggle") === "dropdown");
     if (hasDropdownClass) {
       return true;
     }
@@ -787,13 +801,13 @@ function getDropdownTriggerSelector(triggerEl) {
   if (primary) return primary;
   const id = triggerEl.id && triggerEl.id.trim();
   if (id) {
-    return `#${CSS.escape(id)}`;
+    return `#${escapeCss(id)}`;
   }
   const ac = triggerEl.getAttribute("aria-controls");
   if (ac && ac.trim()) {
     const tag = triggerEl.tagName ? triggerEl.tagName.toLowerCase() : "button";
     try {
-      const sel = `${tag}[aria-controls="${CSS.escape(ac.trim())}"]`;
+      const sel = `${tag}[aria-controls="${escapeCss(ac.trim())}"]`;
       if (document.querySelectorAll(sel).length === 1) {
         return sel;
       }
@@ -1159,7 +1173,7 @@ function findAllMenuTriggersContainingTarget(target) {
  */
 function resolveTriggerForMenu(menuLike) {
   if (!menuLike || !menuLike.id) return null;
-  const esc = CSS.escape(menuLike.id);
+  const esc = escapeCss(menuLike.id);
   let t = document.querySelector(`[aria-controls="${esc}"]`);
   if (!t) {
     t = document.querySelector(`[aria-owns="${esc}"]`);

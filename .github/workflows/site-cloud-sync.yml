@@ -1,0 +1,37 @@
+name: Site and API Checks
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "site/**"
+      - ".github/workflows/site-cloud-sync.yml"
+  pull_request:
+    paths:
+      - "site/**"
+      - ".github/workflows/site-cloud-sync.yml"
+  workflow_dispatch:
+
+jobs:
+  site-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install site dependencies
+        working-directory: site
+        run: npm install
+
+      - name: Build TanStack site
+        working-directory: site
+        run: npm run build
+
+      - name: Typecheck API entry
+        working-directory: site
+        run: npx tsc --noEmit

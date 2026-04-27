@@ -115,13 +115,15 @@ The command bar (`Cmd/Ctrl + K`) provides quick access to:
 ### Privacy / Data Collection
 
 - The extension **never collects or sends any email content or browsing data**
-- There is **no analytics or telemetry** and no external network requests from the extension code (except when using optional AI features)
+- There is **no analytics or telemetry** in the extension code
 - **AI Features**: When using Gemini API features (email summarization or AI title editing), your content is sent to Google's Gemini API. This requires you to provide your own API key, which is stored locally in your browser's extension storage
+- **Account and cloud sync (optional)**: If you sign in and enable cloud sync, settings data is sent to your configured backend API and stored in Firebase under your account. Email content is not included in settings sync.
 - The only data stored locally is:
   - Your chosen shortcuts (undo, command bar)
   - Feature toggles (vim navigation, dark mode, inbox zero, options bar, AI title editing)
   - Custom shortcuts configuration
   - Gemini API key (if provided, stored locally only)
+  - Optional cloud sync session state and sync metadata
 
 ### Supported Domains
 
@@ -130,6 +132,8 @@ The extension is scoped to Outlook web only:
 - `https://outlook.live.com/*`
 - `https://outlook.office.com/*`
 - `https://outlook.office365.com/*`
+- `https://api.zero-extension.com/*` (optional cloud sync backend)
+- `http://localhost:8787/*` (local cloud sync API development)
 
 ### Installation
 
@@ -215,13 +219,23 @@ zero-for-outlook/
 
 - **Build**: `bun run build` - Builds the content script with Vite and copies files to `dist/chrome/` and `dist/firefox/`
 - **Package**: `bun run package` - Builds and creates zip files for distribution
+- **Site (account app)**: `npm run site:dev` - Runs the account/sign-in web app in `site/`
+- **Site API proxy**: `npm run site:api` - Runs API routes in `site/server/` for Clerk + Firebase-backed sync
 
 The project uses:
 
 - **Vite** for building the content script (bundles ES modules into a single IIFE)
+- **TanStack + React** in `site/` for account/sign-in UX
 - **Manifest V3** for Chrome
 - **Manifest V2** for Firefox (required for Firefox compatibility)
 - **Modular architecture** with feature-based modules
+
+### Cloud Sync Architecture (Optional)
+
+- The extension options page remains local-first and still writes to `browser.storage.sync`
+- A new Account tab opens the site sign-in flow
+- Background script handles auth and sync messages, keeps tokens out of content scripts
+- Backend API verifies Clerk sessions, stores settings in Firebase, and merges settings revisions by timestamp
 
 ### Customizing / Extending
 

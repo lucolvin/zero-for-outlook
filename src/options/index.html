@@ -203,25 +203,48 @@
         <div class="oz-sidebar-spacer"></div>
 
         <div class="oz-sidebar-footer">
-          <a
-            class="oz-sidebar-link"
-            href="https://github.com/lucolvin/zero-for-outlook"
-            target="_blank"
-            rel="noopener noreferrer"
-            ><span class="oz-sidebar-link-icon" aria-hidden="true">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path
-                  d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </svg>
-            </span>
-            GitHub</a
-          >
-          <span class="oz-sidebar-version">v0.7.3</span>
+          <div class="oz-sidebar-footer-meta">
+            <a
+              class="oz-sidebar-link"
+              href="https://github.com/lucolvin/zero-for-outlook"
+              target="_blank"
+              rel="noopener noreferrer"
+              ><span class="oz-sidebar-link-icon" aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path
+                    d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </span>
+              GitHub</a
+            >
+            <span class="oz-sidebar-version">v0.7.3</span>
+          </div>
+          <nav class="oz-sidebar-account-nav" role="tablist" aria-label="Account section">
+            <button
+              type="button"
+              class="oz-sidebar-account-tab"
+              role="tab"
+              id="tab-account"
+              aria-selected="false"
+              aria-controls="panel-account"
+              data-panel="account"
+            >
+              <img
+                id="sidebarAccountAvatar"
+                class="oz-sidebar-account-avatar oz-hidden"
+                src=""
+                alt=""
+                width="28"
+                height="28"
+              />
+              <span class="oz-sidebar-account-name" id="sidebarAccountName">Account</span>
+            </button>
+          </nav>
         </div>
       </aside>
 
@@ -700,6 +723,85 @@
               </div>
             </section>
 
+            <!-- Account -->
+            <section id="panel-account" class="oz-panel" role="tabpanel" aria-labelledby="tab-account">
+              <div class="oz-panel-card">
+                <div class="oz-section-head">
+                  <h2 class="oz-section-title">Account and cloud sync</h2>
+                  <p class="oz-section-desc">
+                    Keep this options page and local settings as-is, and optionally sync your settings through your
+                    signed-in account.
+                  </p>
+                </div>
+                <div class="oz-form-stack">
+                  <div class="oz-form-row">
+                    <div class="oz-form-meta">
+                      <div class="oz-label">Cloud account</div>
+                      <p class="oz-help-sub" id="accountCloudOptInHelp">
+                        Optional. Turn on if you want to sign in and sync settings with your account. When off,
+                        everything stays on this device and account prompts stay hidden.
+                      </p>
+                    </div>
+                    <div class="oz-form-control">
+                      <label class="oz-toggle">
+                        <input type="checkbox" id="accountCloudOptInToggle" class="oz-toggle-input" />
+                        <span class="oz-toggle-label">Enable cloud account (sign-in &amp; sync)</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div class="oz-form-row">
+                    <div class="oz-form-meta">
+                      <div class="oz-label">Sync settings with account</div>
+                      <p class="oz-help-sub" id="accountCloudSyncHelp">
+                        When signed in, push and pull settings through your cloud account. Turn off to keep changes
+                        local only.
+                      </p>
+                    </div>
+                    <div class="oz-form-control">
+                      <label class="oz-toggle">
+                        <input type="checkbox" id="accountCloudSyncToggle" class="oz-toggle-input" disabled />
+                        <span class="oz-toggle-label">Enable cloud sync</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div class="oz-form-row">
+                    <div class="oz-form-meta">
+                      <div class="oz-label">Sign in</div>
+                      <p class="oz-help-sub">
+                        A compact sign-in window opens. Complete sign-in there, then return to this page.
+                      </p>
+                    </div>
+                    <div class="oz-form-control">
+                      <div class="oz-inline-fields">
+                        <button id="accountSignIn" class="oz-button oz-button-primary" type="button">Sign in</button>
+                        <button id="accountSignOut" class="oz-button oz-button-secondary" type="button">
+                          Sign out
+                        </button>
+                        <button id="accountSyncNow" class="oz-button oz-button-secondary" type="button">
+                          Sync now
+                        </button>
+                      </div>
+                      <p id="status-account" class="oz-status" role="status" aria-live="polite"></p>
+                    </div>
+                  </div>
+
+                  <div class="oz-form-row">
+                    <div class="oz-form-meta">
+                      <div class="oz-label">Sync status</div>
+                      <p class="oz-help-sub">Current account link state for this extension install.</p>
+                    </div>
+                    <div class="oz-form-control">
+                      <p class="oz-help-sub"><strong id="accountStatusLabel">Not signed in</strong></p>
+                      <p class="oz-help-sub">Last synced: <span id="accountLastSynced">Never</span></p>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+            </section>
+
             <!-- About -->
             <section id="panel-about" class="oz-panel" role="tabpanel" aria-labelledby="tab-about">
               <div class="oz-panel-card">
@@ -733,12 +835,15 @@
                 </div>
                 <ul class="oz-list">
                   <li>
-                    <strong>No tracking</strong>: No analytics, telemetry, or external network requests from the
-                    extension itself.
+                    <strong>No tracking</strong>: No analytics or telemetry in extension code.
                   </li>
                   <li>
                     <strong>Local-only settings</strong>: Shortcuts and toggles live in the browser’s extension
                     storage.
+                  </li>
+                  <li>
+                    <strong>Optional cloud sync</strong>: If you sign in and enable account sync, settings are sent
+                    to your configured backend API and stored in your account.
                   </li>
                   <li>
                     <strong>Minimal permissions</strong>: Runs only on Outlook web domains and simulates clicks
@@ -836,6 +941,32 @@
             </section>
           </div>
         </main>
+
+        <div class="oz-accent-modal-overlay oz-hidden" id="accountOnboardingOverlay" aria-hidden="true">
+          <div class="oz-accent-modal" role="dialog" aria-modal="true" aria-labelledby="accountOnboardingTitle">
+            <h3 class="oz-accent-modal-title" id="accountOnboardingTitle">Cloud account</h3>
+            <p class="oz-accent-modal-desc">
+              You turned on cloud account on the Account page. While you are not signed in, this reminder appears each
+              time you open settings until you sign in or turn cloud account off.
+            </p>
+            <p class="oz-accent-modal-desc">
+              Choose <strong>Continue</strong> to close for now. Check the box below to turn off cloud account and keep
+              everything on this device (same as the Account page toggle).
+            </p>
+            <label class="oz-onboarding-local-toggle">
+              <input type="checkbox" id="accountOnboardingOptOut" />
+              <span>Turn off cloud account (keep settings local only)</span>
+            </label>
+            <div class="oz-accent-modal-actions oz-onboarding-actions">
+              <button type="button" class="oz-button oz-button-secondary" id="accountOnboardingContinue">
+                Continue
+              </button>
+              <button type="button" class="oz-button oz-button-primary" id="accountOnboardingSignIn">
+                Sign in
+              </button>
+            </div>
+          </div>
+        </div>
 
         <div class="oz-accent-modal-overlay oz-hidden" id="accentCustomModalOverlay" aria-hidden="true">
           <div class="oz-accent-modal" role="dialog" aria-modal="true" aria-labelledby="accentCustomModalTitle">

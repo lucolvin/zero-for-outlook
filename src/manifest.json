@@ -3,14 +3,20 @@
   "description": "Zero for Outlook adds configurable keyboard shortcuts and extends functionality of Outlook on the web.",
   "version": "0.7.3",
   "permissions": [
-    "storage"
+    "storage",
+    "tabs",
+    "windows"
   ],
   "host_permissions": [
     "https://outlook.live.com/*",
     "https://outlook.office.com/*",
     "https://outlook.office365.com/*",
     "https://outlook.cloud.microsoft/*",
-    "https://generativelanguage.googleapis.com/*"
+    "https://generativelanguage.googleapis.com/*",
+    "https://api.zero-extension.com/*",
+    "https://*.zero-extension.com/*",
+    "http://localhost:8787/*",
+    "http://localhost:4173/*"
   ],
   "content_scripts": [
     {

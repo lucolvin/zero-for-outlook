@@ -1,0 +1,90 @@
+:root {
+  color-scheme: light dark;
+  font-family: Inter, system-ui, -apple-system, sans-serif;
+}
+
+body {
+  margin: 0;
+  background: #0f172a;
+  color: #e2e8f0;
+}
+
+.app {
+  min-height: 100vh;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #334155;
+}
+
+.content {
+  max-width: 680px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+.card {
+  background: #111827;
+  border: 1px solid #374151;
+  border-radius: 12px;
+  padding: 1.25rem;
+}
+
+.button {
+  border: 0;
+  background: #4f46e5;
+  color: #ffffff;
+  border-radius: 8px;
+  padding: 0.55rem 0.85rem;
+  cursor: pointer;
+}
+
+.button-secondary {
+  background: transparent;
+  color: #e2e8f0;
+  border: 1px solid #475569;
+}
+
+.button-secondary:hover {
+  background: rgba(148, 163, 184, 0.12);
+}
+
+.help-muted {
+  margin: 0.75rem 0 0.5rem;
+  font-size: 0.9rem;
+  color: #94a3b8;
+}
+
+.signout-actions {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #374151;
+}
+
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+}
+
+.error {
+  color: #fca5a5;
+}
+
+.logout-page-footer-link {
+  margin-top: 1.25rem;
+}
+
+.logout-page-link {
+  color: #a5b4fc;
+  text-decoration: underline;
+}
+
+.logout-page-link:hover {
+  color: #c7d2fe;
+}

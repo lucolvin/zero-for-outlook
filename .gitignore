@@ -1,7 +1,10 @@
 node_modules
 .pnpm-store/
 dist/
+site/api-dist/
 *.zip
 .DS_Store
 bun.lock
 package-lock.json
+.env
+site/.env
