@@ -9,7 +9,8 @@ let lastInboxCount = null;
 let overlayDismissTimer = null;
 let overlayKeydownHandler = null;
 let zeroConfirmationTimer = null;
-let isCelebrationInFlight = false;
+let isStreakOverlayInFlight = false;
+let lastOverlayShownDateInMemory = null;
 
 const INBOX_ZERO_STREAK_KEY = "inboxZeroStreak";
 const DEFAULT_ACCENT_COLOR = "#6366f1";
@@ -64,14 +65,16 @@ function loadInboxZeroStreakData() {
         {
           [INBOX_ZERO_STREAK_KEY]: {
             days: 0,
-            lastHitDate: null
+            lastHitDate: null,
+            lastOverlayDate: null
           }
         },
         (items) => {
           if (browserApi.runtime && browserApi.runtime.lastError) {
             resolve({
               days: 0,
-              lastHitDate: null
+              lastHitDate: null,
+              lastOverlayDate: null
             });
             return;
           }
@@ -85,14 +88,19 @@ function loadInboxZeroStreakData() {
             incoming && typeof incoming.lastHitDate === "string"
               ? incoming.lastHitDate
               : null;
+          const lastOverlayDate =
+            incoming && typeof incoming.lastOverlayDate === "string"
+              ? incoming.lastOverlayDate
+              : null;
 
-          resolve({ days, lastHitDate });
+          resolve({ days, lastHitDate, lastOverlayDate });
         }
       );
     } catch (e) {
       resolve({
         days: 0,
-        lastHitDate: null
+        lastHitDate: null,
+        lastOverlayDate: null
       });
     }
   });
@@ -307,7 +315,7 @@ export function showInboxZeroFireworks(previousDays, nextDays) {
 
     const title = document.createElement("div");
     title.className = "oz-inbox-zero-title";
-    title.textContent = "Inbox Zero";
+    title.textContent = "Inbox Zero Streak";
     card.appendChild(title);
 
     const viewport = document.createElement("div");
@@ -368,10 +376,10 @@ export function showInboxZeroFireworks(previousDays, nextDays) {
 }
 
 async function recordInboxZeroHitAndShowOverlay() {
-  if (isCelebrationInFlight) {
+  if (isStreakOverlayInFlight) {
     return;
   }
-  isCelebrationInFlight = true;
+  isStreakOverlayInFlight = true;
   try {
     const currentData = await loadInboxZeroStreakData();
     const today = getLocalDateStamp();
@@ -386,14 +394,22 @@ async function recordInboxZeroHitAndShowOverlay() {
       nextDays = Math.max(1, previousDays + 1);
     }
 
+    const hasShownToday =
+      currentData.lastOverlayDate === today || lastOverlayShownDateInMemory === today;
+    const nextOverlayDate = hasShownToday ? currentData.lastOverlayDate : today;
+
     await saveInboxZeroStreakData({
       days: nextDays,
-      lastHitDate: today
+      lastHitDate: today,
+      lastOverlayDate: nextOverlayDate
     });
 
-    showInboxZeroFireworks(previousDays, nextDays);
+    if (!hasShownToday) {
+      lastOverlayShownDateInMemory = today;
+      showInboxZeroFireworks(previousDays, nextDays);
+    }
   } finally {
-    isCelebrationInFlight = false;
+    isStreakOverlayInFlight = false;
   }
 }
 
