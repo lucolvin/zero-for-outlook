@@ -4,8 +4,7 @@ import starlight from '@astrojs/starlight';
 
 // https://astro.build/config
 export default defineConfig({
-	site: 'https://lukes-labs.github.io',
-	base: '/zero-for-outlook',
+	site: 'https://docs.zero-extension.com',
 	integrations: [
 		starlight({
 			title: 'Zero for Outlook',
