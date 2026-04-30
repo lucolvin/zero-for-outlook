@@ -5,11 +5,11 @@ import starlight from '@astrojs/starlight';
 // https://astro.build/config
 export default defineConfig({
 	site: 'https://lukes-labs.github.io',
-	base: '/zero-for-outlook-docs-testing',
+	base: '/zero-for-outlook',
 	integrations: [
 		starlight({
-			title: 'My Docs',
-			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/withastro/starlight' }],
+			title: 'Zero for Outlook',
+			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/lucolvin/zero-for-outlook' }],
 			sidebar: [
 				{
 					label: 'Guides',
