@@ -4,6 +4,8 @@ import starlight from '@astrojs/starlight';
 
 // https://astro.build/config
 export default defineConfig({
+	site: 'https://lukes-labs.github.io',
+	base: '/zero-for-outlook-docs-testing',
 	integrations: [
 		starlight({
 			title: 'My Docs',
