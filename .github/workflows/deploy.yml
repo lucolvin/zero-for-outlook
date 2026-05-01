@@ -25,7 +25,6 @@ jobs:
         with:
           path: ./docs
           node-version: 22
-          package-manager: pnpm@10
           # build-cmd: pnpm run build # The command to run to build your site. Runs the package build script/task by default. (optional)
         # env:
           # PUBLIC_POKEAPI: 'https://pokeapi.co/api/v2' # Use single quotation marks for the variable value. (optional)
