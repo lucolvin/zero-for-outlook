@@ -1,0 +1,20 @@
+/* Starlight’s Hero left-aligns on wide viewports when an image sits beside copy.
+   Without an image, keep title, tagline, and actions centered. */
+@media (min-width: 50rem) {
+	.hero:not(:has(img)):not(:has(.hero-html)) {
+		grid-template-columns: 1fr;
+		justify-items: center;
+	}
+
+	.hero:not(:has(img)):not(:has(.hero-html)) .stack {
+		text-align: center;
+	}
+
+	.hero:not(:has(img)):not(:has(.hero-html)) .copy {
+		align-items: center;
+	}
+
+	.hero:not(:has(img)):not(:has(.hero-html)) .actions {
+		justify-content: center;
+	}
+}

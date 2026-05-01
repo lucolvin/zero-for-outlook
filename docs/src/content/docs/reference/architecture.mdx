@@ -1,0 +1,40 @@
+---
+title: Architecture
+description: High-level structure of Zero for Outlook.
+---
+
+## Runtime components
+
+- **Content script** (`src/contentScript/index.js`): injects extension behavior into Outlook pages.
+- **Background script** (`src/background/index.js`): handles extension-level actions and messaging.
+- **Options page** (`src/options/index.html` + `src/options/main.js`): user configuration UI.
+
+## Content script organization
+
+The content script follows a feature-oriented layout:
+
+- `core/`: shared primitives (settings, keyboard handling, DOM helpers, browser API wrappers).
+- `features/`: user-facing behaviors (command bar, snooze, vim mode, dark mode, etc.).
+- `styles/`: overlay and feature CSS.
+
+## Initialization flow
+
+1. Load persisted settings.
+2. Initialize feature dependencies.
+3. Build command list.
+4. Install keyboard handlers.
+5. Start observers (inbox zero, options bar, storage events).
+
+## Browser support model
+
+- Chrome distribution targets Manifest V3.
+- Firefox distribution targets Manifest V2 compatibility packaging.
+- Build scripts transform and copy assets to browser-specific outputs.
+
+## Build pipeline
+
+- `vite build` bundles script assets.
+- `scripts/build.js` copies and transforms extension artifacts.
+- `scripts/package.js` creates distributable zip files.
+
+See [Get Started](/guides/get-started/) for local run steps.

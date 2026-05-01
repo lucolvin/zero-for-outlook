@@ -1,0 +1,82 @@
+---
+title: Get Started
+description: Install Zero for Outlook and set up your first keyboard workflow.
+---
+
+import { LinkButton } from '@astrojs/starlight/components';
+
+## Prerequisites
+
+- A Chromium browser (Chrome, Brave, Edge) or Firefox.
+- Access to Outlook Web:
+  - `https://outlook.live.com/*`
+  - `https://outlook.office.com/*`
+  - `https://outlook.office365.com/*`
+  - `https://outlook.cloud.microsoft/*`
+
+## Install from stores
+
+<div class="sl-flex" style="gap: 0.75rem; flex-wrap: wrap; margin: 0.25rem 0 0.75rem;">
+	<LinkButton
+		href="https://chromewebstore.google.com/detail/zero-for-outlook/gpjbinalhllobnkijndgahhlfgcpbhnc"
+		variant="primary"
+		icon="chrome"
+		iconPlacement="start"
+		target="_blank"
+	>
+		Install on Chrome
+	</LinkButton>
+	<LinkButton
+		href="https://addons.mozilla.org/en-US/firefox/addon/zero-for-outlook/"
+		variant="primary"
+		icon="firefox"
+		iconPlacement="start"
+		target="_blank"
+	>
+		Install on Firefox
+	</LinkButton>
+</div>
+
+## Install from source
+
+1. Clone the repository.
+2. Install dependencies from the repository root:
+
+```bash
+npm install
+```
+
+3. Build the extension:
+
+```bash
+npm run build
+```
+
+The build creates browser-specific bundles in `dist/chrome` and `dist/firefox`.
+
+## Load in Chrome-based browsers
+
+1. Open `chrome://extensions`.
+2. Enable **Developer mode**.
+3. Click **Load unpacked**.
+4. Select `dist/chrome`.
+5. Open Outlook Web in a new tab.
+
+## Load in Firefox
+
+1. Open `about:debugging#/runtime/this-firefox`.
+2. Click **Load Temporary Add-on...**.
+3. Select `dist/firefox/manifest.json`.
+4. Open Outlook Web in a new tab.
+
+## Verify setup
+
+- Press `Cmd + K` (or `Ctrl + K` if you changed the mapping) to open the command bar.
+- Select a message and press `s` to open the snooze overlay.
+- Archive an email and press `z` to trigger undo.
+
+## Next steps
+
+- Learn major workflows in [Features](/guides/features/).
+- Tune appearance and behavior in [Customization](/guides/customization/).
+- Review exact defaults in [Settings reference](/reference/settings/).

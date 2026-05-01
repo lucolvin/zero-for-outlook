@@ -1,0 +1,35 @@
+---
+title: Privacy and Data
+description: Data handling model and network behavior.
+---
+
+## Data collection policy
+
+Zero for Outlook does not include analytics or telemetry by default.
+
+## Local storage
+
+The extension stores configuration in browser extension storage:
+
+- Keyboard bindings
+- Feature toggles
+- Visual preferences
+- Custom shortcut definitions
+- Gemini API key (only if you provide one)
+
+## Network access
+
+Regular extension workflows do not require remote services.
+
+If you enable AI features, requests are sent to:
+
+- `https://generativelanguage.googleapis.com/*`
+
+This is required for:
+
+- Email summarization
+- AI title editing for custom shortcuts
+
+## Scope restrictions
+
+The extension only injects into Outlook Web host patterns defined in the manifest.

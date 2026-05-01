@@ -1,0 +1,57 @@
+---
+title: Settings Reference
+description: Default values and persisted settings keys.
+---
+
+## Storage area
+
+Settings are stored in browser extension sync storage (`storage.sync`).
+
+## Shortcut defaults
+
+### `undoShortcut`
+
+```json
+{ "ctrlKey": false, "altKey": false, "shiftKey": false, "metaKey": false, "key": "z" }
+```
+
+### `commandShortcut`
+
+```json
+{ "ctrlKey": false, "altKey": false, "shiftKey": false, "metaKey": true, "key": "k" }
+```
+
+### `blockedContentShortcut`
+
+```json
+{ "ctrlKey": false, "altKey": false, "shiftKey": true, "metaKey": true, "key": "b" }
+```
+
+## Boolean settings
+
+- `vimEnabled` (default: `true`)
+- `darkModeEnabled` (default: `true`)
+- `oledModeEnabled` (default: `false`)
+- `backdropBlurEnabled` (default: `true`)
+- `inboxZeroEnabled` (default: `true`)
+- `archivePopupEnabled` (default: `true`)
+- `optionsBarHidden` (default: `false`)
+- `aiTitleEditingEnabled` (default: `true`)
+
+## Visual settings
+
+- `accentColor` (default: `#6366f1`)
+- `popupOpacity` (default: `95`)
+
+## Other persisted values
+
+- `vimContext` (default: `"auto"`)
+- `customShortcuts` (default: `[]`)
+
+## Change propagation
+
+When settings change:
+
+- Internal handlers update keyboard listeners as needed.
+- Open overlays receive theme updates.
+- Command bar entries are rebuilt or refreshed where required.

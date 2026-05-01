@@ -1,42 +1,67 @@
 ---
 title: Zero for Outlook
-description: Extensible Chrome and Firefox extension to enhance the Outlook web experience.
-template: splash # Remove or comment out this line to display the site sidebar on this page.
+description: Keyboard-first tooling for Outlook web users who want to move faster.
+template: splash
 hero:
-  tagline: Reach Inbox Zero with Zero for Outlook
-  image:
-    file: ../../assets/zero-icon.svg
+  tagline: Reach inbox zero with keyboard-first workflows
+  # image:
+  #   file: ../../assets/zero-icon.svg
   actions:
     - text: Get started
-      link: /guides/get_started/
+      link: /guides/get-started/
       icon: right-arrow
-    - text: Learn more
-      link: /about/intro/
+    - text: Explore features
+      link: /guides/features/
       icon: open-book
-    - text: Get source
+    - text: Source code
       link: https://github.com/lucolvin/zero-for-outlook
       icon: github
 ---
 
-import { Card, CardGrid } from '@astrojs/starlight/components';
+import { Card, CardGrid, LinkButton } from '@astrojs/starlight/components';
 
-## Next steps
+## Why Zero for Outlook
 
 <CardGrid stagger>
-	<Card title="Update content" icon="pencil">
-		Edit `src/content/docs/index.mdx` to see this page change.
+	<Card title="Fast triage" icon="bolt">
+		Vim-style movement, command palette actions, and quick message operations without leaving your keyboard.
 	</Card>
-	<Card title="Change page layout" icon="document">
-		Delete `template: splash` in `src/content/docs/index.mdx` to display a
-		sidebar on this page.
+	<Card title="Personalized controls" icon="setting">
+		Customize shortcut bindings, toggle visual behavior, and add your own element-level shortcuts.
 	</Card>
-	<Card title="Add new content" icon="add-document">
-		Add Markdown or MDX files to `src/content/docs` to create new pages.
+	<Card title="Optional AI workflows" icon="star">
+		Summarize threads and generate shortcut labels with your own Gemini API key.
 	</Card>
-	<Card title="Configure your site" icon="setting">
-		Edit your `sidebar` and other config in `astro.config.mjs`.
-	</Card>
-	<Card title="Read the docs" icon="open-book">
-		Learn more in [the Starlight Docs](https://starlight.astro.build/).
+	<Card title="Privacy-first defaults" icon="shield-check">
+		No analytics, no telemetry, and no remote calls unless you explicitly use AI features.
 	</Card>
 </CardGrid>
+
+## Install Zero for Outlook
+
+<div class="sl-flex" style="gap: 0.75rem; flex-wrap: wrap; justify-content: center; margin: 1.25rem 0 1rem;">
+	<LinkButton
+		href="https://chromewebstore.google.com/detail/zero-for-outlook/gpjbinalhllobnkijndgahhlfgcpbhnc"
+		variant="primary"
+		icon="chrome"
+		iconPlacement="start"
+    target="_blank"
+	>
+		Install on Chrome
+	</LinkButton>
+	<LinkButton
+		href="https://addons.mozilla.org/en-US/firefox/addon/zero-for-outlook/"
+		variant="primary"
+		icon="firefox"
+		iconPlacement="start"
+		target="_blank"
+	>
+		Install on Firefox
+	</LinkButton>
+</div>
+
+## Start here
+
+- New users: follow [Get Started](/guides/get-started/) first.
+- Power users: jump to [Features](/guides/features/) and [Customization](/guides/customization/).
+- Contributors: review [Architecture](/reference/architecture/) before changing behavior.

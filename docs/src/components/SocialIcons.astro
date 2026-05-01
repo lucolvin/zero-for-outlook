@@ -1,0 +1,16 @@
+---
+import DefaultSocialIcons from '@astrojs/starlight/components/SocialIcons.astro';
+import GhStars from './GhStars.astro';
+---
+
+<div class="sl-flex social-with-stars">
+	<DefaultSocialIcons {...Astro.props} />
+	<GhStars owner="lucolvin" repo="zero-for-outlook" />
+</div>
+
+<style>
+	.social-with-stars {
+		align-items: center;
+		gap: 0.5rem;
+	}
+</style>

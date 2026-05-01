@@ -8,7 +8,16 @@ export default defineConfig({
 	integrations: [
 		starlight({
 			title: 'Zero for Outlook',
+			logo: {
+				src: './src/assets/zero-icon.svg',
+				alt: 'Zero for Outlook',
+			},
+			favicon: '/favicon.ico',
+			customCss: ['./src/styles/custom.css'],
 			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/lucolvin/zero-for-outlook' }],
+			components: {
+				SocialIcons: './src/components/SocialIcons.astro',
+			},
 			sidebar: [
 				{
 					label: 'Guides',
