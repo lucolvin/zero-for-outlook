@@ -14,7 +14,7 @@ Zero for Outlook adds configurable keyboard shortcuts and extends functionality 
 > Find a bug? Open an [issue](https://github.com/lucolvin/zero-for-outlook/issues/new/choose).
 
 > [!NOTE]
-> The docs including this README are extremely out of date. A docs site is currently being created. And will be updated at [the docs site](https://docs.zero-extension.com/)
+> WIP [docs site](https://docs.zero-extension.com/)
 
 > [!NOTE]
 > These extensions were primarily developed on MacOS. Compatibility with other platforms may be degraded while extensions are still in beta
