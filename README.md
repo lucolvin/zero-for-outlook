@@ -1,5 +1,8 @@
 # Zero for Outlook
 
+> [!CAUTION]
+> I am currently moving codebase to [WXT](https://wxt.dev/). Possible breaking changes incoming. Thou hast been warned...
+
 Zero for Outlook adds configurable keyboard shortcuts and extends functionality of Outlook on the web, making it more efficient and enjoyable to use.
 
 ![Chrome Web Store Version](https://img.shields.io/chrome-web-store/v/gpjbinalhllobnkijndgahhlfgcpbhnc?link=https%3A%2F%2Fchromewebstore.google.com%2Fdetail%2Fzero-for-outlook%2Fgpjbinalhllobnkijndgahhlfgcpbhnc)
