@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Zero — Sign in</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        overflow: hidden;
+        font-family:
+          system-ui,
+          -apple-system,
+          "Segoe UI",
+          Roboto,
+          sans-serif;
+      }
+      #root {
+        height: 100%;
+        box-sizing: border-box;
+      }
+      #root.visible {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        padding: 16px;
+        box-sizing: border-box;
+        text-align: center;
+        font-size: 14px;
+        line-height: 1.45;
+        color: #374151;
+        background: #f9fafb;
+      }
+      #root.oz-hosted {
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+      }
+      #root .oz-hosted-frame-host {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        width: 100%;
+      }
+      #root .oz-hosted-frame-host iframe {
+        flex: 1;
+        border: 0;
+        width: 100%;
+        height: 100%;
+        background: #fff;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root">Loading…</div>
+    <script type="module" src="./sidepanel/main.ts"></script>
+  </body>
+</html>

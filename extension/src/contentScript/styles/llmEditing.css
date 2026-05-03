@@ -1,0 +1,75 @@
+.oz-ai-editing-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.18);
+  /*  */
+  -webkit-backdrop-filter: blur(14px) saturate(130%);
+  backdrop-filter: blur(14px) saturate(130%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2147483647;
+}
+
+.oz-ai-editing-backdrop.oz-ai-editing-dark {
+  background:
+    radial-gradient(circle at top left, rgba(59, 130, 246, 0.25), transparent 55%),
+    radial-gradient(circle at bottom right, rgba(129, 140, 248, 0.3), transparent 55%),
+    rgba(15, 23, 42, 0.32);
+}
+
+.oz-ai-editing-backdrop.oz-ai-editing-light {
+  background:
+    radial-gradient(circle at top left, rgba(59, 130, 246, 0.18), transparent 55%),
+    radial-gradient(circle at bottom right, rgba(129, 140, 248, 0.2), transparent 55%),
+    rgba(15, 23, 42, 0.12);
+}
+
+.oz-ai-editing-modal {
+  max-width: min(400px, 90vw);
+  border-radius: 12px;
+  padding: 20px 24px;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  text-align: center;
+}
+
+.oz-ai-editing-modal.oz-ai-editing-dark {
+  background-color: #020617;
+  box-shadow:
+    0 18px 36px rgba(15, 23, 42, 0.9),
+    0 0 0 1px rgba(148, 163, 184, 0.5);
+  color: #e5e7eb;
+}
+
+.oz-ai-editing-modal.oz-ai-editing-light {
+  background-color: #ffffff;
+  box-shadow:
+    0 10px 24px rgba(15, 23, 42, 0.16),
+    0 0 0 1px rgba(148, 163, 184, 0.45);
+  color: #111827;
+}
+
+.oz-ai-editing-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.oz-ai-editing-chip {
+  font-size: 0.75rem;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.7);
+  opacity: 0.85;
+}
+
+.oz-ai-editing-message {
+  font-size: 0.9rem;
+  opacity: 0.86;
+  line-height: 1.5;
+}
+
