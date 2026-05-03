@@ -1,10 +1,16 @@
 node_modules
+**/node_modules
 .pnpm-store/
 dist/
+.output/
+.wxt/
+**/.output/
+**/.wxt/
 site/api-dist/
 *.zip
 .DS_Store
 bun.lock
 package-lock.json
+**/package-lock.json
 .env
 site/.env
