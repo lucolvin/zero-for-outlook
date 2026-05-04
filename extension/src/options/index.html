@@ -127,6 +127,27 @@
               type="button"
               class="oz-tab"
               role="tab"
+              id="tab-snippets"
+              aria-selected="false"
+              aria-controls="panel-snippets"
+              data-panel="snippets"
+            >
+              <span class="oz-tab-icon" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path
+                    d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                  />
+                </svg>
+              </span>
+              <span class="oz-tab-label">Snippets</span>
+            </button>
+            <button
+              type="button"
+              class="oz-tab"
+              role="tab"
               id="tab-ai"
               aria-selected="false"
               aria-controls="panel-ai"
@@ -406,7 +427,7 @@
                   </p>
                 </div>
                 <div class="oz-form-stack">
-                  <div class="oz-form-row oz-form-row-last">
+                  <div class="oz-form-row">
                     <div class="oz-form-meta">
                       <div class="oz-label">Enable vim navigation</div>
                       <p class="oz-help-sub">Safe by default: keys are ignored while typing in inputs.</p>
@@ -433,6 +454,21 @@
                       </ul>
                     </div>
                   </div>
+                  <div class="oz-form-row oz-form-row-last">
+                    <div class="oz-form-meta">
+                      <div class="oz-label">Smooth vim (message list)</div>
+                      <p class="oz-help-sub">
+                        Coalesce rapid <kbd>j</kbd>/<kbd>k</kbd> to one move per frame and re-focus the list when
+                        Outlook steals focus.
+                      </p>
+                    </div>
+                    <div class="oz-form-control">
+                      <label class="oz-toggle">
+                        <input id="vimSmoothNavigationEnabled" type="checkbox" class="oz-toggle-input" />
+                        <span class="oz-toggle-label">Enable smooth vim navigation</span>
+                      </label>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -444,7 +480,7 @@
                   </p>
                 </div>
                 <div class="oz-form-stack">
-                  <div class="oz-form-row oz-form-row-last">
+                  <div class="oz-form-row">
                     <div class="oz-form-meta">
                       <div class="oz-label">Archive popup</div>
                       <p class="oz-help-sub">Shows or hides the "Archived" popup with Undo action.</p>
@@ -455,6 +491,21 @@
                         <span class="oz-toggle-label">Show archive popup</span>
                       </label>
                       <p id="status-archive-popup" class="oz-status" role="status" aria-live="polite"></p>
+                    </div>
+                  </div>
+                  <div class="oz-form-row oz-form-row-last">
+                    <div class="oz-form-meta">
+                      <div class="oz-label">List motion (experimental)</div>
+                      <p class="oz-help-sub">
+                        Shorten CSS transitions on virtualized message rows when archiving. Turn off if anything in
+                        the list looks wrong.
+                      </p>
+                    </div>
+                    <div class="oz-form-control">
+                      <label class="oz-toggle">
+                        <input id="archiveListMotionReduced" type="checkbox" class="oz-toggle-input" />
+                        <span class="oz-toggle-label">Reduce archive row animation</span>
+                      </label>
                     </div>
                   </div>
                 </div>
@@ -544,7 +595,7 @@
                   <div class="oz-form-row">
                     <div class="oz-form-meta">
                       <div class="oz-label">Popup Opacity</div>
-                      <p class="oz-help-sub">Adjust the transparency of overlays (command bar, summary, snooze).</p>
+                      <p class="oz-help-sub">Adjust the transparency of overlays (command bar, summary, Remind me).</p>
                     </div>
                     <div class="oz-form-control">
                       <div class="oz-slider-control">
@@ -580,12 +631,43 @@
 
               <div class="oz-panel-card">
                 <div class="oz-section-head">
-                  <h2 class="oz-section-title">Streak</span></h2>
+                  <h2 class="oz-section-title">Streak &amp; stats</h2>
                   <p class="oz-section-desc">
-                    Show a inbox zero streak popup when your inbox reaches zero messages.
+                    Celebrate inbox zero and see how your streak is tracking in storage.
                   </p>
                 </div>
                 <div class="oz-form-stack">
+                  <div class="oz-stats-grid" id="ozStatsSummary" aria-live="polite">
+                    <div class="oz-stat-pill">
+                      <div class="oz-stat-value" id="ozStatStreakDays">—</div>
+                      <div class="oz-stat-label">Inbox zero streak (days)</div>
+                    </div>
+                    <div class="oz-stat-pill">
+                      <div class="oz-stat-value" id="ozStatLastZeroDate">—</div>
+                      <div class="oz-stat-label">Last day you hit inbox zero</div>
+                    </div>
+                  </div>
+                  <div class="oz-form-row">
+                    <div class="oz-form-meta">
+                      <div class="oz-label">Badges</div>
+                      <p class="oz-help-sub">Unlocks as you use Zero in Outlook (archives, reminders, snippets, etc.).</p>
+                    </div>
+                    <div class="oz-form-control">
+                      <div id="ozAchievementsGrid" class="oz-achievements-grid" aria-live="polite"></div>
+                    </div>
+                  </div>
+                  <div class="oz-form-row">
+                    <div class="oz-form-meta">
+                      <div class="oz-label">Recent activity</div>
+                      <p class="oz-help-sub">Last events recorded for achievements (newest first).</p>
+                    </div>
+                    <div class="oz-form-control">
+                      <ol id="ozAchievementLog" class="oz-achievement-log"></ol>
+                    </div>
+                  </div>
+                  <p class="oz-help-sub oz-stats-footnote">
+                    Stats and badges sync when cloud sync is enabled. Open Outlook and use the extension to unlock more.
+                  </p>
                   <div class="oz-form-row oz-form-row-last">
                     <div class="oz-form-meta">
                       <div class="oz-label">Inbox zero</div>
@@ -659,6 +741,67 @@
 
                 <div id="customShortcutsList" class="oz-custom-shortcuts-list"></div>
                 <p id="status-custom" class="oz-status" role="status" aria-live="polite"></p>
+              </div>
+            </section>
+
+            <!-- Snippets -->
+            <section
+              id="panel-snippets"
+              class="oz-panel"
+              role="tabpanel"
+              aria-labelledby="tab-snippets"
+            >
+              <div class="oz-panel-card">
+                <div class="oz-section-head">
+                  <h2 class="oz-section-title">Snippets</h2>
+                  <p class="oz-section-desc">
+                    Saved text you can insert from the command bar or by typing <strong>;</strong> in the Outlook
+                    message body. Rich formatting from the editor below is preserved when inserting. Placeholders include
+                    <code>{first_name}</code>, <code>{your_placeholder}</code>, and the other variables listed under
+                    Snippets.
+                  </p>
+                </div>
+                <div class="oz-form-stack">
+                  <div class="oz-form-row oz-form-row-last">
+                    <div class="oz-form-meta">
+                      <div class="oz-label">Snippets tab shortcut</div>
+                      <p class="oz-help-sub">
+                        Opens these Zero settings on the Snippets tab (default:
+                        <kbd>Meta</kbd> + <kbd>Shift</kbd> + <kbd>Y</kbd> on Mac,
+                        <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>Y</kbd> on Windows). Works while Outlook has focus.
+                      </p>
+                    </div>
+                    <div class="oz-form-control">
+                      <div class="oz-shortcut-controls">
+                        <label for="snippetsPageShortcut" class="oz-visually-hidden">
+                          Snippets tab shortcut
+                        </label>
+                        <input
+                          id="snippetsPageShortcut"
+                          type="text"
+                          class="oz-shortcut-input"
+                          autocomplete="off"
+                          spellcheck="false"
+                          placeholder="Press keys…"
+                        />
+                        <button
+                          id="clearSnippetsPageShortcut"
+                          class="oz-button oz-button-secondary"
+                          type="button"
+                        >
+                          Clear
+                        </button>
+                      </div>
+                      <p
+                        id="status-snippets-page-shortcut"
+                        class="oz-status"
+                        role="status"
+                        aria-live="polite"
+                      ></p>
+                    </div>
+                  </div>
+                </div>
+                <div id="oz-snippets-react-root" class="oz-snippets-embed"></div>
               </div>
             </section>
 
@@ -814,7 +957,7 @@
                   </li>
                   <li>
                     <strong>Typing safety</strong>: While composing in an input, text area, or editable field,
-                    vim navigation, Undo, Snooze, and similar shortcuts are ignored. Your command bar shortcut
+                    vim navigation, Undo, Remind me (Snooze), and similar shortcuts are ignored. Your command bar shortcut
                     and custom shortcuts still work there.
                   </li>
                 </ul>

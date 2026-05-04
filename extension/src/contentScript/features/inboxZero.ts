@@ -2,6 +2,7 @@
 import { browserApi } from "../core/browserApi.ts";
 import { settings } from "../core/settings.ts";
 import { getInboxMessageCount } from "../core/messageList.ts";
+import { updateMaxInboxZeroStreak } from "./achievements.ts";
 
 // State
 let inboxZeroOverlay = null;
@@ -418,6 +419,7 @@ async function recordInboxZeroHitAndShowOverlay() {
       lastOverlayDate: nextOverlayDate
     });
     pushCloudSyncForStreak();
+    updateMaxInboxZeroStreak(nextDays);
 
     if (!hasShownToday) {
       lastOverlayShownDateInMemory = today;

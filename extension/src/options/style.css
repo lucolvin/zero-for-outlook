@@ -1469,3 +1469,139 @@ html.oz-theme-dark.oz-oled-mode {
 body.oz-theme-dark .oz-slider {
   background: rgba(148, 163, 184, 0.2);
 }
+
+.oz-stats-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.oz-stat-pill {
+  flex: 1 1 140px;
+  min-width: 140px;
+  padding: 12px 14px;
+  border-radius: var(--oz-radius-md);
+  background: var(--oz-bg);
+  border: 1px solid var(--oz-border);
+  box-shadow: var(--oz-shadow-sm);
+}
+
+.oz-stat-value {
+  font-size: 1.45rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--oz-text);
+  line-height: 1.2;
+}
+
+.oz-stat-label {
+  margin-top: 6px;
+  font-size: 0.8rem;
+  color: var(--oz-text-muted);
+  line-height: 1.35;
+}
+
+.oz-stats-footnote {
+  margin: 0 0 12px;
+}
+
+.oz-achievements-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.oz-achievement-card {
+  flex: 1 1 160px;
+  max-width: 220px;
+  padding: 10px 12px;
+  border-radius: var(--oz-radius-md);
+  border: 1px solid var(--oz-border);
+  background: var(--oz-bg);
+  opacity: 0.55;
+}
+
+.oz-achievement-card.oz-achievement-unlocked {
+  opacity: 1;
+  border-color: var(--oz-accent);
+  box-shadow: 0 0 0 1px var(--oz-accent-muted);
+}
+
+.oz-achievement-card-title {
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-bottom: 4px;
+}
+
+.oz-achievement-card-desc {
+  font-size: 0.78rem;
+  color: var(--oz-text-muted);
+  line-height: 1.35;
+}
+
+.oz-achievement-log {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.82rem;
+  color: var(--oz-text-secondary);
+  max-height: 180px;
+  overflow: auto;
+}
+
+.oz-achievement-log li {
+  margin-bottom: 6px;
+}
+
+.oz-snippets-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+.oz-snippet-row {
+  border: 1px solid var(--oz-border);
+  border-radius: var(--oz-radius-md);
+  padding: 10px 12px;
+  background: var(--oz-main-surface);
+}
+
+.oz-snippet-row-head {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.oz-snippet-title {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 8px;
+  border-radius: var(--oz-radius-btn);
+  border: 1px solid var(--oz-border);
+  font: inherit;
+  background: var(--oz-surface);
+  color: var(--oz-text);
+}
+
+.oz-snippet-body {
+  width: 100%;
+  min-height: 88px;
+  resize: vertical;
+  padding: 8px;
+  border-radius: var(--oz-radius-btn);
+  border: 1px solid var(--oz-border);
+  font: inherit;
+  background: var(--oz-surface);
+  color: var(--oz-text);
+}
+
+.oz-snippet-remove {
+  flex-shrink: 0;
+}
+
+.oz-snippet-add {
+  align-self: flex-start;
+}

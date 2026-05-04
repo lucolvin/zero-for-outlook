@@ -19,6 +19,15 @@ import {
   openBookings,
   openTodo
 } from "./navigation.ts";
+import {
+  tryBlockSender,
+  tryBlockDomain,
+  tryOpenSignatureUi,
+  openReportIssuePage
+} from "./mailActions.ts";
+import { toggleFullscreenReading } from "./fullscreenReading.ts";
+import { getSnippetCommands } from "./snippets.ts";
+import { recordCommandBarOpened } from "./achievements.ts";
 import commandBarStyles from "../styles/commandBar.css?raw";
 
 // State
@@ -406,9 +415,91 @@ export function rebuildCommandList() {
       }
     },
     {
+      id: "block-sender",
+      title: "Block sender",
+      subtitle: "Best effort: use Outlook junk / block controls for the open message",
+      action: () => {
+        if (tryBlockSender()) {
+          return;
+        }
+        if (openSummaryOverlay) {
+          openSummaryOverlay({
+            title: "Block sender",
+            body:
+              "Could not find Block controls automatically. Open the message ⋯ menu, then choose Junk email or Block.",
+            isError: true
+          });
+        }
+      }
+    },
+    {
+      id: "block-domain",
+      title: "Block sender’s domain",
+      subtitle: "Best effort: block the domain from the reading pane overflow menu",
+      action: () => {
+        if (tryBlockDomain()) {
+          return;
+        }
+        if (openSummaryOverlay) {
+          openSummaryOverlay({
+            title: "Block domain",
+            body:
+              "Could not find a Block domain option. Use the message ⋯ menu and Junk email settings in Outlook.",
+            isError: true
+          });
+        }
+      }
+    },
+    {
+      id: "insert-signature",
+      title: "Signatures",
+      subtitle: "Open insert / manage signatures while composing (best effort)",
+      action: () => {
+        if (tryOpenSignatureUi()) {
+          return;
+        }
+        if (openSummaryOverlay) {
+          openSummaryOverlay({
+            title: "Signatures",
+            body: "Open a compose window first, then run this command again.",
+            isError: true
+          });
+        }
+      }
+    },
+    {
+      id: "report-issue",
+      title: "Report an issue",
+      subtitle: "Open the GitHub issue chooser for Zero for Outlook",
+      action: () => {
+        openReportIssuePage();
+      }
+    },
+    {
+      id: "zen-reading",
+      title: "Zen reading mode",
+      subtitle: "Expand the reading pane; scroll top/bottom edge or press Esc to exit",
+      action: () => {
+        toggleFullscreenReading();
+      }
+    },
+    {
+      id: "snippets-open-settings",
+      title: "Manage snippets",
+      subtitle: "Open Zero settings on the Snippets tab to add, edit, or delete saved snippets",
+      action: () => {
+        try {
+          browserApi.runtime.sendMessage({ type: "oz-open-options", hash: "snippets" }, () => {});
+        } catch (e) {
+          // eslint-disable-next-line no-console
+          console.debug("Zero: Could not open snippets settings:", e);
+        }
+      }
+    },
+    {
       id: "snooze-later-today",
-      title: "Snooze – Later today",
-      subtitle: "Move selected message to later today",
+      title: "Remind me – Later today",
+      subtitle: "Snooze the selection until later today",
       shortcutHint: "S, then preset",
       action: () => {
         openSnoozeAndApplyPreset("laterToday");
@@ -416,8 +507,8 @@ export function rebuildCommandList() {
     },
     {
       id: "snooze-tomorrow",
-      title: "Snooze – Tomorrow",
-      subtitle: "Move selected message to tomorrow morning",
+      title: "Remind me – Tomorrow",
+      subtitle: "Snooze the selection until tomorrow morning",
       shortcutHint: "S, then preset",
       action: () => {
         openSnoozeAndApplyPreset("tomorrow");
@@ -425,8 +516,8 @@ export function rebuildCommandList() {
     },
     {
       id: "snooze-this-weekend",
-      title: "Snooze – This weekend",
-      subtitle: "Move selected message to this weekend",
+      title: "Remind me – This weekend",
+      subtitle: "Snooze the selection until this weekend",
       shortcutHint: "S, then preset",
       action: () => {
         openSnoozeAndApplyPreset("thisWeekend");
@@ -434,8 +525,8 @@ export function rebuildCommandList() {
     },
     {
       id: "snooze-next-week",
-      title: "Snooze – Next week",
-      subtitle: "Move selected message to next week",
+      title: "Remind me – Next week",
+      subtitle: "Snooze the selection until next week",
       shortcutHint: "S, then preset",
       action: () => {
         openSnoozeAndApplyPreset("nextWeek");
@@ -443,9 +534,9 @@ export function rebuildCommandList() {
     },
     {
       id: "unsnooze",
-      title: "Unsnooze",
-      subtitle: "Move scheduled message back to Inbox",
-      shortcutHint: "S, then Unsnooze",
+      title: "Move to Inbox",
+      subtitle: "Clear snooze on a scheduled item (Outlook Unsnooze)",
+      shortcutHint: "S, then Move to Inbox",
       action: () => {
         clickUnsnooze();
       }
@@ -618,6 +709,11 @@ export function rebuildCommandList() {
       }
     }
   ];
+
+  const snippetCommands = getSnippetCommands();
+  if (snippetCommands && snippetCommands.length) {
+    COMMANDS.push(...snippetCommands);
+  }
 
   // Add custom shortcuts as commands (all of them, not just those with keyboard shortcuts)
   const customShortcuts = state.customShortcuts || [];
@@ -869,12 +965,11 @@ function renderCommandList(query) {
     item.addEventListener("click", () => {
       if (cmd && typeof cmd.action === "function") {
         try {
-          cmd.action();
           closeCommandOverlay();
+          cmd.action();
         } catch (e) {
           // eslint-disable-next-line no-console
           console.debug("Zero command action error:", e);
-          closeCommandOverlay();
         }
       }
     });
@@ -955,6 +1050,12 @@ export function openCommandOverlay() {
 
   commandOverlay = backdrop;
   commandInput = modal.querySelector(".oz-command-input");
+
+  try {
+    recordCommandBarOpened();
+  } catch {
+    // best-effort
+  }
 
   renderCommandList("");
 

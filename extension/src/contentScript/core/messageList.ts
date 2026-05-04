@@ -92,6 +92,21 @@ export function focusMessageRow(row) {
   }
 }
 
+/** Keeps the active list row in the middle of the viewport after vim-style j/k (Outlook updates selection async). */
+export function scrollActiveMessageRowIntoViewCenter() {
+  const rows = getMessageRows();
+  if (!rows.length) return;
+  const idx = getCurrentRowIndex(rows);
+  if (idx < 0) return;
+  const row = rows[idx];
+  if (!row || typeof row.scrollIntoView !== "function") return;
+  try {
+    row.scrollIntoView({ block: "center", inline: "nearest", behavior: "instant" });
+  } catch {
+    row.scrollIntoView({ block: "center", inline: "nearest" });
+  }
+}
+
 export function getRowKey(row) {
   const el = /** @type {HTMLElement} */ (row);
   if (!el) return "";

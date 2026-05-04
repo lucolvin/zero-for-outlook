@@ -5,6 +5,7 @@ import {
   DEFAULT_UNDO_SHORTCUT,
   DEFAULT_COMMAND_SHORTCUT,
   DEFAULT_BLOCKED_CONTENT_SHORTCUT,
+  DEFAULT_SNIPPETS_PAGE_SHORTCUT,
   settings
 } from "./settings.ts";
 import {
@@ -22,6 +23,16 @@ import {
   setDarkModeEnabled
 } from "../features/darkMode.ts";
 import { setArchivePopupEnabled } from "../features/archivePopup.ts";
+import { setArchiveListMotionReduced } from "../features/archiveListMotion.ts";
+import {
+  loadSnippetsFromStorage,
+  setSnippetsChangeCallback,
+  watchSnippetStorage
+} from "../features/snippets.ts";
+import { startComposeFocusTracking } from "../features/snippetInsert.ts";
+import { startSnippetInlinePicker } from "../features/snippetInlinePicker.ts";
+import { startSnippetYourPlaceholderSendGuard } from "../features/snippetYourPlaceholderGuard.ts";
+import { startAchievementToastObserver } from "../features/achievements.ts";
 import {
   rebuildCommandList,
   refreshCommandList,
@@ -59,7 +70,9 @@ import { createKeyboardHandler } from "./keyboardHandler.ts";
 let undoShortcut = { ...DEFAULT_UNDO_SHORTCUT };
 let commandShortcut = { ...DEFAULT_COMMAND_SHORTCUT };
 let blockedContentShortcut = { ...DEFAULT_BLOCKED_CONTENT_SHORTCUT };
+let snippetsPageShortcut = { ...DEFAULT_SNIPPETS_PAGE_SHORTCUT };
 let vimEnabled = true;
+let vimSmoothNavigationEnabled = true;
 let inboxZeroEnabled = true;
 let customShortcuts = [];
 let aiTitleEditingEnabled = true;
@@ -72,10 +85,13 @@ export function loadSettings() {
           undoShortcut: DEFAULT_UNDO_SHORTCUT,
           commandShortcut: DEFAULT_COMMAND_SHORTCUT,
           blockedContentShortcut: DEFAULT_BLOCKED_CONTENT_SHORTCUT,
+          snippetsPageShortcut: DEFAULT_SNIPPETS_PAGE_SHORTCUT,
           vimEnabled: true,
           darkModeEnabled: true,
           inboxZeroEnabled: true,
           archivePopupEnabled: true,
+          archiveListMotionReduced: false,
+          vimSmoothNavigationEnabled: true,
           optionsBarHidden: false,
           customShortcuts: [],
           aiTitleEditingEnabled: true
@@ -104,6 +120,12 @@ export function loadSettings() {
                 ...items.blockedContentShortcut
               };
             }
+            if (items.snippetsPageShortcut) {
+              snippetsPageShortcut = {
+                ...DEFAULT_SNIPPETS_PAGE_SHORTCUT,
+                ...items.snippetsPageShortcut
+              };
+            }
             if (typeof items.vimEnabled === "boolean") {
               vimEnabled = items.vimEnabled;
             }
@@ -117,6 +139,16 @@ export function loadSettings() {
               setArchivePopupEnabled(items.archivePopupEnabled);
             } else {
               setArchivePopupEnabled(true);
+            }
+            if (typeof items.archiveListMotionReduced === "boolean") {
+              setArchiveListMotionReduced(items.archiveListMotionReduced);
+            } else {
+              setArchiveListMotionReduced(false);
+            }
+            if (typeof items.vimSmoothNavigationEnabled === "boolean") {
+              vimSmoothNavigationEnabled = items.vimSmoothNavigationEnabled;
+            } else {
+              vimSmoothNavigationEnabled = true;
             }
             if (typeof items.optionsBarHidden === "boolean") {
               setOptionsBarHidden(items.optionsBarHidden);
@@ -171,6 +203,24 @@ export function initialize() {
     // Build initial command list
     rebuildCommandList();
 
+    startAchievementToastObserver();
+    setSnippetsChangeCallback(() => {
+      rebuildCommandList();
+      if (isCommandOverlayOpen()) {
+        refreshCommandList();
+      }
+    });
+    watchSnippetStorage();
+    loadSnippetsFromStorage().then(() => {
+      rebuildCommandList();
+      if (isCommandOverlayOpen()) {
+        refreshCommandList();
+      }
+      startComposeFocusTracking();
+      startSnippetInlinePicker();
+      startSnippetYourPlaceholderSendGuard();
+    });
+
     // Set up keyboard handler
     let currentHandler = null;
     function updateKeyboardHandler() {
@@ -181,7 +231,9 @@ export function initialize() {
         undoShortcut,
         commandShortcut,
         blockedContentShortcut,
-        vimEnabled
+        snippetsPageShortcut,
+        vimEnabled,
+        vimSmoothNavigationEnabled
       });
       window.addEventListener("keydown", currentHandler, true);
     }
@@ -232,9 +284,29 @@ export function initialize() {
           };
           handlerNeedsUpdate = true;
         }
+        if (changes.snippetsPageShortcut && changes.snippetsPageShortcut.newValue) {
+          snippetsPageShortcut = {
+            ...DEFAULT_SNIPPETS_PAGE_SHORTCUT,
+            ...changes.snippetsPageShortcut.newValue
+          };
+          handlerNeedsUpdate = true;
+        }
         if (changes.vimEnabled && typeof changes.vimEnabled.newValue === "boolean") {
           vimEnabled = changes.vimEnabled.newValue;
           handlerNeedsUpdate = true;
+        }
+        if (
+          changes.vimSmoothNavigationEnabled &&
+          typeof changes.vimSmoothNavigationEnabled.newValue === "boolean"
+        ) {
+          vimSmoothNavigationEnabled = changes.vimSmoothNavigationEnabled.newValue;
+          handlerNeedsUpdate = true;
+        }
+        if (
+          changes.archiveListMotionReduced &&
+          typeof changes.archiveListMotionReduced.newValue === "boolean"
+        ) {
+          setArchiveListMotionReduced(changes.archiveListMotionReduced.newValue);
         }
         if (changes.customShortcuts && Array.isArray(changes.customShortcuts.newValue)) {
           customShortcuts = changes.customShortcuts.newValue;
@@ -301,10 +373,10 @@ export function initialize() {
           if (result && result.ok) {
             sendResponse({ ok: true });
           } else {
-            sendResponse(result || { ok: false, error: "Could not apply snooze." });
+            sendResponse(result || { ok: false, error: "Could not apply reminder (Snooze)." });
           }
         } catch (e) {
-          sendResponse({ ok: false, error: "Error applying snooze." });
+          sendResponse({ ok: false, error: "Error applying reminder (Snooze)." });
         }
         return true;
       });

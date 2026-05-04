@@ -5,8 +5,17 @@ import {
   getMessageRows,
   getCurrentRowIndex,
   focusMessageRow,
-  getMessageListContainer
+  getMessageListContainer,
+  scrollActiveMessageRowIntoViewCenter
 } from "../core/messageList.ts";
+
+function scheduleScrollMessageListSelectionCentered() {
+  window.requestAnimationFrame(() => {
+    window.requestAnimationFrame(() => {
+      scrollActiveMessageRowIntoViewCenter();
+    });
+  });
+}
 
 /**
  * @param {"down" | "up"} direction
@@ -39,12 +48,19 @@ export function getVimContext() {
   return vimContext;
 }
 
-export function sendShiftArrow(direction) {
+/**
+ * @param {"down" | "up"} direction
+ * @param {{ skipPostScroll?: boolean }} [opts]
+ */
+export function sendShiftArrow(direction, opts) {
   /** @type {Element | null} */
   const targetEl = document.activeElement || document.body;
   if (!targetEl) return;
 
   targetEl.dispatchEvent(createArrowKeyEvent(direction, true));
+  if (!opts || !opts.skipPostScroll) {
+    scheduleScrollMessageListSelectionCentered();
+  }
 }
 
 /**
@@ -53,12 +69,18 @@ export function sendShiftArrow(direction) {
  * row index would stop after ~N items. Dispatching arrow keys matches native behavior
  * and keeps scrolling (notably on Firefox, which often keeps a smaller DOM window).
  */
-export function moveSelection(direction) {
+/**
+ * @param {"down" | "up"} direction
+ * @param {{ skipPostScroll?: boolean }} [opts]
+ */
+export function moveSelection(direction, opts) {
   const container = getMessageListContainer();
   if (!container) return;
 
   const focusInList =
     document.activeElement && container.contains(document.activeElement);
+
+  const doScroll = !opts || !opts.skipPostScroll;
 
   if (!focusInList) {
     const rows = getMessageRows();
@@ -68,6 +90,7 @@ export function moveSelection(direction) {
     if (index === -1) {
       index = direction === "down" ? 0 : rows.length - 1;
       focusMessageRow(rows[index]);
+      if (doScroll) scheduleScrollMessageListSelectionCentered();
       return;
     }
 
@@ -75,11 +98,13 @@ export function moveSelection(direction) {
     focusMessageRow(rows[index]);
     const targetEl = document.activeElement || document.body;
     targetEl.dispatchEvent(createArrowKeyEvent(direction, false));
+    if (doScroll) scheduleScrollMessageListSelectionCentered();
     return;
   }
 
   const targetEl = document.activeElement || document.body;
   targetEl.dispatchEvent(createArrowKeyEvent(direction, false));
+  if (doScroll) scheduleScrollMessageListSelectionCentered();
 }
 
 export function getNavItems() {
@@ -198,7 +223,7 @@ export function moveNavVertical(direction) {
     target.focus();
   }
   if (typeof target.scrollIntoView === "function") {
-    target.scrollIntoView({ block: "nearest" });
+    target.scrollIntoView({ block: "center", inline: "nearest" });
   }
 }
 
@@ -219,7 +244,7 @@ export function focusSidebar() {
     target.focus();
   }
   if (typeof target.scrollIntoView === "function") {
-    target.scrollIntoView({ block: "nearest" });
+    target.scrollIntoView({ block: "center", inline: "nearest" });
   }
   vimContext = "sidebar";
 }
@@ -247,7 +272,7 @@ export function focusMessageListFromSidebar() {
     targetRow.focus();
   }
   if (typeof targetRow.scrollIntoView === "function") {
-    targetRow.scrollIntoView({ block: "nearest" });
+    targetRow.scrollIntoView({ block: "center", inline: "nearest" });
   }
 
   vimContext = "auto";

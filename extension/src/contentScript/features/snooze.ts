@@ -3,6 +3,7 @@
 import { isScheduledView } from "../core/dom.ts";
 import { hasSelectedMessage } from "../core/messageList.ts";
 import { settings } from "../core/settings.ts";
+import { recordReminderSet } from "./achievements.ts";
 
 // State
 let snoozeOverlay = null;
@@ -226,8 +227,10 @@ function clickSnoozePreset(presetName) {
 export function openSnoozeAndApplyPreset(preset) {
   const snoozeButton = findSnoozeButton();
   if (!snoozeButton) {
-    return { ok: false, error: "No Snooze button found on this page." };
+    return { ok: false, error: "Could not find Outlook’s Snooze control on this page." };
   }
+
+  recordReminderSet();
 
   /** @type {HTMLElement} */ (snoozeButton).click();
 
@@ -476,6 +479,14 @@ function setSnoozeSelection(index) {
       btn.classList.remove("oz-snooze-selected");
     }
   });
+  const activeBtn = snoozeButtons[clamped];
+  if (activeBtn && typeof activeBtn.scrollIntoView === "function") {
+    try {
+      activeBtn.scrollIntoView({ block: "center", inline: "nearest", behavior: "instant" });
+    } catch {
+      activeBtn.scrollIntoView({ block: "center", inline: "nearest" });
+    }
+  }
 }
 
 export function moveSnoozeSelection(direction) {
@@ -553,7 +564,7 @@ export function openSnoozeOverlay() {
     close.className = "oz-snooze-close";
     close.setAttribute(
       "aria-label",
-      kind === "Unsnooze" ? "Close unsnooze menu" : "Close snooze menu"
+      kind === "Move to Inbox" ? "Close move to Inbox menu" : "Close remind me menu"
     );
     close.textContent = "Esc";
 
@@ -588,11 +599,17 @@ export function openSnoozeOverlay() {
     // so that the "Unsnooze" command exists when we try to trigger it.
     primeSnoozeDropdown();
 
-    modal.appendChild(buildHeader("Unsnooze"));
+    modal.appendChild(buildHeader("Move to Inbox"));
+
+    const hintScheduled = document.createElement("p");
+    hintScheduled.className = "oz-snooze-hint";
+    hintScheduled.textContent =
+      "Clears the reminder so the thread appears in your Inbox again (Outlook Unsnooze).";
+    modal.appendChild(hintScheduled);
 
     const section = document.createElement("div");
     section.className = "oz-snooze-section";
-    section.appendChild(buildButton("unsnooze", "Unsnooze", "Move back to Inbox"));
+    section.appendChild(buildButton("unsnooze", "Move to Inbox now", "Return this item to Inbox"));
     modal.appendChild(section);
   } else {
     // Just like the Unsnooze view, we want Outlook's own Snooze dropdown
@@ -601,7 +618,13 @@ export function openSnoozeOverlay() {
     // This briefly toggles the Snooze button and then closes it again.
     primeSnoozeDropdown();
 
-    modal.appendChild(buildHeader("Snooze"));
+    modal.appendChild(buildHeader("Remind me"));
+
+    const hintInbox = document.createElement("p");
+    hintInbox.className = "oz-snooze-hint";
+    hintInbox.textContent =
+      "Pick when this thread should return to your Inbox. Uses Outlook’s Snooze command under the hood.";
+    modal.appendChild(hintInbox);
 
     const presets = document.createElement("div");
     presets.className = "oz-snooze-section";

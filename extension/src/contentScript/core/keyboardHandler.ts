@@ -12,6 +12,8 @@ import {
   resetVimContext,
   getVimContext
 } from "../features/vimMode.ts";
+import { requestVimVerticalNav } from "../features/vimNavigation.ts";
+import { shouldVimDeferToOutlook } from "../features/fullscreenReading.ts";
 import {
   openSnoozeOverlay,
   closeSnoozeOverlay,
@@ -40,14 +42,18 @@ import {
 } from "../features/elementPicker.ts";
 import { hasSelectedMessage } from "./messageList.ts";
 import { settings } from "./settings.ts";
+import { browserApi } from "./browserApi.ts";
 
 export function createKeyboardHandler(options) {
   const {
     undoShortcut,
     commandShortcut,
     blockedContentShortcut,
-    vimEnabled
+    snippetsPageShortcut,
+    vimEnabled,
+    vimSmoothNavigationEnabled: vimSmoothRaw
   } = options;
+  const vimSmoothNavigationEnabled = vimSmoothRaw !== false;
 
   return function onKeyDown(event) {
     try {
@@ -111,6 +117,21 @@ export function createKeyboardHandler(options) {
         return;
       }
 
+      if (
+        snippetsPageShortcut &&
+        snippetsPageShortcut.key &&
+        shortcutMatches(event, snippetsPageShortcut)
+      ) {
+        event.preventDefault();
+        event.stopPropagation();
+        try {
+          browserApi.runtime.sendMessage({ type: "oz-open-options", hash: "snippets" }, () => {});
+        } catch {
+          // ignore
+        }
+        return;
+      }
+
       // Custom shortcuts also work while composing/editing; other extension shortcuts do not (see below).
       const customShortcuts = settings.getState().customShortcuts || [];
       for (const customShortcut of customShortcuts) {
@@ -131,7 +152,7 @@ export function createKeyboardHandler(options) {
 
       // Multi‑select support: Shift+j / Shift+k behave like
       // Shift+ArrowDown / Shift+ArrowUp in the message list, allowing
-      // you to select ranges of messages that can then be snoozed or
+      // you to select ranges of messages that can then be reminded (Snooze) or
       // archived together using Outlook's own commands.
       if (
         vimEnabled &&
@@ -142,9 +163,16 @@ export function createKeyboardHandler(options) {
         (key === "j" || key === "k") &&
         !isSnoozeOverlayOpen()
       ) {
+        if (shouldVimDeferToOutlook()) {
+          return;
+        }
         event.preventDefault();
         event.stopPropagation();
-        sendShiftArrow(key === "j" ? "down" : "up");
+        if (vimSmoothNavigationEnabled) {
+          requestVimVerticalNav("shift", key === "j" ? "down" : "up");
+        } else {
+          sendShiftArrow(key === "j" ? "down" : "up");
+        }
         return;
       }
 
@@ -179,7 +207,7 @@ export function createKeyboardHandler(options) {
             }
             return;
           }
-          // Block sidebar/message navigation keys while the snooze/unsnooze overlay is active.
+          // Block sidebar/message navigation keys while the Remind me / Move to Inbox overlay is active.
           if (key === "h" || key === "l") {
             event.preventDefault();
             event.stopPropagation();
@@ -219,11 +247,22 @@ export function createKeyboardHandler(options) {
         !event.shiftKey &&
         !event.metaKey
       ) {
+        if (key === "j" || key === "k") {
+          if (shouldVimDeferToOutlook()) {
+            return;
+          }
+        }
         if (key === "j") {
           event.preventDefault();
           event.stopPropagation();
           if (getVimContext() === "sidebar") {
-            moveNavVertical("down");
+            if (vimSmoothNavigationEnabled) {
+              requestVimVerticalNav("sidebar", "down");
+            } else {
+              moveNavVertical("down");
+            }
+          } else if (vimSmoothNavigationEnabled) {
+            requestVimVerticalNav("list", "down");
           } else {
             moveSelection("down");
           }
@@ -233,7 +272,13 @@ export function createKeyboardHandler(options) {
           event.preventDefault();
           event.stopPropagation();
           if (getVimContext() === "sidebar") {
-            moveNavVertical("up");
+            if (vimSmoothNavigationEnabled) {
+              requestVimVerticalNav("sidebar", "up");
+            } else {
+              moveNavVertical("up");
+            }
+          } else if (vimSmoothNavigationEnabled) {
+            requestVimVerticalNav("list", "up");
           } else {
             moveSelection("up");
           }

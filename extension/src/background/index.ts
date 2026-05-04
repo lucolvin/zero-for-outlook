@@ -2,6 +2,8 @@
 // Background script for Outlook Web Keyboard Shortcuts (Manifest V2)
 // Clicking the toolbar icon opens the options page in a full tab.
 
+import { writeSyncFromRows } from "../snippetStorage.ts";
+
 (() => {
   const api = typeof chrome !== "undefined" ? chrome : browser;
   const AUTH_SESSION_KEY = "ozAuthSession";
@@ -41,6 +43,13 @@
       metaKey: true,
       key: "b"
     },
+    snippetsPageShortcut: {
+      ctrlKey: false,
+      altKey: false,
+      shiftKey: true,
+      metaKey: true,
+      key: "y"
+    },
     vimEnabled: true,
     darkModeEnabled: true,
     oledModeEnabled: false,
@@ -49,9 +58,19 @@
     backdropBlurEnabled: true,
     inboxZeroEnabled: true,
     archivePopupEnabled: true,
+    archiveListMotionReduced: false,
+    vimSmoothNavigationEnabled: true,
     optionsBarHidden: false,
     vimContext: "auto",
     customShortcuts: [],
+    /** Canonical bodies live in chrome.storage.local; included in cloud API payload only. */
+    ozSnippets: [],
+    ozAchievementState: {
+      v: 2,
+      stats: {},
+      unlocked: [],
+      log: []
+    },
     aiTitleEditingEnabled: true,
     geminiApiKey: "",
     inboxZeroStreak: {
@@ -62,6 +81,12 @@
     manualShortcutAdvancedWarningShown: false
   };
   const SYNCED_KEYS = Object.keys(SETTINGS_DEFAULTS);
+  const ACCOUNT_PROFILE_CACHE_TTL_MS = 1000 * 60 * 10;
+  let cachedAccountProfile = {
+    token: "",
+    profile: null,
+    expiresAt: 0
+  };
 
   function randomHex(bytes = 24) {
     const arr = new Uint8Array(bytes);
@@ -265,6 +290,13 @@
 
   async function fetchAccountProfile(extensionToken) {
     if (!extensionToken) return null;
+    if (
+      cachedAccountProfile.token === extensionToken &&
+      cachedAccountProfile.profile &&
+      cachedAccountProfile.expiresAt > Date.now()
+    ) {
+      return cachedAccountProfile.profile;
+    }
     const { apiBaseUrl } = await getCloudConfig();
 
     try {
@@ -275,10 +307,16 @@
       );
       const profile = response && response.profile ? response.profile : null;
       if (!profile) return null;
-      return {
+      const normalized = {
         name: String(profile.name || "").trim() || "Account",
         imageUrl: String(profile.imageUrl || "").trim()
       };
+      cachedAccountProfile = {
+        token: extensionToken,
+        profile: normalized,
+        expiresAt: Date.now() + ACCOUNT_PROFILE_CACHE_TTL_MS
+      };
+      return normalized;
     } catch (_) {
       return null;
     }
@@ -469,6 +507,11 @@
   }
 
   async function signOut(flowOptions = {}) {
+    cachedAccountProfile = {
+      token: "",
+      profile: null,
+      expiresAt: 0
+    };
     await storageLocalSet({
       [AUTH_SESSION_KEY]: null,
       [PENDING_AUTH_KEY]: null,
@@ -499,16 +542,26 @@
         updatedAt: 0
       }
     });
+    const localSnip = await storageLocalGet({ ozSnippets: [], ozSnippetsRev: 0 });
     const values = {};
     for (const key of SYNCED_KEYS) {
       if (Object.prototype.hasOwnProperty.call(items, key)) {
         values[key] = items[key];
       }
     }
+    values.ozSnippets = Array.isArray(localSnip.ozSnippets) ? localSnip.ozSnippets : [];
+
     const syncMeta = items[SYNC_META_KEY] || {};
+    const fieldUpdatedAt = {
+      ...(syncMeta.fieldUpdatedAt || {}),
+      ozSnippets: Math.max(
+        Number((syncMeta.fieldUpdatedAt || {}).ozSnippets || 0),
+        Number(localSnip.ozSnippetsRev || 0)
+      )
+    };
     return {
       values,
-      fieldUpdatedAt: syncMeta.fieldUpdatedAt || {},
+      fieldUpdatedAt,
       settingsRevision: Number(syncMeta.settingsRevision || 0),
       updatedAt: Number(syncMeta.updatedAt || 0)
     };
@@ -565,17 +618,27 @@
   }
 
   async function writeMergedSettingsDoc(doc) {
-    const toWrite = { [SYNC_META_KEY]: {
-      fieldUpdatedAt: doc.fieldUpdatedAt || {},
-      settingsRevision: Number(doc.settingsRevision || 0),
-      updatedAt: Number(doc.updatedAt || Date.now())
-    } };
-    for (const key of SYNCED_KEYS) {
-      if (Object.prototype.hasOwnProperty.call(doc.values || {}, key)) {
-        toWrite[key] = doc.values[key];
+    const toWrite = {
+      [SYNC_META_KEY]: {
+        fieldUpdatedAt: doc.fieldUpdatedAt || {},
+        settingsRevision: Number(doc.settingsRevision || 0),
+        updatedAt: Number(doc.updatedAt || Date.now())
       }
+    };
+    for (const key of SYNCED_KEYS) {
+      if (!Object.prototype.hasOwnProperty.call(doc.values || {}, key)) continue;
+      if (key === "ozSnippets") continue;
+      toWrite[key] = doc.values[key];
     }
     await storageSyncSet(toWrite);
+
+    if (Object.prototype.hasOwnProperty.call(doc.values || {}, "ozSnippets")) {
+      const rows = doc.values.ozSnippets;
+      const arr = Array.isArray(rows) ? rows : [];
+      const rev = Date.now();
+      await storageLocalSet({ ozSnippets: arr, ozSnippetsRev: rev });
+      writeSyncFromRows(api, arr, rev, () => {});
+    }
   }
 
   async function pushLocalToCloud() {
@@ -1021,8 +1084,15 @@
               });
             }
 
+            const optionsHash =
+              typeof message.hash === "string" && message.hash
+                ? message.hash.startsWith("#")
+                  ? message.hash
+                  : `#${message.hash}`
+                : "";
+
             if (api.runtime && api.runtime.getURL && api.tabs && api.tabs.create) {
-              api.tabs.create({ url: api.runtime.getURL("settings.html") }, () => {
+              api.tabs.create({ url: api.runtime.getURL("settings.html") + optionsHash }, () => {
                 if (api.runtime && api.runtime.lastError && api.runtime.openOptionsPage) {
                   api.runtime.openOptionsPage();
                 }

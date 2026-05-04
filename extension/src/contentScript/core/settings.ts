@@ -26,11 +26,21 @@ export const DEFAULT_BLOCKED_CONTENT_SHORTCUT = {
   key: "b"
 };
 
+/** Opens the full-page snippets manager (extension tab). */
+export const DEFAULT_SNIPPETS_PAGE_SHORTCUT = {
+  ctrlKey: false,
+  altKey: false,
+  shiftKey: true,
+  metaKey: true,
+  key: "y"
+};
+
 class SettingsManager {
   constructor() {
     this.undoShortcut = { ...DEFAULT_UNDO_SHORTCUT };
     this.commandShortcut = { ...DEFAULT_COMMAND_SHORTCUT };
     this.blockedContentShortcut = { ...DEFAULT_BLOCKED_CONTENT_SHORTCUT };
+    this.snippetsPageShortcut = { ...DEFAULT_SNIPPETS_PAGE_SHORTCUT };
     this.vimEnabled = true;
     this.darkModeEnabled = true;
     this.oledModeEnabled = false;
@@ -39,6 +49,8 @@ class SettingsManager {
     this.backdropBlurEnabled = true;
     this.inboxZeroEnabled = true;
     this.archivePopupEnabled = true;
+    this.archiveListMotionReduced = false;
+    this.vimSmoothNavigationEnabled = true;
     this.optionsBarHidden = false;
     this.vimContext = "auto";
     this.customShortcuts = [];
@@ -71,6 +83,7 @@ class SettingsManager {
       undoShortcut: this.undoShortcut,
       commandShortcut: this.commandShortcut,
       blockedContentShortcut: this.blockedContentShortcut,
+      snippetsPageShortcut: this.snippetsPageShortcut,
       vimEnabled: this.vimEnabled,
       darkModeEnabled: this.darkModeEnabled,
       oledModeEnabled: this.oledModeEnabled,
@@ -79,6 +92,8 @@ class SettingsManager {
       backdropBlurEnabled: this.backdropBlurEnabled,
       inboxZeroEnabled: this.inboxZeroEnabled,
       archivePopupEnabled: this.archivePopupEnabled,
+      archiveListMotionReduced: this.archiveListMotionReduced,
+      vimSmoothNavigationEnabled: this.vimSmoothNavigationEnabled,
       optionsBarHidden: this.optionsBarHidden,
       vimContext: this.vimContext,
       customShortcuts: this.customShortcuts,
@@ -95,6 +110,7 @@ class SettingsManager {
             undoShortcut: DEFAULT_UNDO_SHORTCUT,
             commandShortcut: DEFAULT_COMMAND_SHORTCUT,
             blockedContentShortcut: DEFAULT_BLOCKED_CONTENT_SHORTCUT,
+            snippetsPageShortcut: DEFAULT_SNIPPETS_PAGE_SHORTCUT,
             vimEnabled: true,
             darkModeEnabled: true,
             oledModeEnabled: false,
@@ -103,6 +119,8 @@ class SettingsManager {
             backdropBlurEnabled: true,
             inboxZeroEnabled: true,
             archivePopupEnabled: true,
+            archiveListMotionReduced: false,
+            vimSmoothNavigationEnabled: true,
             optionsBarHidden: false,
             customShortcuts: [],
             aiTitleEditingEnabled: true
@@ -131,6 +149,12 @@ class SettingsManager {
                   ...items.blockedContentShortcut
                 };
               }
+              if (items.snippetsPageShortcut) {
+                this.snippetsPageShortcut = {
+                  ...DEFAULT_SNIPPETS_PAGE_SHORTCUT,
+                  ...items.snippetsPageShortcut
+                };
+              }
               if (typeof items.vimEnabled === "boolean") {
                 this.vimEnabled = items.vimEnabled;
               }
@@ -154,6 +178,12 @@ class SettingsManager {
               }
               if (typeof items.archivePopupEnabled === "boolean") {
                 this.archivePopupEnabled = items.archivePopupEnabled;
+              }
+              if (typeof items.archiveListMotionReduced === "boolean") {
+                this.archiveListMotionReduced = items.archiveListMotionReduced;
+              }
+              if (typeof items.vimSmoothNavigationEnabled === "boolean") {
+                this.vimSmoothNavigationEnabled = items.vimSmoothNavigationEnabled;
               }
               if (typeof items.optionsBarHidden === "boolean") {
                 this.optionsBarHidden = items.optionsBarHidden;
@@ -208,6 +238,13 @@ class SettingsManager {
           };
           changed = true;
         }
+        if (changes.snippetsPageShortcut && changes.snippetsPageShortcut.newValue) {
+          this.snippetsPageShortcut = {
+            ...DEFAULT_SNIPPETS_PAGE_SHORTCUT,
+            ...changes.snippetsPageShortcut.newValue
+          };
+          changed = true;
+        }
         if (changes.vimEnabled && typeof changes.vimEnabled.newValue === "boolean") {
           this.vimEnabled = changes.vimEnabled.newValue;
           changed = true;
@@ -238,6 +275,20 @@ class SettingsManager {
         }
         if (changes.archivePopupEnabled && typeof changes.archivePopupEnabled.newValue === "boolean") {
           this.archivePopupEnabled = changes.archivePopupEnabled.newValue;
+          changed = true;
+        }
+        if (
+          changes.archiveListMotionReduced &&
+          typeof changes.archiveListMotionReduced.newValue === "boolean"
+        ) {
+          this.archiveListMotionReduced = changes.archiveListMotionReduced.newValue;
+          changed = true;
+        }
+        if (
+          changes.vimSmoothNavigationEnabled &&
+          typeof changes.vimSmoothNavigationEnabled.newValue === "boolean"
+        ) {
+          this.vimSmoothNavigationEnabled = changes.vimSmoothNavigationEnabled.newValue;
           changed = true;
         }
         if (changes.optionsBarHidden && typeof changes.optionsBarHidden.newValue === "boolean") {

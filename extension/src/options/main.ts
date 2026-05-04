@@ -27,6 +27,13 @@ export {};
     metaKey: true,
     key: "b"
   };
+  const DEFAULT_SNIPPETS_PAGE_SHORTCUT = {
+    ctrlKey: false,
+    altKey: false,
+    shiftKey: true,
+    metaKey: true,
+    key: "y"
+  };
 
   const shortcutInput = document.getElementById("undoShortcut");
   const commandShortcutInput = document.getElementById("commandShortcut");
@@ -47,7 +54,12 @@ export {};
   const clearBtn = document.getElementById("clearUndo");
   const clearCommandBtn = document.getElementById("clearCommand");
   const clearBlockedContentBtn = document.getElementById("clearBlockedContent");
+  const snippetsPageShortcutInput = document.getElementById("snippetsPageShortcut");
+  const clearSnippetsPageShortcutBtn = document.getElementById("clearSnippetsPageShortcut");
+  const snippetsPageShortcutStatusEl = document.getElementById("status-snippets-page-shortcut");
   const vimToggle = document.getElementById("vimEnabled");
+  const vimSmoothNavigationToggle = document.getElementById("vimSmoothNavigationEnabled");
+  const archiveListMotionToggle = document.getElementById("archiveListMotionReduced");
   const lightModeBtn = document.getElementById("lightModeBtn");
   const darkModeBtn = document.getElementById("darkModeBtn");
   const oledEnabledBtn = document.getElementById("oledEnabledBtn");
@@ -98,13 +110,96 @@ export {};
   const syncNowModalPush = document.getElementById("syncNowModalPush");
   const syncNowModalPull = document.getElementById("syncNowModalPull");
   const CLOUD_ACCOUNT_OPT_IN_KEY = "ozCloudAccountOptIn";
+  const INBOX_ZERO_STREAK_KEY = "inboxZeroStreak";
+  const OZ_ACHIEVEMENT_STORAGE_KEY = "ozAchievementState";
+
+  const ACHIEVEMENT_META = [
+    { id: "first_archive", label: "Archivist", desc: "Archive a message once" },
+    { id: "archives_10", label: "Declutterer", desc: "Archive 10 messages" },
+    { id: "command_explorer", label: "Command explorer", desc: "Open the command bar 5 times" },
+    { id: "reminder_friend", label: "Reminder friend", desc: "Set 5 reminders" },
+    { id: "snippet_author", label: "Snippet author", desc: "Save at least one snippet" },
+    { id: "snippet_pro", label: "Snippet pro", desc: "Insert snippets 10 times" },
+    { id: "streak_3", label: "On a roll", desc: "Reach a 3-day inbox zero streak" },
+    { id: "streak_7", label: "Week warrior", desc: "Reach a 7-day inbox zero streak" }
+  ];
+
+  function updateStatsFromStorage(items) {
+    const elDays = document.getElementById("ozStatStreakDays");
+    const elDate = document.getElementById("ozStatLastZeroDate");
+    if (!elDays && !elDate) {
+      return;
+    }
+    const raw = items && items[INBOX_ZERO_STREAK_KEY];
+    const days =
+      raw && Number.isFinite(Number(raw.days)) && Number(raw.days) > 0
+        ? Math.floor(Number(raw.days))
+        : 0;
+    const lastHit =
+      raw && typeof raw.lastHitDate === "string" && raw.lastHitDate.trim()
+        ? raw.lastHitDate.trim()
+        : null;
+    if (elDays) {
+      elDays.textContent = days > 0 ? String(days) : "—";
+    }
+    if (elDate) {
+      elDate.textContent = lastHit || "—";
+    }
+  }
+
+  function renderAchievementsFromStorage() {
+    const grid = document.getElementById("ozAchievementsGrid");
+    const logEl = document.getElementById("ozAchievementLog");
+    if (!grid && !logEl) return;
+    try {
+      browserApi.storage.sync.get({ [OZ_ACHIEVEMENT_STORAGE_KEY]: null }, (items) => {
+        const raw = items && items[OZ_ACHIEVEMENT_STORAGE_KEY];
+        const unlocked = raw && Array.isArray(raw.unlocked) ? raw.unlocked : [];
+        const log = raw && Array.isArray(raw.log) ? raw.log.slice().reverse() : [];
+        if (grid) {
+          grid.innerHTML = "";
+          ACHIEVEMENT_META.forEach((meta) => {
+            const card = document.createElement("div");
+            card.className =
+              "oz-achievement-card" +
+              (unlocked.includes(meta.id) ? " oz-achievement-unlocked" : "");
+            const t = document.createElement("div");
+            t.className = "oz-achievement-card-title";
+            t.textContent = meta.label;
+            const d = document.createElement("div");
+            d.className = "oz-achievement-card-desc";
+            d.textContent = meta.desc;
+            card.appendChild(t);
+            card.appendChild(d);
+            grid.appendChild(card);
+          });
+        }
+        if (logEl) {
+          logEl.innerHTML = "";
+          log.slice(0, 12).forEach((entry) => {
+            const li = document.createElement("li");
+            const when = entry.t ? String(entry.t).replace("T", " ").slice(0, 19) : "";
+            li.textContent = `${when} — ${entry.type}${entry.note ? ": " + entry.note : ""}`;
+            logEl.appendChild(li);
+          });
+        }
+      });
+    } catch {
+      // ignore
+    }
+  }
+
   const SIDE_PANEL_NAV_URL_KEY = "ozSidePanelNavigateUrl";
   const LEGACY_LOCAL_ONLY_KEY = "ozLocalOnlyMode";
   const MANUAL_SHORTCUT_WARNING_KEY = "manualShortcutAdvancedWarningShown";
+  const ACCOUNT_STATUS_POLL_FAST_MS = 4000;
+  const ACCOUNT_STATUS_POLL_MEDIUM_MS = 15000;
+  const ACCOUNT_STATUS_POLL_SLOW_MS = 60000;
 
   // Pending changes object
   let pendingChanges = {};
   let hasUnsavedChanges = false;
+  let accountStatusPollTimer = null;
 
   const PAGE_INFO = {
     general: {
@@ -130,6 +225,13 @@ export {};
       icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <rect x="2" y="6" width="20" height="12" rx="2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
         <path d="M7 10h2.5M11.5 10h5.5M7 14h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>`
+    },
+    snippets: {
+      title: "Snippets",
+      subtitle: "Saved snippets, shortcut to this tab, and insert text in Outlook.",
+      icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
       </svg>`
     },
     ai: {
@@ -243,7 +345,12 @@ export {};
       "customShortcuts",
       "geminiApiKey",
       "aiTitleEditingEnabled",
-      "manualShortcutAdvancedWarningShown"
+      "manualShortcutAdvancedWarningShown",
+      "ozSnippets",
+      "snippetsPageShortcut",
+      "ozAchievementState",
+      "vimSmoothNavigationEnabled",
+      "archiveListMotionReduced"
     ];
     if (hintKeys.some((k) => Object.prototype.hasOwnProperty.call(parsed, k))) {
       return parsed;
@@ -847,6 +954,36 @@ export {};
     } else if (status?.claimError) {
       setAccountStatus(status.claimError);
     }
+    return status || null;
+  }
+
+  function clearAccountStatusPolling() {
+    if (accountStatusPollTimer) {
+      clearTimeout(accountStatusPollTimer);
+      accountStatusPollTimer = null;
+    }
+  }
+
+  async function pollAccountStatusLoop() {
+    const status = await refreshAccountStatus();
+    const claimPending = status?.claimState === "pending";
+    const signedIn = !!status?.signedIn;
+
+    let delay = ACCOUNT_STATUS_POLL_MEDIUM_MS;
+    if (claimPending) {
+      delay = ACCOUNT_STATUS_POLL_FAST_MS;
+    } else if (signedIn) {
+      delay = ACCOUNT_STATUS_POLL_SLOW_MS;
+    }
+
+    if (document.visibilityState === "hidden") {
+      delay = Math.max(delay, ACCOUNT_STATUS_POLL_SLOW_MS);
+    }
+
+    clearAccountStatusPolling();
+    accountStatusPollTimer = setTimeout(() => {
+      void pollAccountStatusLoop();
+    }, delay);
   }
 
   function saveAllPendingChanges() {
@@ -1124,6 +1261,13 @@ export {};
     updatePendingChange('blockedContentShortcut', shortcut);
     if (blockedContentShortcutInput) {
       blockedContentShortcutInput.value = formatShortcut(shortcut);
+    }
+  }
+
+  function saveSnippetsPageShortcut(shortcut) {
+    updatePendingChange("snippetsPageShortcut", shortcut);
+    if (snippetsPageShortcutInput) {
+      snippetsPageShortcutInput.value = formatShortcut(shortcut);
     }
   }
 
@@ -1517,6 +1661,7 @@ export {};
           undoShortcut: DEFAULT_UNDO_SHORTCUT,
           commandShortcut: DEFAULT_COMMAND_SHORTCUT,
           blockedContentShortcut: DEFAULT_BLOCKED_CONTENT_SHORTCUT,
+          snippetsPageShortcut: DEFAULT_SNIPPETS_PAGE_SHORTCUT,
           vimEnabled: true,
           darkModeEnabled: true,
           oledModeEnabled: false,
@@ -1525,9 +1670,16 @@ export {};
           backdropBlurEnabled: true,
           inboxZeroEnabled: true,
           archivePopupEnabled: true,
+          archiveListMotionReduced: false,
+          vimSmoothNavigationEnabled: true,
           geminiApiKey: "",
           customShortcuts: [],
-          aiTitleEditingEnabled: true
+          aiTitleEditingEnabled: true,
+          [INBOX_ZERO_STREAK_KEY]: {
+            days: 0,
+            lastHitDate: null,
+            lastOverlayDate: null
+          }
         },
         (items) => {
           if (browserApi.runtime && browserApi.runtime.lastError) {
@@ -1547,6 +1699,12 @@ export {};
             const blockedShortcut =
               (items && items.blockedContentShortcut) || DEFAULT_BLOCKED_CONTENT_SHORTCUT;
             blockedContentShortcutInput.value = formatShortcut(blockedShortcut);
+          }
+
+          if (snippetsPageShortcutInput) {
+            const sp =
+              (items && items.snippetsPageShortcut) || DEFAULT_SNIPPETS_PAGE_SHORTCUT;
+            snippetsPageShortcutInput.value = formatShortcut(sp);
           }
 
           if (vimToggle) {
@@ -1607,6 +1765,22 @@ export {};
             archivePopupToggle.checked = archivePopupEnabled;
           }
 
+          const archiveListMotionReduced =
+            items && typeof items.archiveListMotionReduced === "boolean"
+              ? items.archiveListMotionReduced
+              : false;
+          if (archiveListMotionToggle) {
+            archiveListMotionToggle.checked = archiveListMotionReduced;
+          }
+
+          const vimSmoothNavigationEnabled =
+            items && typeof items.vimSmoothNavigationEnabled === "boolean"
+              ? items.vimSmoothNavigationEnabled
+              : true;
+          if (vimSmoothNavigationToggle) {
+            vimSmoothNavigationToggle.checked = vimSmoothNavigationEnabled;
+          }
+
           const geminiKey = (items && items.geminiApiKey) || "";
           if (geminiInput) {
             geminiInput.value = geminiKey;
@@ -1626,6 +1800,8 @@ export {};
           }
 
           loadCustomShortcuts();
+          updateStatsFromStorage(items);
+          renderAchievementsFromStorage();
           markChangesSaved();
         }
       );
@@ -1665,6 +1841,17 @@ export {};
       key: ""
     };
     saveBlockedContentShortcut(emptyShortcut);
+  }
+
+  function clearSnippetsPageShortcut() {
+    const emptyShortcut = {
+      ctrlKey: false,
+      altKey: false,
+      shiftKey: false,
+      metaKey: false,
+      key: ""
+    };
+    saveSnippetsPageShortcut(emptyShortcut);
   }
 
   function clearGeminiApiKey() {
@@ -1716,10 +1903,39 @@ export {};
     });
   }
 
+  if (snippetsPageShortcutInput) {
+    snippetsPageShortcutInput.addEventListener(
+      "keydown",
+      createShortcutHandler(saveSnippetsPageShortcut)
+    );
+    snippetsPageShortcutInput.addEventListener("keyup", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+    });
+  }
+
+  if (clearSnippetsPageShortcutBtn) {
+    clearSnippetsPageShortcutBtn.addEventListener("click", clearSnippetsPageShortcut);
+  }
+
   if (vimToggle) {
     vimToggle.addEventListener("change", (e) => {
       const target = /** @type {HTMLInputElement} */ (e.target);
       updatePendingChange('vimEnabled', !!target.checked);
+    });
+  }
+
+  if (vimSmoothNavigationToggle) {
+    vimSmoothNavigationToggle.addEventListener("change", (e) => {
+      const target = /** @type {HTMLInputElement} */ (e.target);
+      updatePendingChange("vimSmoothNavigationEnabled", !!target.checked);
+    });
+  }
+
+  if (archiveListMotionToggle) {
+    archiveListMotionToggle.addEventListener("change", (e) => {
+      const target = /** @type {HTMLInputElement} */ (e.target);
+      updatePendingChange("archiveListMotionReduced", !!target.checked);
     });
   }
 
@@ -2169,6 +2385,16 @@ export {};
       activatePanel(initialPanelId);
     }
 
+    window.requestAnimationFrame(() => {
+      const raw = (window.location.hash || "").replace(/^#/, "").trim().toLowerCase();
+      if (raw === "snippets") {
+        const tab = document.querySelector('[data-panel="snippets"]');
+        if (tab) {
+          /** @type {HTMLElement} */ (tab).click();
+        }
+      }
+    });
+
     const exportSettingsBtn = document.getElementById("exportSettingsJson");
     if (exportSettingsBtn) {
       exportSettingsBtn.addEventListener("click", exportSettingsAndShortcuts);
@@ -2176,10 +2402,13 @@ export {};
 
     wireImportSettingsUi();
     initAboutInfo();
-    void refreshAccountStatus();
-    setInterval(() => {
-      refreshAccountStatus();
-    }, 4000);
+    void pollAccountStatusLoop();
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") {
+        clearAccountStatusPolling();
+        void pollAccountStatusLoop();
+      }
+    });
   }
 
   // Settings HTML is injected by the WXT/React shell after the document may already
