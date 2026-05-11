@@ -3,7 +3,8 @@
   "description": "Zero for Outlook adds configurable keyboard shortcuts and extends functionality of Outlook on the web.",
   "version": "0.7.3",
   "permissions": [
-    "storage"
+    "storage",
+    "tabs"
   ],
   "host_permissions": [
     "https://outlook.live.com/*",
@@ -31,6 +32,14 @@
     "32": "icons/icon-32.png",
     "48": "icons/icon-48.png",
     "128": "icons/icon-128.png"
+  },
+  "commands": {
+    "toggle-command-bar": {
+      "suggested_key": {
+        "default": "Ctrl+K"
+      },
+      "description": "Toggle the Zero command bar"
+    }
   },
   "options_ui": {
     "page": "options.html",
