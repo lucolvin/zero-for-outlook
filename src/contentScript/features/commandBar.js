@@ -197,21 +197,64 @@ function findUnsubscribeLinkInCurrentEmail() {
   return null;
 }
 
-export function clickUnsubscribeLink() {
-  const link = findUnsubscribeLinkInCurrentEmail();
-  if (!link) {
-    // eslint-disable-next-line no-console
-    console.debug("Zero: No unsubscribe link found in current email.");
-    return false;
-  }
+function performUnsubscribeClick(link) {
   try {
-    /** @type {HTMLElement} */ (link).click();
+    const el = /** @type {HTMLElement} */ (link);
+    // Bring the element into view and give it focus first. Some Outlook
+    // controls only respond to a click once they have been scrolled into
+    // the visible viewport and received focus (especially the native
+    // unsubscribe banner that mounts lazily).
+    try {
+      if (typeof el.scrollIntoView === "function") {
+        el.scrollIntoView({ block: "center", inline: "nearest" });
+      }
+    } catch (e) {
+      // ignore
+    }
+    try {
+      if (typeof el.focus === "function") {
+        el.focus({ preventScroll: true });
+      }
+    } catch (e) {
+      // ignore
+    }
+    el.click();
     return true;
   } catch (e) {
     // eslint-disable-next-line no-console
     console.debug("Zero: Failed to click unsubscribe link:", e);
     return false;
   }
+}
+
+// Retries the search briefly so the first invocation from the command bar
+// works even when Outlook has not finished rendering the message body or
+// the native unsubscribe banner. Previously the lookup ran once and the
+// user had to trigger the command a second time after the DOM settled.
+export function clickUnsubscribeLink() {
+  const immediate = findUnsubscribeLinkInCurrentEmail();
+  if (immediate) {
+    return performUnsubscribeClick(immediate);
+  }
+
+  const maxAttempts = 20; // ~1.6s total at 80ms intervals
+  const intervalMs = 80;
+  let attempts = 0;
+  const timer = window.setInterval(() => {
+    attempts += 1;
+    const link = findUnsubscribeLinkInCurrentEmail();
+    if (link) {
+      window.clearInterval(timer);
+      performUnsubscribeClick(link);
+      return;
+    }
+    if (attempts >= maxAttempts) {
+      window.clearInterval(timer);
+      // eslint-disable-next-line no-console
+      console.debug("Zero: No unsubscribe link found in current email.");
+    }
+  }, intervalMs);
+  return false;
 }
 
 function getCurrentEmailText() {
