@@ -26,6 +26,8 @@ import {
   refreshCommandList,
   setCommandBarDependencies,
   updateCommandOverlayTheme,
+  openCommandOverlay,
+  closeCommandOverlay,
   isCommandOverlayOpen
 } from "../features/commandBar.js";
 import {
@@ -291,7 +293,25 @@ export function initialize() {
     // Listen for runtime messages
     try {
       browserApi.runtime.onMessage.addListener((message, sender, sendResponse) => {
-        if (!message || message.type !== "oz-snooze") {
+        if (!message || !message.type) {
+          return;
+        }
+
+        if (message.type === "oz-toggle-command-bar") {
+          try {
+            if (isCommandOverlayOpen()) {
+              closeCommandOverlay();
+            } else {
+              openCommandOverlay();
+            }
+            sendResponse({ ok: true });
+          } catch (e) {
+            sendResponse({ ok: false, error: "Could not toggle command bar." });
+          }
+          return true;
+        }
+
+        if (message.type !== "oz-snooze") {
           return;
         }
         try {

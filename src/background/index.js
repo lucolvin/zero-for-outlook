@@ -240,7 +240,39 @@
     }
   }
 
+  function toggleCommandBarInActiveTab() {
+    try {
+      if (!api.tabs || !api.tabs.query || !api.tabs.sendMessage) {
+        return;
+      }
+
+      api.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        if (api.runtime && api.runtime.lastError) {
+          return;
+        }
+        const activeTab = Array.isArray(tabs) ? tabs[0] : null;
+        if (!activeTab || typeof activeTab.id !== "number") {
+          return;
+        }
+
+        api.tabs.sendMessage(activeTab.id, { type: "oz-toggle-command-bar" }, () => {
+          // Ignore if the active tab does not have our content script.
+        });
+      });
+    } catch (e) {
+      // best-effort only
+    }
+  }
+
   try {
+    if (api.commands && api.commands.onCommand) {
+      api.commands.onCommand.addListener((command) => {
+        if (command === "toggle-command-bar") {
+          toggleCommandBarInActiveTab();
+        }
+      });
+    }
+
     if (api.runtime && api.runtime.onMessage) {
       api.runtime.onMessage.addListener((message, sender, sendResponse) => {
         if (!message || !message.type) {
