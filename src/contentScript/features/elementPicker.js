@@ -165,9 +165,24 @@ function getElementSelector(element) {
       }
     }
   } else {
-    // For non-buttons, use ID first (original behavior)
+    // For non-buttons, prefer ID but skip dynamic numeric IDs (common on
+    // Outlook sidebar treeitems and similar list nodes) and verify the
+    // selector is actually unique before returning it. Falling through lets
+    // later strategies (data-* attrs, aria-label, parent-anchored paths)
+    // produce a stable selector for sidebar items whose ids are unreliable.
     if (element.id && element.id.trim()) {
-      return `#${CSS.escape(element.id)}`;
+      const idValue = element.id.trim();
+      if (!/^\d+$/.test(idValue)) {
+        const testSelector = `#${CSS.escape(idValue)}`;
+        try {
+          const matches = document.querySelectorAll(testSelector);
+          if (matches.length === 1 && matches[0] === element) {
+            return testSelector;
+          }
+        } catch (e) {
+          // Invalid selector, fall through to other strategies
+        }
+      }
     }
   }
 
