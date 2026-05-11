@@ -3,6 +3,19 @@
 (() => {
   const browserApi = typeof chrome !== "undefined" ? chrome : browser;
 
+  function isMacPlatform() {
+    try {
+      const platform =
+        (navigator.userAgentData && navigator.userAgentData.platform) ||
+        navigator.platform ||
+        navigator.userAgent ||
+        "";
+      return /Mac/i.test(platform);
+    } catch (e) {
+      return false;
+    }
+  }
+
   const DEFAULT_UNDO_SHORTCUT = {
     ctrlKey: false,
     altKey: false,
@@ -313,11 +326,12 @@
   function formatShortcut(shortcut) {
     if (!shortcut || !shortcut.key) return "Not set";
 
+    const mac = isMacPlatform();
     const parts = [];
     if (shortcut.ctrlKey) parts.push("Ctrl");
     if (shortcut.altKey) parts.push("Alt");
     if (shortcut.shiftKey) parts.push("Shift");
-    if (shortcut.metaKey) parts.push(navigator.platform.includes("Mac") ? "Cmd" : "Meta");
+    if (shortcut.metaKey) parts.push(mac ? "Cmd" : "Ctrl");
     parts.push(shortcut.key.toUpperCase());
 
     return parts.join(" + ");
