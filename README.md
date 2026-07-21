@@ -118,13 +118,15 @@ The command bar (`Cmd/Ctrl + K`) provides quick access to:
 ### Privacy / Data Collection
 
 - The extension **never collects or sends any email content or browsing data**
-- There is **no analytics or telemetry** and no external network requests from the extension code (except when using optional AI features)
+- There is **no analytics or telemetry** in the extension code
 - **AI Features**: When using Gemini API features (email summarization or AI title editing), your content is sent to Google's Gemini API. This requires you to provide your own API key, which is stored locally in your browser's extension storage
+- Settings, snippets, streaks, and badges stay **local on this device**. Use Import / Export to back them up or move them between browsers.
 - The only data stored locally is:
   - Your chosen shortcuts (undo, command bar)
   - Feature toggles (vim navigation, dark mode, inbox zero, options bar, AI title editing)
   - Custom shortcuts configuration
   - Gemini API key (if provided, stored locally only)
+  - Local stats (inbox zero streak, achievements)
 
 ### Supported Domains
 
@@ -133,6 +135,8 @@ The extension is scoped to Outlook web only:
 - `https://outlook.live.com/*`
 - `https://outlook.office.com/*`
 - `https://outlook.office365.com/*`
+- `https://outlook.cloud.microsoft/*`
+- `https://generativelanguage.googleapis.com/*` (optional Gemini features)
 
 ### Installation
 
@@ -221,7 +225,7 @@ zero-for-outlook/
 
 The project uses:
 
-- **Vite** for building the content script (bundles ES modules into a single IIFE)
+- **Vite / WXT** for building the extension
 - **Manifest V3** for Chrome
 - **Manifest V2** for Firefox (required for Firefox compatibility)
 - **Modular architecture** with feature-based modules
