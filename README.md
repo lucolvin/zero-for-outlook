@@ -1,8 +1,5 @@
 # Zero for Outlook
 
-> [!CAUTION]
-> I am currently moving codebase to [WXT](https://wxt.dev/). Possible breaking changes incoming. Thou hast been warned...
-
 Zero for Outlook adds configurable keyboard shortcuts and extends functionality of Outlook on the web, making it more efficient and enjoyable to use.
 
 ![Chrome Web Store Version](https://img.shields.io/chrome-web-store/v/gpjbinalhllobnkijndgahhlfgcpbhnc?link=https%3A%2F%2Fchromewebstore.google.com%2Fdetail%2Fzero-for-outlook%2Fgpjbinalhllobnkijndgahhlfgcpbhnc)
@@ -11,16 +8,16 @@ Zero for Outlook adds configurable keyboard shortcuts and extends functionality 
 Zero for Outlook adds configurable keyboard shortcuts and extends functionality of Outlook on the web, making it more efficient and enjoyable to use.
 
 > [!CAUTION]
-> These extensions are still in early beta and are under active development. Expect breaking changes. Use at your own risk and so on.
+> Extensions are in early beta and under active development. Expect breaking changes. Use at your own risk and so on.
 
 > [!TIP]
 > Find a bug? Open an [issue](https://github.com/lucolvin/zero-for-outlook/issues/new/choose).
 
-> [!NOTE]
-> WIP [docs site](https://docs.zero-extension.com/)
+> [!TIP]
+> Read the [docs](https://docs.zero-extension.com/)
 
 > [!NOTE]
-> These extensions were primarily developed on MacOS. Compatibility with other platforms may be degraded while extensions are still in beta
+> Extensions primarily developed on MacOS. Compatibility with other platforms may be degraded while extensions are still in beta
 
 ## What it does
 
