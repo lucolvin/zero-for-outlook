@@ -1,6 +1,6 @@
 // @ts-nocheck
 // Background script for Zero for Outlook (local-only settings).
-// Clicking the toolbar icon opens the options page in a full tab.
+// Toolbar icon and command-bar "oz-open-options" open settings.html in a new tab.
 
 (() => {
   const api = typeof chrome !== "undefined" ? chrome : browser;

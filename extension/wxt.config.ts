@@ -21,7 +21,7 @@ export default defineConfig({
     name: "Zero for Outlook",
     description:
       "Zero for Outlook adds configurable keyboard shortcuts and extends functionality of Outlook on the web.",
-    version: "0.8.0",
+    version: "0.8.1",
     permissions: ["storage", "tabs"],
     host_permissions: [
       ...outlookMatches,
@@ -44,7 +44,7 @@ export default defineConfig({
     },
     browser_specific_settings: {
       gecko: {
-        id: "zero-for-outlook@zero-extension.com",
+        id: "outlook-zero@example.com",
         strict_min_version: "140.0",
         data_collection_permissions: {
           required: ["personalCommunications", "websiteContent"],
