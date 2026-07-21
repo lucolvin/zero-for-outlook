@@ -11,11 +11,7 @@
     "https://outlook.office.com/*",
     "https://outlook.office365.com/*",
     "https://outlook.cloud.microsoft/*",
-    "https://generativelanguage.googleapis.com/*",
-    "https://api.zero-extension.com/*",
-    "https://*.zero-extension.com/*",
-    "http://localhost:8787/*",
-    "http://localhost:4173/*"
+    "https://generativelanguage.googleapis.com/*"
   ],
   "content_scripts": [
     {

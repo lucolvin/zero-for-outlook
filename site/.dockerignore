@@ -1,7 +1,0 @@
-node_modules
-dist
-api-dist
-.env
-.git
-*.md
-.dockerignore

@@ -1,4 +1,8 @@
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "wxt";
+
+const repoRootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 const outlookMatches = [
   "https://outlook.live.com/*",
@@ -10,6 +14,9 @@ const outlookMatches = [
 export default defineConfig({
   outDir: "dist",
   modules: ["@wxt-dev/module-react"],
+  vite: () => ({
+    envDir: repoRootDir
+  }),
   manifest: {
     name: "Zero for Outlook",
     description:
@@ -18,11 +25,7 @@ export default defineConfig({
     permissions: ["storage", "tabs"],
     host_permissions: [
       ...outlookMatches,
-      "https://generativelanguage.googleapis.com/*",
-      "https://api.zero-extension.com/*",
-      "https://*.zero-extension.com/*",
-      "http://localhost:8787/*",
-      "http://localhost:4173/*"
+      "https://generativelanguage.googleapis.com/*"
     ],
     icons: {
       "16": "icons/icon-16.png",

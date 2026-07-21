@@ -177,6 +177,35 @@
               type="button"
               class="oz-tab"
               role="tab"
+              id="tab-stats"
+              aria-selected="false"
+              aria-controls="panel-stats"
+              data-panel="stats"
+            >
+              <span class="oz-tab-icon" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path
+                    d="M4 19V5M4 19h16"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                  <path
+                    d="M8 16v-4M12 16V8M16 16v-7"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </span>
+              <span class="oz-tab-label">Stats</span>
+            </button>
+            <button
+              type="button"
+              class="oz-tab"
+              role="tab"
               id="tab-about"
               aria-selected="false"
               aria-controls="panel-about"
@@ -224,31 +253,29 @@
         <div class="oz-sidebar-spacer"></div>
 
         <div class="oz-sidebar-footer">
-          <nav class="oz-sidebar-account-nav" role="tablist" aria-label="Account section">
-            <button
-              type="button"
-              class="oz-sidebar-account-tab"
-              role="tab"
-              id="tab-account"
-              aria-selected="false"
-              aria-controls="panel-account"
-              data-panel="account"
-            >
-              <img
-                id="sidebarAccountAvatar"
-                class="oz-sidebar-account-avatar oz-hidden"
-                src=""
-                alt=""
-                width="28"
-                height="28"
-              />
-              <span class="oz-sidebar-account-meta">
-                <span class="oz-sidebar-account-name" id="sidebarAccountName">Account</span>
-                <span class="oz-sidebar-account-email" id="sidebarAccountEmail">Not signed in</span>
-              </span>
-            </button>
-          </nav>
           <div class="oz-sidebar-footer-meta">
+            <a
+              class="oz-sidebar-link"
+              href="https://github.com/lucolvin/zero-for-outlook"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <span class="oz-sidebar-link-icon" aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 16 16" focusable="false">
+                  <path
+                    fill="currentColor"
+                    d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38
+                    0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52
+                    -.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95
+                    0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0
+                    1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15
+                    0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013
+                    8.013 0 0016 8c0-4.42-3.58-8-8-8z"
+                  />
+                </svg>
+              </span>
+              GitHub
+            </a>
             <button
               type="button"
               class="oz-sidebar-version-link"
@@ -628,61 +655,6 @@
                   </div>
                 </div>
               </div>
-
-              <div class="oz-panel-card">
-                <div class="oz-section-head">
-                  <h2 class="oz-section-title">Streak &amp; stats</h2>
-                  <p class="oz-section-desc">
-                    Celebrate inbox zero and see how your streak is tracking in storage.
-                  </p>
-                </div>
-                <div class="oz-form-stack">
-                  <div class="oz-stats-grid" id="ozStatsSummary" aria-live="polite">
-                    <div class="oz-stat-pill">
-                      <div class="oz-stat-value" id="ozStatStreakDays">—</div>
-                      <div class="oz-stat-label">Inbox zero streak (days)</div>
-                    </div>
-                    <div class="oz-stat-pill">
-                      <div class="oz-stat-value" id="ozStatLastZeroDate">—</div>
-                      <div class="oz-stat-label">Last day you hit inbox zero</div>
-                    </div>
-                  </div>
-                  <div class="oz-form-row">
-                    <div class="oz-form-meta">
-                      <div class="oz-label">Badges</div>
-                      <p class="oz-help-sub">Unlocks as you use Zero in Outlook (archives, reminders, snippets, etc.).</p>
-                    </div>
-                    <div class="oz-form-control">
-                      <div id="ozAchievementsGrid" class="oz-achievements-grid" aria-live="polite"></div>
-                    </div>
-                  </div>
-                  <div class="oz-form-row">
-                    <div class="oz-form-meta">
-                      <div class="oz-label">Recent activity</div>
-                      <p class="oz-help-sub">Last events recorded for achievements (newest first).</p>
-                    </div>
-                    <div class="oz-form-control">
-                      <ol id="ozAchievementLog" class="oz-achievement-log"></ol>
-                    </div>
-                  </div>
-                  <p class="oz-help-sub oz-stats-footnote">
-                    Stats and badges sync when cloud sync is enabled. Open Outlook and use the extension to unlock more.
-                  </p>
-                  <div class="oz-form-row oz-form-row-last">
-                    <div class="oz-form-meta">
-                      <div class="oz-label">Inbox zero</div>
-                      <p class="oz-help-sub">Optional overlay when the inbox is empty.</p>
-                    </div>
-                    <div class="oz-form-control">
-                      <label class="oz-toggle">
-                        <input id="inboxZeroEnabled" type="checkbox" class="oz-toggle-input" />
-                        <span class="oz-toggle-label">Enable streak overlay</span>
-                      </label>
-                      <p id="status-inbox-zero" class="oz-status" role="status" aria-live="polite"></p>
-                    </div>
-                  </div>
-                </div>
-              </div>
             </section>
 
             <!-- Custom shortcuts -->
@@ -762,7 +734,7 @@
                   </p>
                 </div>
                 <div class="oz-form-stack">
-                  <div class="oz-form-row oz-form-row-last">
+                  <div class="oz-form-row">
                     <div class="oz-form-meta">
                       <div class="oz-label">Snippets tab shortcut</div>
                       <p class="oz-help-sub">
@@ -798,6 +770,34 @@
                         role="status"
                         aria-live="polite"
                       ></p>
+                    </div>
+                  </div>
+
+                  <div class="oz-form-row oz-form-row-last">
+                    <div class="oz-form-meta">
+                      <div class="oz-label">Preferred name</div>
+                      <p class="oz-help-sub">
+                        When set, this name is used for <code>{sender_first_name}</code>,
+                        <code>{sender_last_name}</code>, and <code>{sender_full_name}</code> instead of the
+                        name detected from Outlook.
+                      </p>
+                    </div>
+                    <div class="oz-form-control">
+                      <div class="oz-inline-fields">
+                        <label for="ozPreferredName" class="oz-visually-hidden">Preferred name</label>
+                        <input
+                          id="ozPreferredName"
+                          type="text"
+                          class="oz-shortcut-input oz-input-grow"
+                          autocomplete="name"
+                          spellcheck="false"
+                          placeholder="e.g. John Smith"
+                        />
+                        <button id="savePreferredName" class="oz-button oz-button-secondary" type="button">
+                          Save
+                        </button>
+                      </div>
+                      <p id="status-preferred-name" class="oz-status" role="status" aria-live="polite"></p>
                     </div>
                   </div>
                 </div>
@@ -860,81 +860,120 @@
               </div>
             </section>
 
-            <!-- Account -->
-            <section id="panel-account" class="oz-panel" role="tabpanel" aria-labelledby="tab-account">
-              <div class="oz-panel-card">
-                <div class="oz-section-head">
-                  <h2 class="oz-section-title">Account and cloud sync</h2>
-                  <p class="oz-section-desc">
-                    Keep this options page and local settings as-is, and optionally sync your settings through your
-                    signed-in account.
-                  </p>
+            <!-- Stats -->
+            <section id="panel-stats" class="oz-panel" role="tabpanel" aria-labelledby="tab-stats">
+              <div class="oz-panel-card oz-stats-dashboard">
+                <div class="oz-section-head oz-stats-dashboard-head">
+                  <div> 
+                    <h2 class="oz-section-title">Stats</h2>
+                    <p class="oz-section-desc">
+                      Everything here lives on this device, streak, usage, and badges from how you use Zero for Outlook.
+                    </p>
+                  </div>
+                  <span class="oz-stats-local-chip">On this browser</span>
                 </div>
-                <div class="oz-form-stack">
-                  <div class="oz-form-row">
-                    <div class="oz-form-meta">
-                      <div class="oz-label">Cloud account</div>
-                      <p class="oz-help-sub" id="accountCloudOptInHelp">
-                        Optional. Turn on if you want to sign in and sync settings with your account. When off,
-                        everything stays on this device and account prompts stay hidden.
-                      </p>
-                    </div>
-                    <div class="oz-form-control">
-                      <label class="oz-toggle">
-                        <input type="checkbox" id="accountCloudOptInToggle" class="oz-toggle-input" />
-                        <span class="oz-toggle-label">Enable cloud account (sign-in &amp; sync)</span>
-                      </label>
+
+                <div class="oz-streak-hero" id="ozStreakHero" aria-live="polite">
+                  <div class="oz-streak-ring" aria-hidden="true">
+                    <svg class="oz-streak-ring-svg" viewBox="0 0 120 120">
+                      <circle class="oz-streak-ring-track" cx="60" cy="60" r="52" />
+                      <circle
+                        class="oz-streak-ring-progress"
+                        id="ozStatStreakRing"
+                        cx="60"
+                        cy="60"
+                        r="52"
+                        stroke-dasharray="326.73"
+                        stroke-dashoffset="326.73"
+                      />
+                    </svg>
+                    <div class="oz-streak-ring-center">
+                      <div class="oz-streak-ring-value" id="ozStatStreakDays">—</div>
+                      <div class="oz-streak-ring-unit">day streak</div>
                     </div>
                   </div>
-
-                  <div class="oz-form-row">
-                    <div class="oz-form-meta">
-                      <div class="oz-label">Sync settings with account</div>
-                      <p class="oz-help-sub" id="accountCloudSyncHelp">
-                        When signed in, push and pull settings through your cloud account. Turn off to keep changes
-                        local only.
-                      </p>
-                    </div>
-                    <div class="oz-form-control">
-                      <label class="oz-toggle">
-                        <input type="checkbox" id="accountCloudSyncToggle" class="oz-toggle-input" disabled />
-                        <span class="oz-toggle-label">Enable cloud sync</span>
-                      </label>
-                    </div>
-                  </div>
-
-                  <div class="oz-form-row">
-                    <div class="oz-form-meta">
-                      <div class="oz-label">Sign in</div>
-                      <p class="oz-help-sub">
-                        A compact sign-in window opens. Complete sign-in there, then return to this page.
-                      </p>
-                    </div>
-                    <div class="oz-form-control">
-                      <div class="oz-inline-fields">
-                        <button id="accountSignIn" class="oz-button oz-button-primary" type="button">Sign in</button>
-                        <button id="accountSignOut" class="oz-button oz-button-secondary" type="button">
-                          Sign out
-                        </button>
-                        <button id="accountSyncNow" class="oz-button oz-button-secondary" type="button">
-                          Sync now
-                        </button>
+                  <div class="oz-streak-hero-copy">
+                    <div class="oz-streak-hero-title" id="ozStatStreakTitle">Keep going</div>
+                    <p class="oz-streak-hero-desc" id="ozStatStreakDesc">
+                      Hit inbox zero in Outlook to start or extend your streak.
+                    </p>
+                    <div class="oz-streak-meta">
+                      <div class="oz-streak-meta-item">
+                        <span class="oz-streak-meta-label">Last inbox zero</span>
+                        <span class="oz-streak-meta-value" id="ozStatLastZeroDate">—</span>
                       </div>
-                      <p id="status-account" class="oz-status" role="status" aria-live="polite"></p>
+                      <div class="oz-streak-meta-item">
+                        <span class="oz-streak-meta-label">Best streak</span>
+                        <span class="oz-streak-meta-value" id="ozStatBestStreak">—</span>
+                      </div>
+                      <div class="oz-streak-meta-item">
+                        <span class="oz-streak-meta-label">Next milestone</span>
+                        <span class="oz-streak-meta-value" id="ozStatNextMilestone">3 days</span>
+                      </div>
+                    </div>
+                    <div class="oz-streak-milestone-bar" aria-hidden="true">
+                      <div class="oz-streak-milestone-fill" id="ozStatMilestoneFill"></div>
                     </div>
                   </div>
+                </div>
 
-                  <div class="oz-form-row">
+                <div class="oz-stats-metrics" id="ozStatsSummary" aria-live="polite">
+                  <div class="oz-stat-metric">
+                    <div class="oz-stat-metric-value" id="ozStatArchives">0</div>
+                    <div class="oz-stat-metric-label">Archives</div>
+                  </div>
+                  <div class="oz-stat-metric">
+                    <div class="oz-stat-metric-value" id="ozStatCommandBar">0</div>
+                    <div class="oz-stat-metric-label">Command bar</div>
+                  </div>
+                  <div class="oz-stat-metric">
+                    <div class="oz-stat-metric-value" id="ozStatReminders">0</div>
+                    <div class="oz-stat-metric-label">Reminders</div>
+                  </div>
+                  <div class="oz-stat-metric">
+                    <div class="oz-stat-metric-value" id="ozStatSnippetsSaved">0</div>
+                    <div class="oz-stat-metric-label">Snippets saved</div>
+                  </div>
+                  <div class="oz-stat-metric">
+                    <div class="oz-stat-metric-value" id="ozStatSnippetsInserted">0</div>
+                    <div class="oz-stat-metric-label">Snippets used</div>
+                  </div>
+                  <div class="oz-stat-metric">
+                    <div class="oz-stat-metric-value" id="ozStatBadgesUnlocked">0</div>
+                    <div class="oz-stat-metric-label">Badges unlocked</div>
+                  </div>
+                </div>
+
+                <div class="oz-stats-block">
+                  <div class="oz-stats-block-head">
+                    <div class="oz-label">Badges</div>
+                    <p class="oz-help-sub" id="ozBadgesProgressLabel">0 of 8 unlocked</p>
+                  </div>
+                  <div id="ozAchievementsGrid" class="oz-achievements-grid" aria-live="polite"></div>
+                </div>
+
+                <div class="oz-stats-block">
+                  <div class="oz-stats-block-head">
+                    <div class="oz-label">Recent activity</div>
+                    <p class="oz-help-sub">Newest events first — stored locally on this browser.</p>
+                  </div>
+                  <ol id="ozAchievementLog" class="oz-achievement-log"></ol>
+                </div>
+
+                <div class="oz-form-stack oz-stats-footer-stack">
+                  <div class="oz-form-row oz-form-row-last">
                     <div class="oz-form-meta">
-                      <div class="oz-label">Sync status</div>
-                      <p class="oz-help-sub">Current account link state for this extension install.</p>
+                      <div class="oz-label">Inbox zero overlay</div>
+                      <p class="oz-help-sub">Optional celebration when the inbox is empty.</p>
                     </div>
                     <div class="oz-form-control">
-                      <p class="oz-help-sub"><strong id="accountStatusLabel">Not signed in</strong></p>
-                      <p class="oz-help-sub">Last synced: <span id="accountLastSynced">Never</span></p>
+                      <label class="oz-toggle">
+                        <input id="inboxZeroEnabled" type="checkbox" class="oz-toggle-input" />
+                        <span class="oz-toggle-label">Enable streak overlay</span>
+                      </label>
+                      <p id="status-inbox-zero" class="oz-status" role="status" aria-live="polite"></p>
                     </div>
                   </div>
-
                 </div>
               </div>
             </section>
@@ -975,12 +1014,12 @@
                     <strong>No tracking</strong>: No analytics or telemetry in extension code.
                   </li>
                   <li>
-                    <strong>Local-only settings</strong>: Shortcuts and toggles live in the browser’s extension
-                    storage.
+                    <strong>Local-only settings</strong>: Shortcuts, toggles, snippets, and stats live in the
+                    browser’s extension storage on this device.
                   </li>
                   <li>
-                    <strong>Optional cloud sync</strong>: If you sign in and enable account sync, settings are sent
-                    to your configured backend API and stored in your account.
+                    <strong>No cloud account</strong>: There is no sign-in or remote sync. Use Import / Export to
+                    back up or move settings between browsers.
                   </li>
                   <li>
                     <strong>Minimal permissions</strong>: Runs only on Outlook web domains and simulates clicks
@@ -1099,25 +1138,6 @@
             <div class="oz-accent-modal-actions">
               <button type="button" class="oz-button oz-button-secondary" id="accentCustomModalCancel">Cancel</button>
               <button type="button" class="oz-button oz-button-primary" id="accentCustomModalApply">Apply</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="oz-accent-modal-overlay oz-hidden" id="syncNowModalOverlay" aria-hidden="true">
-          <div class="oz-accent-modal" role="dialog" aria-modal="true" aria-labelledby="syncNowModalTitle">
-            <button type="button" class="oz-accent-modal-close" id="syncNowModalClose" aria-label="Close">×</button>
-            <h3 class="oz-accent-modal-title" id="syncNowModalTitle">Choose sync direction</h3>
-            <p class="oz-accent-modal-desc">
-              Push this browser's local settings to the cloud, or pull the latest account config from the DB.
-            </p>
-            <div class="oz-sync-now-modal-actions">
-              <button type="button" class="oz-button oz-button-secondary" id="syncNowModalCancel">Cancel</button>
-              <button type="button" class="oz-button oz-button-secondary" id="syncNowModalPull">
-                Pull config from DB
-              </button>
-              <button type="button" class="oz-button oz-button-primary" id="syncNowModalPush">
-                Push local changes
-              </button>
             </div>
           </div>
         </div>

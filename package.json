@@ -3,16 +3,11 @@
   "private": true,
   "workspaces": [
     "extension/*",
-    "site",
     "docs"
   ],
   "scripts": {
     "dev": "cd extension && npm run dev",
     "build": "cd extension && npm run build",
-    "package": "cd extension && npm run package",
-    "site:dev": "npm --prefix site run dev",
-    "site:build": "npm --prefix site run build",
-    "site:api": "npm --prefix site run api:dev",
-    "docker:up": "docker compose up --build"
+    "package": "cd extension && npm run package"
   }
 }

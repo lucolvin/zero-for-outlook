@@ -57,6 +57,9 @@ export {};
   const snippetsPageShortcutInput = document.getElementById("snippetsPageShortcut");
   const clearSnippetsPageShortcutBtn = document.getElementById("clearSnippetsPageShortcut");
   const snippetsPageShortcutStatusEl = document.getElementById("status-snippets-page-shortcut");
+  const preferredNameInput = document.getElementById("ozPreferredName");
+  const savePreferredNameBtn = document.getElementById("savePreferredName");
+  const preferredNameStatusEl = document.getElementById("status-preferred-name");
   const vimToggle = document.getElementById("vimEnabled");
   const vimSmoothNavigationToggle = document.getElementById("vimSmoothNavigationEnabled");
   const archiveListMotionToggle = document.getElementById("archiveListMotionReduced");
@@ -85,51 +88,125 @@ export {};
   const manualAddCustomShortcutBtn = document.getElementById("manualAddCustomShortcut");
   const aiTitleEditingToggle = document.getElementById("aiTitleEditingEnabled");
   const aiTitleEditingStatusEl = document.getElementById("status-ai-title-editing");
-  const accountStatusEl = document.getElementById("status-account");
-  const accountSignInBtn = document.getElementById("accountSignIn");
-  const accountSignOutBtn = document.getElementById("accountSignOut");
-  const accountSyncNowBtn = document.getElementById("accountSyncNow");
-  const accountStatusLabel = document.getElementById("accountStatusLabel");
-  const accountLastSynced = document.getElementById("accountLastSynced");
-  const sidebarAccountName = document.getElementById("sidebarAccountName");
-  const sidebarAccountAvatar = document.getElementById("sidebarAccountAvatar");
-  const sidebarAccountEmail = document.getElementById("sidebarAccountEmail");
   const sidebarVersionLink = document.getElementById("sidebarVersionLink");
   const aboutInfoModalOverlay = document.getElementById("aboutInfoModalOverlay");
   const aboutInfoModalClose = document.getElementById("aboutInfoModalClose");
   const aboutInfoVersionLabel = document.getElementById("aboutInfoModalVersionLabel");
   const aboutInfoExtensionName = document.getElementById("aboutInfoExtensionName");
   const aboutInfoVersionValue = document.getElementById("aboutInfoVersionValue");
-  const accountCloudSyncToggle = document.getElementById("accountCloudSyncToggle");
-  const accountCloudSyncHelp = document.getElementById("accountCloudSyncHelp");
-  const accountCloudOptInToggle = document.getElementById("accountCloudOptInToggle");
-  const accountCloudOptInHelp = document.getElementById("accountCloudOptInHelp");
-  const syncNowModalOverlay = document.getElementById("syncNowModalOverlay");
-  const syncNowModalClose = document.getElementById("syncNowModalClose");
-  const syncNowModalCancel = document.getElementById("syncNowModalCancel");
-  const syncNowModalPush = document.getElementById("syncNowModalPush");
-  const syncNowModalPull = document.getElementById("syncNowModalPull");
-  const CLOUD_ACCOUNT_OPT_IN_KEY = "ozCloudAccountOptIn";
   const INBOX_ZERO_STREAK_KEY = "inboxZeroStreak";
   const OZ_ACHIEVEMENT_STORAGE_KEY = "ozAchievementState";
+  const MANUAL_SHORTCUT_WARNING_KEY = "manualShortcutAdvancedWarningShown";
 
   const ACHIEVEMENT_META = [
-    { id: "first_archive", label: "Archivist", desc: "Archive a message once" },
-    { id: "archives_10", label: "Declutterer", desc: "Archive 10 messages" },
-    { id: "command_explorer", label: "Command explorer", desc: "Open the command bar 5 times" },
-    { id: "reminder_friend", label: "Reminder friend", desc: "Set 5 reminders" },
-    { id: "snippet_author", label: "Snippet author", desc: "Save at least one snippet" },
-    { id: "snippet_pro", label: "Snippet pro", desc: "Insert snippets 10 times" },
-    { id: "streak_3", label: "On a roll", desc: "Reach a 3-day inbox zero streak" },
-    { id: "streak_7", label: "Week warrior", desc: "Reach a 7-day inbox zero streak" }
+    { id: "first_archive", label: "Archivist", desc: "Archive a message once", statKey: "archives", target: 1 },
+    { id: "archives_10", label: "Declutterer", desc: "Archive 10 messages", statKey: "archives", target: 10 },
+    { id: "command_explorer", label: "Command explorer", desc: "Open the command bar 5 times", statKey: "commandBarOpens", target: 5 },
+    { id: "reminder_friend", label: "Reminder friend", desc: "Set 5 reminders", statKey: "remindersSet", target: 5 },
+    { id: "snippet_author", label: "Snippet author", desc: "Save at least one snippet", statKey: "snippetsSaved", target: 1 },
+    { id: "snippet_pro", label: "Snippet pro", desc: "Insert snippets 10 times", statKey: "snippetsInserted", target: 10 },
+    { id: "streak_3", label: "On a roll", desc: "Reach a 3-day inbox zero streak", statKey: "maxInboxZeroStreak", target: 3 },
+    { id: "streak_7", label: "Week warrior", desc: "Reach a 7-day inbox zero streak", statKey: "maxInboxZeroStreak", target: 7 }
   ];
 
-  function updateStatsFromStorage(items) {
-    const elDays = document.getElementById("ozStatStreakDays");
-    const elDate = document.getElementById("ozStatLastZeroDate");
-    if (!elDays && !elDate) {
-      return;
+  const STREAK_MILESTONES = [3, 7, 14, 30];
+  const RING_CIRCUMFERENCE = 2 * Math.PI * 52;
+
+  function formatStatNumber(n) {
+    const v = Math.max(0, Math.floor(Number(n) || 0));
+    return v.toLocaleString();
+  }
+
+  function formatFriendlyDate(isoDate) {
+    if (!isoDate || typeof isoDate !== "string") return "—";
+    const raw = isoDate.trim();
+    if (!raw) return "—";
+    const d = new Date(raw.includes("T") ? raw : `${raw}T12:00:00`);
+    if (Number.isNaN(d.getTime())) return raw;
+    return d.toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric"
+    });
+  }
+
+  function formatActivityWhen(iso) {
+    if (!iso) return "";
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) {
+      return String(iso).replace("T", " ").slice(0, 19);
     }
+    return d.toLocaleString(undefined, {
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit"
+    });
+  }
+
+  function describeActivity(entry) {
+    const type = entry && entry.type ? String(entry.type) : "event";
+    const note = entry && entry.note ? String(entry.note) : "";
+    if (type === "badge") {
+      const meta = ACHIEVEMENT_META.find((m) => m.id === note);
+      return meta ? `Unlocked “${meta.label}”` : `Unlocked badge${note ? `: ${note}` : ""}`;
+    }
+    if (type === "archive") return "Archived a message";
+    if (type === "command") return "Opened the command bar";
+    if (note) return `${type}: ${note}`;
+    return type;
+  }
+
+  function nextStreakMilestone(days) {
+    for (const m of STREAK_MILESTONES) {
+      if (days < m) return m;
+    }
+    return null;
+  }
+
+  function streakCopy(days) {
+    if (days <= 0) {
+      return {
+        title: "Start your streak",
+        desc: "Hit inbox zero in Outlook to begin a local streak. Progress stays on this browser."
+      };
+    }
+    if (days === 1) {
+      return {
+        title: "Day one — nice",
+        desc: "Come back tomorrow with an empty inbox to keep the streak alive."
+      };
+    }
+    if (days < 3) {
+      return {
+        title: "Building momentum",
+        desc: `You’re on a ${days}-day run. Reach 3 days to unlock On a roll.`
+      };
+    }
+    if (days < 7) {
+      return {
+        title: "On a roll",
+        desc: `Solid ${days}-day streak. Push to 7 days for Week warrior.`
+      };
+    }
+    if (days < 14) {
+      return {
+        title: "Week warrior territory",
+        desc: `${days} days strong. Keep clearing to stretch toward two weeks.`
+      };
+    }
+    return {
+      title: "Inbox discipline",
+      desc: `${days}-day streak on this device. You’re in rare air — keep it local and keep it going.`
+    };
+  }
+
+  function setText(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value;
+  }
+
+  function updateStatsFromStorage(items) {
     const raw = items && items[INBOX_ZERO_STREAK_KEY];
     const days =
       raw && Number.isFinite(Number(raw.days)) && Number(raw.days) > 0
@@ -139,12 +216,43 @@ export {};
       raw && typeof raw.lastHitDate === "string" && raw.lastHitDate.trim()
         ? raw.lastHitDate.trim()
         : null;
-    if (elDays) {
-      elDays.textContent = days > 0 ? String(days) : "—";
+
+    setText("ozStatStreakDays", days > 0 ? String(days) : "0");
+    setText("ozStatLastZeroDate", formatFriendlyDate(lastHit));
+
+    const copy = streakCopy(days);
+    setText("ozStatStreakTitle", copy.title);
+    setText("ozStatStreakDesc", copy.desc);
+
+    const next = nextStreakMilestone(days);
+    const milestoneTarget = next || STREAK_MILESTONES[STREAK_MILESTONES.length - 1];
+    const prevMilestone =
+      STREAK_MILESTONES.slice()
+        .reverse()
+        .find((m) => m < milestoneTarget) || 0;
+    const span = Math.max(1, milestoneTarget - prevMilestone);
+    const progressed = Math.min(span, Math.max(0, days - prevMilestone));
+    const pct = next ? Math.min(1, progressed / span) : 1;
+
+    setText("ozStatNextMilestone", next ? `${next} days` : "Max tracked");
+
+    const fill = document.getElementById("ozStatMilestoneFill");
+    if (fill) fill.style.width = `${Math.round(pct * 100)}%`;
+
+    const ring = document.getElementById("ozStatStreakRing");
+    if (ring) {
+      const offset = RING_CIRCUMFERENCE * (1 - pct);
+      ring.style.strokeDasharray = String(RING_CIRCUMFERENCE);
+      ring.style.strokeDashoffset = String(offset);
     }
-    if (elDate) {
-      elDate.textContent = lastHit || "—";
-    }
+
+    const ach = items && items[OZ_ACHIEVEMENT_STORAGE_KEY];
+    const bestFromAch =
+      ach && ach.stats && Number.isFinite(Number(ach.stats.maxInboxZeroStreak))
+        ? Math.floor(Number(ach.stats.maxInboxZeroStreak))
+        : 0;
+    const best = Math.max(days, bestFromAch);
+    setText("ozStatBestStreak", best > 0 ? `${best} day${best === 1 ? "" : "s"}` : "—");
   }
 
   function renderAchievementsFromStorage() {
@@ -152,54 +260,120 @@ export {};
     const logEl = document.getElementById("ozAchievementLog");
     if (!grid && !logEl) return;
     try {
-      browserApi.storage.sync.get({ [OZ_ACHIEVEMENT_STORAGE_KEY]: null }, (items) => {
-        const raw = items && items[OZ_ACHIEVEMENT_STORAGE_KEY];
-        const unlocked = raw && Array.isArray(raw.unlocked) ? raw.unlocked : [];
-        const log = raw && Array.isArray(raw.log) ? raw.log.slice().reverse() : [];
-        if (grid) {
-          grid.innerHTML = "";
-          ACHIEVEMENT_META.forEach((meta) => {
-            const card = document.createElement("div");
-            card.className =
-              "oz-achievement-card" +
-              (unlocked.includes(meta.id) ? " oz-achievement-unlocked" : "");
-            const t = document.createElement("div");
-            t.className = "oz-achievement-card-title";
-            t.textContent = meta.label;
-            const d = document.createElement("div");
-            d.className = "oz-achievement-card-desc";
-            d.textContent = meta.desc;
-            card.appendChild(t);
-            card.appendChild(d);
-            grid.appendChild(card);
-          });
+      browserApi.storage.sync.get(
+        {
+          [OZ_ACHIEVEMENT_STORAGE_KEY]: null,
+          [INBOX_ZERO_STREAK_KEY]: null
+        },
+        (items) => {
+          const raw = items && items[OZ_ACHIEVEMENT_STORAGE_KEY];
+          const stats =
+            raw && raw.stats && typeof raw.stats === "object"
+              ? raw.stats
+              : {
+                  archives: 0,
+                  commandBarOpens: 0,
+                  remindersSet: 0,
+                  snippetsSaved: 0,
+                  snippetsInserted: 0,
+                  maxInboxZeroStreak: 0
+                };
+          const unlocked = raw && Array.isArray(raw.unlocked) ? raw.unlocked : [];
+          const log = raw && Array.isArray(raw.log) ? raw.log.slice().reverse() : [];
+
+          updateStatsFromStorage(items);
+
+          setText("ozStatArchives", formatStatNumber(stats.archives));
+          setText("ozStatCommandBar", formatStatNumber(stats.commandBarOpens));
+          setText("ozStatReminders", formatStatNumber(stats.remindersSet));
+          setText("ozStatSnippetsSaved", formatStatNumber(stats.snippetsSaved));
+          setText("ozStatSnippetsInserted", formatStatNumber(stats.snippetsInserted));
+          setText("ozStatBadgesUnlocked", formatStatNumber(unlocked.length));
+          setText(
+            "ozBadgesProgressLabel",
+            `${unlocked.length} of ${ACHIEVEMENT_META.length} unlocked`
+          );
+
+          if (grid) {
+            grid.innerHTML = "";
+            ACHIEVEMENT_META.forEach((meta) => {
+              const current = Math.max(0, Math.floor(Number(stats[meta.statKey]) || 0));
+              const target = meta.target;
+              const isUnlocked = unlocked.includes(meta.id);
+              const pct = Math.min(1, current / Math.max(1, target));
+
+              const card = document.createElement("div");
+              card.className =
+                "oz-achievement-card" + (isUnlocked ? " oz-achievement-unlocked" : "");
+
+              const t = document.createElement("div");
+              t.className = "oz-achievement-card-title";
+              t.textContent = meta.label;
+
+              const d = document.createElement("div");
+              d.className = "oz-achievement-card-desc";
+              d.textContent = meta.desc;
+
+              const progress = document.createElement("div");
+              progress.className = "oz-achievement-progress";
+              progress.setAttribute("aria-hidden", "true");
+
+              const track = document.createElement("div");
+              track.className = "oz-achievement-progress-track";
+              const fillEl = document.createElement("div");
+              fillEl.className = "oz-achievement-progress-fill";
+              fillEl.style.width = `${Math.round(pct * 100)}%`;
+              track.appendChild(fillEl);
+
+              const pctText = document.createElement("div");
+              pctText.className = "oz-achievement-progress-text";
+              pctText.textContent = isUnlocked
+                ? "Done"
+                : `${Math.min(current, target)}/${target}`;
+
+              progress.appendChild(track);
+              progress.appendChild(pctText);
+
+              card.appendChild(t);
+              card.appendChild(d);
+              card.appendChild(progress);
+              grid.appendChild(card);
+            });
+          }
+
+          if (logEl) {
+            logEl.innerHTML = "";
+            if (!log.length) {
+              const empty = document.createElement("li");
+              empty.className = "oz-achievement-log-empty";
+              empty.textContent =
+                "No activity yet. Use Zero in Outlook — archives, reminders, and snippets show up here.";
+              logEl.appendChild(empty);
+            } else {
+              log.slice(0, 16).forEach((entry) => {
+                const li = document.createElement("li");
+                const when = document.createElement("span");
+                when.className = "oz-achievement-log-time";
+                when.textContent = formatActivityWhen(entry && entry.t);
+                const body = document.createElement("span");
+                body.className = "oz-achievement-log-body";
+                body.textContent = describeActivity(entry);
+                li.appendChild(when);
+                li.appendChild(body);
+                logEl.appendChild(li);
+              });
+            }
+          }
         }
-        if (logEl) {
-          logEl.innerHTML = "";
-          log.slice(0, 12).forEach((entry) => {
-            const li = document.createElement("li");
-            const when = entry.t ? String(entry.t).replace("T", " ").slice(0, 19) : "";
-            li.textContent = `${when} — ${entry.type}${entry.note ? ": " + entry.note : ""}`;
-            logEl.appendChild(li);
-          });
-        }
-      });
+      );
     } catch {
       // ignore
     }
   }
 
-  const SIDE_PANEL_NAV_URL_KEY = "ozSidePanelNavigateUrl";
-  const LEGACY_LOCAL_ONLY_KEY = "ozLocalOnlyMode";
-  const MANUAL_SHORTCUT_WARNING_KEY = "manualShortcutAdvancedWarningShown";
-  const ACCOUNT_STATUS_POLL_FAST_MS = 4000;
-  const ACCOUNT_STATUS_POLL_MEDIUM_MS = 15000;
-  const ACCOUNT_STATUS_POLL_SLOW_MS = 60000;
-
   // Pending changes object
   let pendingChanges = {};
   let hasUnsavedChanges = false;
-  let accountStatusPollTimer = null;
 
   const PAGE_INFO = {
     general: {
@@ -242,12 +416,12 @@ export {};
         <path d="M5 3v4M3 5h4M19 17v4M17 19h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>`
     },
-    account: {
-      title: "Account",
-      subtitle: "Sign in and sync extension settings with your cloud account.",
+    stats: {
+      title: "Stats",
+      subtitle: "Local streak, usage, and badges for this browser.",
       icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M20 21a8 8 0 1 0-16 0" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        <circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M4 19V5M4 19h16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M8 16v-4M12 16V8M16 16v-7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>`
     },
     about: {
@@ -442,12 +616,7 @@ export {};
 
     tabButtons.forEach((tab) => {
       const active = tab.getAttribute("data-panel") === panelId;
-      const isAccountTab = tab.classList.contains("oz-sidebar-account-tab");
-      if (isAccountTab) {
-        tab.classList.toggle("oz-sidebar-account-tab-active", active);
-      } else {
-        tab.classList.toggle("oz-tab-active", active);
-      }
+      tab.classList.toggle("oz-tab-active", active);
       tab.setAttribute("aria-selected", active ? "true" : "false");
     });
 
@@ -573,6 +742,10 @@ export {};
     setStatus(geminiStatusEl, message);
   }
 
+  function setPreferredNameStatus(message) {
+    setStatus(preferredNameStatusEl, message);
+  }
+
   function setInboxZeroStatus(message) {
     setStatus(inboxZeroStatusEl, message);
   }
@@ -583,22 +756,6 @@ export {};
 
   function setCustomStatus(message) {
     setStatus(customStatusEl, message);
-  }
-
-  function setAccountStatus(message) {
-    setStatus(accountStatusEl, message);
-  }
-
-  function openSyncNowModal() {
-    if (!syncNowModalOverlay) return;
-    syncNowModalOverlay.classList.remove("oz-hidden");
-    syncNowModalOverlay.setAttribute("aria-hidden", "false");
-  }
-
-  function closeSyncNowModal() {
-    if (!syncNowModalOverlay) return;
-    syncNowModalOverlay.classList.add("oz-hidden");
-    syncNowModalOverlay.setAttribute("aria-hidden", "true");
   }
 
   function openAboutInfoModal() {
@@ -643,347 +800,6 @@ export {};
     } catch (e) {
       // Ignore rendering metadata errors
     }
-  }
-
-  function runtimeMessage(message) {
-    return new Promise((resolve) => {
-      try {
-        if (!browserApi.runtime || !browserApi.runtime.sendMessage) {
-          resolve({ ok: false, error: "Runtime messaging unavailable." });
-          return;
-        }
-        browserApi.runtime.sendMessage(message, (response) => {
-          if (browserApi.runtime && browserApi.runtime.lastError) {
-            resolve({ ok: false, error: browserApi.runtime.lastError.message || "Message failed." });
-            return;
-          }
-          resolve(response || { ok: false, error: "No response." });
-        });
-      } catch (e) {
-        resolve({ ok: false, error: "Message failed." });
-      }
-    });
-  }
-
-  /**
-   * Chrome/Chromium Side Panel must be opened from this page within the click gesture sequence.
-   * Firefox uses browser.sidebarAction.open() under the same rule.
-   */
-  async function openZeroSidePanelBestEffort() {
-    try {
-      const ch = typeof chrome !== "undefined" ? chrome : null;
-      if (ch?.sidePanel?.open && ch.tabs?.query) {
-        function tabLooksLikeHostPage(t) {
-          if (!t || typeof t.url !== "string") return false;
-          const u = t.url;
-          if (u.startsWith("chrome-extension:")) return false;
-          if (u.startsWith("chrome://")) return false;
-          if (u.startsWith("edge://")) return false;
-          if (u.startsWith("devtools://")) return false;
-          if (u.startsWith("about:")) return false;
-          return /^https?:/i.test(u) || u === "";
-        }
-
-        const tabsActive = await new Promise((resolve) => {
-          try {
-            ch.tabs.query({ active: true, lastFocusedWindow: true }, (t) => {
-              resolve(Array.isArray(t) ? t : []);
-            });
-          } catch (_e) {
-            resolve([]);
-          }
-        });
-        let tab = tabsActive[0];
-
-        if (tab && !tabLooksLikeHostPage(tab) && typeof tab.windowId === "number") {
-          const inWin = await new Promise((resolve) => {
-            try {
-              ch.tabs.query({ windowId: tab.windowId }, (t) => {
-                resolve(Array.isArray(t) ? t : []);
-              });
-            } catch (_e2) {
-              resolve([]);
-            }
-          });
-          const outlookish = inWin.find((x) => {
-            const u = x && typeof x.url === "string" ? x.url : "";
-            return (
-              /outlook\.live\.com|outlook\.office|outlook\.cloud\.microsoft/i.test(u) ||
-              /\.microsoft\.com\//i.test(u)
-            );
-          });
-          const firstWeb = inWin.find((x) => tabLooksLikeHostPage(x));
-          tab = outlookish || firstWeb || tab;
-        }
-
-        try {
-          if (tab && typeof tab.id === "number") {
-            await ch.sidePanel.setOptions({
-              tabId: tab.id,
-              path: "sidepanel.html",
-              enabled: true
-            });
-          } else {
-            await ch.sidePanel.setOptions({
-              path: "sidepanel.html",
-              enabled: true
-            });
-          }
-        } catch (_eOpt) {
-          /* ignore */
-        }
-
-        try {
-          if (tab && typeof tab.id === "number") {
-            await ch.sidePanel.open({ tabId: tab.id });
-            return true;
-          }
-        } catch (_openTab) {
-          /* fallback */
-        }
-
-        try {
-          if (tab && typeof tab.windowId === "number") {
-            await ch.sidePanel.open({ windowId: tab.windowId });
-            return true;
-          }
-        } catch (_openWin) {
-          /* ignore */
-        }
-
-        return false;
-      }
-    } catch (_e3) {
-      /* fallback to Firefox */
-    }
-
-    try {
-      const br =
-        typeof globalThis.browser !== "undefined"
-          ? globalThis.browser
-          : typeof browser !== "undefined"
-            ? browser
-            : null;
-      if (typeof br?.sidebarAction?.open === "function") {
-        await br.sidebarAction.open();
-        return true;
-      }
-    } catch (_ffSidebar) {
-      /* ignore */
-    }
-
-    return false;
-  }
-
-  async function applyChromeHostedSidePanelFromSettings(result, panelPrimeSucceeded) {
-    if (!result || !result.ok || !result.needsExtensionSidePanelOpen) {
-      return result;
-    }
-
-    // Sidebar-only policy: retry opening the panel a few times, but never fallback to popup/tab.
-    if (!panelPrimeSucceeded) {
-      let opened = false;
-      for (let i = 0; i < 3; i += 1) {
-        // keep retries short so click feedback still feels immediate
-        await new Promise((resolve) => setTimeout(resolve, 120));
-        opened = await openZeroSidePanelBestEffort();
-        if (opened) break;
-      }
-      if (!opened) {
-        return {
-          ...result,
-          ok: false,
-          error: "Could not open the side panel. Please click Sign in again."
-        };
-      }
-    }
-
-    return result;
-  }
-
-  function formatDateTime(ms) {
-    if (!ms || Number.isNaN(ms)) return "Never";
-    try {
-      return new Date(ms).toLocaleString();
-    } catch (e) {
-      return "Never";
-    }
-  }
-
-  function readCloudAccountOptIn() {
-    return new Promise((resolve) => {
-      try {
-        browserApi.storage.local.get(null, (items) => {
-          if (browserApi.runtime && browserApi.runtime.lastError) {
-            resolve(false);
-            return;
-          }
-          const store = items || {};
-          if (Object.prototype.hasOwnProperty.call(store, CLOUD_ACCOUNT_OPT_IN_KEY)) {
-            resolve(!!store[CLOUD_ACCOUNT_OPT_IN_KEY]);
-            return;
-          }
-          if (Object.prototype.hasOwnProperty.call(store, LEGACY_LOCAL_ONLY_KEY)) {
-            const migratedOptIn = !store[LEGACY_LOCAL_ONLY_KEY];
-            try {
-              browserApi.storage.local.remove(LEGACY_LOCAL_ONLY_KEY);
-            } catch (removeErr) {
-              // Ignore
-            }
-            browserApi.storage.local.set({ [CLOUD_ACCOUNT_OPT_IN_KEY]: migratedOptIn }, () => {
-              resolve(migratedOptIn);
-            });
-            return;
-          }
-          resolve(false);
-        });
-      } catch (e) {
-        resolve(false);
-      }
-    });
-  }
-
-  async function applyCloudAccountOptOut() {
-    await new Promise((resolve, reject) => {
-      try {
-        browserApi.storage.local.set({ [CLOUD_ACCOUNT_OPT_IN_KEY]: false }, () => {
-          if (browserApi.runtime && browserApi.runtime.lastError) {
-            reject(new Error(browserApi.runtime.lastError.message));
-            return;
-          }
-          resolve();
-        });
-      } catch (err) {
-        reject(err);
-      }
-    });
-    await runtimeMessage({ type: "oz-auth-signout" });
-    setAccountStatus("Cloud account is off. Settings stay on this device.");
-    await refreshAccountStatus();
-  }
-
-  async function refreshAccountStatus() {
-    const cloudOptIn = await readCloudAccountOptIn();
-    if (accountCloudOptInToggle) {
-      accountCloudOptInToggle.checked = cloudOptIn;
-    }
-
-    const status = await runtimeMessage({ type: "oz-auth-get-status" });
-    const signedIn = !!status?.signedIn;
-    const cloudSyncEnabled = !!(status && status.cloudSyncEnabled);
-    const profileName =
-      (status && status.profile && typeof status.profile.name === "string" && status.profile.name.trim()) ||
-      "Account";
-    const profileEmail =
-      (status && status.profile && typeof status.profile.email === "string" && status.profile.email.trim()) ||
-      "";
-    const profileImage =
-      (status &&
-        status.profile &&
-        typeof status.profile.imageUrl === "string" &&
-        status.profile.imageUrl.trim()) ||
-      "icons/icon-48.png";
-
-    if (accountStatusLabel) {
-      accountStatusLabel.textContent = signedIn ? "Signed in" : "Not signed in";
-    }
-    if (sidebarAccountName) {
-      sidebarAccountName.textContent = signedIn ? profileName : "Account";
-    }
-    if (sidebarAccountEmail) {
-      sidebarAccountEmail.textContent = signedIn ? profileEmail || "Signed in" : "Not signed in";
-    }
-    if (sidebarAccountAvatar) {
-      if (signedIn) {
-        sidebarAccountAvatar.src = profileImage;
-        sidebarAccountAvatar.alt = `${profileName} profile picture`;
-        sidebarAccountAvatar.classList.remove("oz-hidden");
-      } else {
-        sidebarAccountAvatar.src = "";
-        sidebarAccountAvatar.alt = "";
-        sidebarAccountAvatar.classList.add("oz-hidden");
-      }
-    }
-    if (accountSignOutBtn) {
-      accountSignOutBtn.disabled = !signedIn;
-    }
-    if (accountSignInBtn) {
-      accountSignInBtn.disabled = !cloudOptIn;
-    }
-    if (accountSyncNowBtn) {
-      accountSyncNowBtn.disabled = !cloudOptIn || !signedIn || !cloudSyncEnabled;
-    }
-    if (accountCloudSyncToggle) {
-      accountCloudSyncToggle.disabled = !cloudOptIn || !signedIn;
-      accountCloudSyncToggle.checked = cloudOptIn && signedIn && cloudSyncEnabled;
-    }
-    if (accountCloudOptInHelp) {
-      accountCloudOptInHelp.textContent = cloudOptIn
-        ? "Sign-in and sync below are available. Turn this off to use the extension without a cloud account."
-        : "Turn this on to enable sign-in, sync, and optional reminders while you are not signed in.";
-    }
-    if (accountCloudSyncHelp) {
-      if (!cloudOptIn) {
-        accountCloudSyncHelp.textContent =
-          "Enable cloud account above to use sync with your signed-in session.";
-      } else if (signedIn) {
-        accountCloudSyncHelp.textContent =
-          "When enabled, settings sync with your account. Turn off to keep changes on this device only.";
-      } else {
-        accountCloudSyncHelp.textContent =
-          "Sign in first. Then you can choose whether to enable cloud sync.";
-      }
-    }
-
-    try {
-      browserApi.storage.local.get({ ozLastSyncedAt: 0 }, (items) => {
-        if (accountLastSynced) {
-          accountLastSynced.textContent = formatDateTime(items.ozLastSyncedAt || 0);
-        }
-      });
-    } catch (e) {
-      if (accountLastSynced) {
-        accountLastSynced.textContent = "Never";
-      }
-    }
-
-    if (status?.claimState === "claimed") {
-      setAccountStatus("Sign-in complete.");
-    } else if (status?.claimState === "pending") {
-      setAccountStatus("Waiting for sign-in confirmation...");
-    } else if (status?.claimError) {
-      setAccountStatus(status.claimError);
-    }
-    return status || null;
-  }
-
-  function clearAccountStatusPolling() {
-    if (accountStatusPollTimer) {
-      clearTimeout(accountStatusPollTimer);
-      accountStatusPollTimer = null;
-    }
-  }
-
-  async function pollAccountStatusLoop() {
-    const status = await refreshAccountStatus();
-    const claimPending = status?.claimState === "pending";
-    const signedIn = !!status?.signedIn;
-
-    let delay = ACCOUNT_STATUS_POLL_MEDIUM_MS;
-    if (claimPending) {
-      delay = ACCOUNT_STATUS_POLL_FAST_MS;
-    } else if (signedIn) {
-      delay = ACCOUNT_STATUS_POLL_SLOW_MS;
-    }
-
-    if (document.visibilityState === "hidden") {
-      delay = Math.max(delay, ACCOUNT_STATUS_POLL_SLOW_MS);
-    }
-
-    clearAccountStatusPolling();
-    accountStatusPollTimer = setTimeout(() => {
-      void pollAccountStatusLoop();
-    }, delay);
   }
 
   function saveAllPendingChanges() {
@@ -1242,6 +1058,24 @@ export {};
       });
     } catch (e) {
       setGeminiStatus("Could not save Gemini API key.");
+    }
+  }
+
+  function savePreferredName(value) {
+    const next = String(value || "").replace(/\s+/g, " ").trim();
+    if (preferredNameInput && preferredNameInput.value !== next) {
+      preferredNameInput.value = next;
+    }
+    try {
+      browserApi.storage.sync.set({ ozPreferredName: next }, () => {
+        if (browserApi.runtime && browserApi.runtime.lastError) {
+          setPreferredNameStatus("Could not save preferred name.");
+          return;
+        }
+        setPreferredNameStatus(next ? "Preferred name saved." : "Preferred name cleared.");
+      });
+    } catch (e) {
+      setPreferredNameStatus("Could not save preferred name.");
     }
   }
 
@@ -1673,6 +1507,7 @@ export {};
           archiveListMotionReduced: false,
           vimSmoothNavigationEnabled: true,
           geminiApiKey: "",
+          ozPreferredName: "",
           customShortcuts: [],
           aiTitleEditingEnabled: true,
           [INBOX_ZERO_STREAK_KEY]: {
@@ -1786,6 +1621,11 @@ export {};
             geminiInput.value = geminiKey;
           }
 
+          if (preferredNameInput) {
+            preferredNameInput.value =
+              items && typeof items.ozPreferredName === "string" ? items.ozPreferredName : "";
+          }
+
           const hasGeminiKey = !!String(geminiKey).trim();
           const storedAiTitleEditing =
             items && typeof items.aiTitleEditingEnabled === "boolean"
@@ -1800,7 +1640,6 @@ export {};
           }
 
           loadCustomShortcuts();
-          updateStatsFromStorage(items);
           renderAchievementsFromStorage();
           markChangesSaved();
         }
@@ -1853,6 +1692,7 @@ export {};
     };
     saveSnippetsPageShortcut(emptyShortcut);
   }
+
 
   function clearGeminiApiKey() {
     if (geminiInput) {
@@ -2080,23 +1920,7 @@ export {};
 
   if (saveBtn) {
     saveBtn.addEventListener("click", async () => {
-      const saveResult = await saveAllPendingChanges();
-      if (!saveResult || !saveResult.ok) {
-        return;
-      }
-
-      const cloudOptIn = await readCloudAccountOptIn();
-      if (!cloudOptIn) {
-        setAccountStatus("Saved locally.");
-        return;
-      }
-
-      const pushResult = await runtimeMessage({ type: "oz-sync-push" });
-      if (pushResult && pushResult.ok) {
-        setAccountStatus("Saved locally and pushed to cloud.");
-      } else if (pushResult && pushResult.error && pushResult.error !== "Not signed in.") {
-        setAccountStatus(`Saved locally. Cloud push failed: ${pushResult.error}`);
-      }
+      await saveAllPendingChanges();
     });
   }
 
@@ -2116,6 +1940,25 @@ export {};
     clearGeminiBtn.addEventListener("click", clearGeminiApiKey);
   }
 
+  if (savePreferredNameBtn && preferredNameInput) {
+    savePreferredNameBtn.addEventListener("click", () => {
+      savePreferredName(preferredNameInput.value);
+    });
+  }
+
+  if (preferredNameInput) {
+    preferredNameInput.addEventListener("blur", () => {
+      savePreferredName(preferredNameInput.value);
+    });
+    preferredNameInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        e.stopPropagation();
+        savePreferredName(preferredNameInput.value);
+      }
+    });
+  }
+
   if (geminiInput) {
     geminiInput.addEventListener("input", () => {
       syncAiTitleEditingToggleGate();
@@ -2125,200 +1968,6 @@ export {};
         e.preventDefault();
         e.stopPropagation();
         saveGeminiApiKey(geminiInput.value.trim());
-      }
-    });
-  }
-
-  if (accountSignInBtn) {
-    accountSignInBtn.addEventListener("click", async () => {
-      const panelPrimeSucceeded = await openZeroSidePanelBestEffort();
-      let result = await runtimeMessage({ type: "oz-auth-open-signin", preferTab: false });
-      result = await applyChromeHostedSidePanelFromSettings(result, panelPrimeSucceeded);
-      if (result && result.ok) {
-        const hint =
-          result.window === "tab"
-            ? "Opened sign-in in a new tab. Complete sign-in, then return here."
-            : result.window === "sidepanel"
-              ? "Opened sign-in in the browser sidebar. Complete sign-in, then return here."
-              : "Sign-in window opened. Complete sign-in, then return here.";
-        setAccountStatus(hint);
-      } else {
-        setAccountStatus((result && result.error) || "Could not open sign-in.");
-      }
-      refreshAccountStatus();
-    });
-  }
-
-  if (accountCloudOptInToggle) {
-    accountCloudOptInToggle.addEventListener("change", async (e) => {
-      const target = /** @type {HTMLInputElement} */ (e.target);
-      const on = !!target.checked;
-      if (!on) {
-        try {
-          await applyCloudAccountOptOut();
-        } catch (err) {
-          target.checked = true;
-          setAccountStatus("Could not turn off cloud account.");
-        }
-        return;
-      }
-      try {
-        await new Promise((resolve, reject) => {
-          try {
-            browserApi.storage.local.set({ [CLOUD_ACCOUNT_OPT_IN_KEY]: true }, () => {
-              if (browserApi.runtime && browserApi.runtime.lastError) {
-                reject(new Error(browserApi.runtime.lastError.message));
-                return;
-              }
-              resolve();
-            });
-          } catch (err) {
-            reject(err);
-          }
-        });
-      } catch (err) {
-        target.checked = false;
-        setAccountStatus("Could not enable cloud account.");
-        return;
-      }
-      setAccountStatus("Cloud account enabled. You can sign in and sync below.");
-      await refreshAccountStatus();
-    });
-  }
-
-  if (accountCloudSyncToggle) {
-    accountCloudSyncToggle.addEventListener("change", async (e) => {
-      const target = /** @type {HTMLInputElement} */ (e.target);
-      const enabled = !!target.checked;
-      const result = await runtimeMessage({ type: "oz-set-cloud-sync-enabled", enabled });
-      if (!result || !result.ok) {
-        target.checked = !enabled;
-        setAccountStatus((result && result.error) || "Could not update cloud sync.");
-      } else {
-        setAccountStatus(
-          enabled
-            ? "Cloud sync enabled."
-            : "Cloud sync disabled. Changes stay on this device until you enable sync again."
-        );
-      }
-      refreshAccountStatus();
-    });
-  }
-
-  if (accountSignOutBtn) {
-    accountSignOutBtn.addEventListener("click", async () => {
-      const panelPrimeSucceeded = await openZeroSidePanelBestEffort();
-      const result = await runtimeMessage({
-        type: "oz-auth-signout",
-        clerkLogout: true
-      });
-      if (result && result.ok && result.needsExtensionSidePanelOpen) {
-        if (!panelPrimeSucceeded) {
-          const openedAgain = await openZeroSidePanelBestEffort();
-          if (!openedAgain) {
-            await runtimeMessage({ type: "oz-auth-open-stored-hosted-url" });
-          }
-        }
-      }
-      if (result && result.ok) {
-        setAccountStatus("Signed out.");
-      } else {
-        setAccountStatus((result && result.error) || "Could not sign out.");
-      }
-      await refreshAccountStatus();
-    });
-  }
-
-  if (accountSyncNowBtn) {
-    accountSyncNowBtn.addEventListener("click", async () => {
-      openSyncNowModal();
-    });
-  }
-
-  if (syncNowModalClose) {
-    syncNowModalClose.addEventListener("click", () => {
-      closeSyncNowModal();
-    });
-  }
-
-  if (syncNowModalCancel) {
-    syncNowModalCancel.addEventListener("click", () => {
-      closeSyncNowModal();
-      setAccountStatus("Sync cancelled.");
-    });
-  }
-
-  if (syncNowModalOverlay) {
-    syncNowModalOverlay.addEventListener("click", (e) => {
-      if (e.target === syncNowModalOverlay) {
-        closeSyncNowModal();
-      }
-    });
-  }
-
-  if (sidebarVersionLink) {
-    sidebarVersionLink.addEventListener("click", () => {
-      openAboutInfoModal();
-    });
-  }
-
-  if (aboutInfoModalClose) {
-    aboutInfoModalClose.addEventListener("click", () => {
-      closeAboutInfoModal();
-    });
-  }
-
-  if (aboutInfoModalOverlay) {
-    aboutInfoModalOverlay.addEventListener("click", (e) => {
-      if (e.target === aboutInfoModalOverlay) {
-        closeAboutInfoModal();
-      }
-    });
-  }
-
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && aboutInfoModalOverlay && !aboutInfoModalOverlay.classList.contains("oz-hidden")) {
-      closeAboutInfoModal();
-    }
-  });
-
-  if (syncNowModalPush) {
-    syncNowModalPush.addEventListener("click", async () => {
-      closeSyncNowModal();
-      const result = await runtimeMessage({ type: "oz-sync-push" });
-      if (result && result.ok) {
-        try {
-          browserApi.storage.local.set({ ozLastSyncedAt: Date.now() }, () => {
-            refreshAccountStatus();
-          });
-        } catch (e) {
-          refreshAccountStatus();
-        }
-        setAccountStatus("Local settings pushed to cloud.");
-      } else {
-        setAccountStatus((result && result.error) || "Push failed.");
-      }
-    });
-  }
-
-  if (syncNowModalPull) {
-    syncNowModalPull.addEventListener("click", async () => {
-      closeSyncNowModal();
-      const result = await runtimeMessage({
-        type: "oz-sync-now",
-        overwriteLocal: true
-      });
-      if (result && result.ok) {
-        try {
-          browserApi.storage.local.set({ ozLastSyncedAt: Date.now() }, () => {
-            refreshAccountStatus();
-          });
-        } catch (e) {
-          refreshAccountStatus();
-        }
-        setAccountStatus("Cloud settings pulled from DB.");
-      } else {
-        setAccountStatus((result && result.error) || "Pull failed.");
       }
     });
   }
@@ -2377,9 +2026,7 @@ export {};
       });
     });
 
-    const activeTab =
-      document.querySelector(".oz-tab.oz-tab-active[data-panel]") ||
-      document.querySelector(".oz-sidebar-account-tab-active[data-panel]");
+    const activeTab = document.querySelector(".oz-tab.oz-tab-active[data-panel]");
     const initialPanelId = activeTab && activeTab.getAttribute("data-panel");
     if (initialPanelId) {
       activatePanel(initialPanelId);
@@ -2387,8 +2034,8 @@ export {};
 
     window.requestAnimationFrame(() => {
       const raw = (window.location.hash || "").replace(/^#/, "").trim().toLowerCase();
-      if (raw === "snippets") {
-        const tab = document.querySelector('[data-panel="snippets"]');
+      if (raw === "snippets" || raw === "stats") {
+        const tab = document.querySelector(`[data-panel="${raw}"]`);
         if (tab) {
           /** @type {HTMLElement} */ (tab).click();
         }
@@ -2402,13 +2049,6 @@ export {};
 
     wireImportSettingsUi();
     initAboutInfo();
-    void pollAccountStatusLoop();
-    document.addEventListener("visibilitychange", () => {
-      if (document.visibilityState === "visible") {
-        clearAccountStatusPolling();
-        void pollAccountStatusLoop();
-      }
-    });
   }
 
   // Settings HTML is injected by the WXT/React shell after the document may already
@@ -2426,6 +2066,13 @@ export {};
         restoreOptions();
       }
 
+      if (
+        areaName === "sync" &&
+        (changes[OZ_ACHIEVEMENT_STORAGE_KEY] || changes[INBOX_ZERO_STREAK_KEY])
+      ) {
+        renderAchievementsFromStorage();
+      }
+
       if (areaName === "sync" && changes.customShortcuts) {
         loadCustomShortcuts(() => {
           // After shortcuts are loaded, check if we need to scroll to a new one
@@ -2437,10 +2084,6 @@ export {};
             }
           });
         });
-      }
-      
-      if (areaName === "local" && changes[CLOUD_ACCOUNT_OPT_IN_KEY]) {
-        void refreshAccountStatus();
       }
 
       // Also check for scrollToShortcutId in local storage (when a new shortcut is added)

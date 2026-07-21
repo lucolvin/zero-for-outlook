@@ -74,19 +74,14 @@ export function SnippetsManagerApp() {
 
     saveOzSnippets(api, cleaned, (err) => {
       if (err) {
-        setStatus("Saved on this device; browser sync failed (size or quota).");
+        setStatus("Could not save snippets (storage size or quota).");
         setRows(cleaned);
         setTimeout(() => setStatus(""), 4000);
         return;
       }
       setRows(cleaned);
-      setStatus("Saved locally and to Chrome sync.");
+      setStatus("Saved.");
       setTimeout(() => setStatus(""), 2200);
-      try {
-        api.runtime?.sendMessage?.({ type: "oz-sync-push" }, () => {});
-      } catch {
-        // ignore
-      }
     });
   }, [rows]);
 
@@ -173,7 +168,7 @@ export function SnippetsManagerApp() {
               />
             </label>
             <button type="button" className="oz-sn-btn-save" onClick={persist}>
-              Save &amp; sync
+              Save
             </button>
           </div>
         </header>
@@ -207,8 +202,7 @@ export function SnippetsManagerApp() {
             </div>
             {filtered.length === 0 ? (
               <p className="oz-sn-empty">
-                No snippets yet. Click <strong>NEW SNIPPET</strong>, then <strong>Save &amp; sync</strong> when you are
-                done.
+                No snippets yet. Click <strong>NEW SNIPPET</strong>, then <strong>Save</strong> when you are done.
               </p>
             ) : (
               filtered.map((r) => (

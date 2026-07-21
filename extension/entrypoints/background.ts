@@ -1,3 +1,5 @@
+import "../src/background/index.ts";
+
 export default defineBackground(() => {
-  import("../src/background/index.ts");
+  /* logic lives in src/background/index.ts (side-effect import above) */
 });

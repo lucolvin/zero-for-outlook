@@ -1,6 +1,8 @@
 // @ts-nocheck
 // Snippet placeholders: recipient (To), sender (From), and send-time {your_placeholder}.
 
+import { settings } from "../core/settings.ts";
+
 export const YOUR_PLACEHOLDER = "{your_placeholder}";
 
 const EMAIL_RE = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g;
@@ -415,11 +417,29 @@ function pickSenderDistinctFromRecipient(surface, recipient) {
 }
 
 /**
+ * Apply the user's preferred name (settings) over Outlook-detected sender identity.
+ * Email from the page is kept when available.
+ */
+function applyPreferredSenderName(sender) {
+  const preferred = String(settings?.ozPreferredName || settings?.getState?.()?.ozPreferredName || "")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!preferred) return sender || emptyPerson();
+
+  const base = sender && typeof sender === "object" ? { ...sender } : emptyPerson();
+  const { first, last } = splitFirstLast(preferred);
+  base.fullName = preferred;
+  base.firstName = first;
+  base.lastName = last;
+  return base;
+}
+
+/**
  * Build recipient (primary To) and sender (From) for placeholder expansion.
  */
 export function buildComposeSnippetContext(surface) {
   if (!surface || surface.nodeType !== 1) {
-    return { recipient: emptyPerson(), sender: emptyPerson() };
+    return { recipient: emptyPerson(), sender: applyPreferredSenderName(emptyPerson()) };
   }
 
   const recipient =
@@ -428,7 +448,7 @@ export function buildComposeSnippetContext(surface) {
     extractFromEmailTokens(surface, "to") ||
     emptyPerson();
 
-  const sender = pickSenderDistinctFromRecipient(surface, recipient);
+  const sender = applyPreferredSenderName(pickSenderDistinctFromRecipient(surface, recipient));
 
   return { recipient, sender };
 }

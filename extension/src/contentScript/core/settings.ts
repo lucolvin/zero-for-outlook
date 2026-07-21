@@ -55,7 +55,9 @@ class SettingsManager {
     this.vimContext = "auto";
     this.customShortcuts = [];
     this.aiTitleEditingEnabled = true;
-    
+    /** Preferred display name for snippet `{sender_*}` placeholders (overrides Outlook detection). */
+    this.ozPreferredName = "";
+
     this.listeners = new Set();
   }
 
@@ -97,7 +99,8 @@ class SettingsManager {
       optionsBarHidden: this.optionsBarHidden,
       vimContext: this.vimContext,
       customShortcuts: this.customShortcuts,
-      aiTitleEditingEnabled: this.aiTitleEditingEnabled
+      aiTitleEditingEnabled: this.aiTitleEditingEnabled,
+      ozPreferredName: this.ozPreferredName
     };
   }
 
@@ -123,7 +126,8 @@ class SettingsManager {
             vimSmoothNavigationEnabled: true,
             optionsBarHidden: false,
             customShortcuts: [],
-            aiTitleEditingEnabled: true
+            aiTitleEditingEnabled: true,
+            ozPreferredName: ""
           },
           (items) => {
             if (browserApi.runtime && browserApi.runtime.lastError) {
@@ -195,6 +199,9 @@ class SettingsManager {
               }
               if (typeof items.aiTitleEditingEnabled === "boolean") {
                 this.aiTitleEditingEnabled = items.aiTitleEditingEnabled;
+              }
+              if (typeof items.ozPreferredName === "string") {
+                this.ozPreferredName = items.ozPreferredName.trim();
               }
             } else {
               this.customShortcuts = [];
@@ -303,7 +310,12 @@ class SettingsManager {
           this.aiTitleEditingEnabled = changes.aiTitleEditingEnabled.newValue;
           changed = true;
         }
-        
+        if (Object.prototype.hasOwnProperty.call(changes, "ozPreferredName")) {
+          const next = changes.ozPreferredName.newValue;
+          this.ozPreferredName = typeof next === "string" ? next.trim() : "";
+          changed = true;
+        }
+
         if (changed) {
           this.notifyListeners();
         }

@@ -25,7 +25,6 @@ import {
 } from "../features/snooze.ts";
 import {
   openCommandOverlay,
-  closeCommandOverlay,
   handleCommandOverlayKeydown,
   isCommandOverlayOpen,
   isElementInCommandOverlay
@@ -109,11 +108,7 @@ export function createKeyboardHandler(options) {
       if (commandShortcut && shortcutMatches(event, commandShortcut)) {
         event.preventDefault();
         event.stopPropagation();
-        if (isCommandOverlayOpen()) {
-          closeCommandOverlay();
-        } else {
-          openCommandOverlay();
-        }
+        openCommandOverlay();
         return;
       }
 

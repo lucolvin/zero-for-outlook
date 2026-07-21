@@ -1,815 +1,26 @@
 // @ts-nocheck
-// Background script for Outlook Web Keyboard Shortcuts (Manifest V2)
+// Background script for Zero for Outlook (local-only settings).
 // Clicking the toolbar icon opens the options page in a full tab.
-
-import { writeSyncFromRows } from "../snippetStorage.ts";
 
 (() => {
   const api = typeof chrome !== "undefined" ? chrome : browser;
-  const AUTH_SESSION_KEY = "ozAuthSession";
-  const PENDING_AUTH_KEY = "ozPendingAuth";
-  const SIDE_PANEL_NAV_URL_KEY = "ozSidePanelNavigateUrl";
-  const CLOUD_SYNC_ENABLED_KEY = "cloudSyncEnabled";
-  const SYNC_META_KEY = "syncMeta";
-  const DEFAULT_AUTH_SITE_URL =
-    (typeof import.meta !== "undefined" &&
-      import.meta.env &&
-      import.meta.env.WXT_AUTH_SITE_URL) ||
-    "http://localhost:4173";
-  const DEFAULT_API_BASE_URL =
-    (typeof import.meta !== "undefined" &&
-      import.meta.env &&
-      import.meta.env.WXT_API_BASE_URL) ||
-    "http://localhost:8787";
-  const SETTINGS_DEFAULTS = {
-    undoShortcut: {
-      ctrlKey: false,
-      altKey: false,
-      shiftKey: false,
-      metaKey: false,
-      key: "z"
-    },
-    commandShortcut: {
-      ctrlKey: false,
-      altKey: false,
-      shiftKey: false,
-      metaKey: true,
-      key: "k"
-    },
-    blockedContentShortcut: {
-      ctrlKey: false,
-      altKey: false,
-      shiftKey: true,
-      metaKey: true,
-      key: "b"
-    },
-    snippetsPageShortcut: {
-      ctrlKey: false,
-      altKey: false,
-      shiftKey: true,
-      metaKey: true,
-      key: "y"
-    },
-    vimEnabled: true,
-    darkModeEnabled: true,
-    oledModeEnabled: false,
-    accentColor: "#6366f1",
-    popupOpacity: 95,
-    backdropBlurEnabled: true,
-    inboxZeroEnabled: true,
-    archivePopupEnabled: true,
-    archiveListMotionReduced: false,
-    vimSmoothNavigationEnabled: true,
-    optionsBarHidden: false,
-    vimContext: "auto",
-    customShortcuts: [],
-    /** Canonical bodies live in chrome.storage.local; included in cloud API payload only. */
-    ozSnippets: [],
-    ozAchievementState: {
-      v: 2,
-      stats: {},
-      unlocked: [],
-      log: []
-    },
-    aiTitleEditingEnabled: true,
-    geminiApiKey: "",
-    inboxZeroStreak: {
-      days: 0,
-      lastHitDate: null,
-      lastOverlayDate: null
-    },
-    manualShortcutAdvancedWarningShown: false
-  };
-  const SYNCED_KEYS = Object.keys(SETTINGS_DEFAULTS);
-  const ACCOUNT_PROFILE_CACHE_TTL_MS = 1000 * 60 * 10;
-  let cachedAccountProfile = {
-    token: "",
-    profile: null,
-    expiresAt: 0
-  };
 
-  function randomHex(bytes = 24) {
-    const arr = new Uint8Array(bytes);
-    crypto.getRandomValues(arr);
-    return Array.from(arr, (b) => b.toString(16).padStart(2, "0")).join("");
-  }
-
-  function storageLocalGet(defaults) {
-    return new Promise((resolve) => {
-      try {
-        api.storage.local.get(defaults, (items) => {
-          resolve(items || defaults);
-        });
-      } catch (e) {
-        resolve(defaults);
-      }
-    });
-  }
-
-  function storageLocalSet(values) {
-    return new Promise((resolve) => {
-      try {
-        api.storage.local.set(values, () => resolve(true));
-      } catch (e) {
-        resolve(false);
-      }
-    });
-  }
-
-  function storageLocalRemove(keys) {
-    const list = Array.isArray(keys) ? keys : [keys];
-    return new Promise((resolve) => {
-      try {
-        api.storage.local.remove(list, () => resolve(true));
-      } catch (e) {
-        resolve(false);
-      }
-    });
-  }
-
+  // Clear leftover cloud-account keys from earlier builds (best-effort).
+  const LEGACY_CLOUD_KEYS = [
+    "ozAuthSession",
+    "ozPendingAuth",
+    "cloudSyncEnabled",
+    "ozSidePanelNavigateUrl",
+    "ozCloudAccountOptIn",
+    "ozLastSyncedAt",
+    "ozLocalOnlyMode",
+    "syncMeta"
+  ];
   try {
-    const ch = typeof chrome !== "undefined" ? chrome : null;
-    if (ch?.sidePanel?.setPanelBehavior) {
-      ch.sidePanel.setPanelBehavior({ openPanelOnActionClick: false }).catch(() => {});
-    }
+    api.storage.local.remove(LEGACY_CLOUD_KEYS, () => {});
+    api.storage.sync.remove(["syncMeta"], () => {});
   } catch (_e) {
-    // Chrome-only Side Panel toolbar behavior — ignore elsewhere.
-  }
-
-  function notifyExtensionPagesCloseHostedAuthSidebar() {
-    try {
-      if (!api.runtime || !api.runtime.sendMessage) return;
-      api.runtime.sendMessage({ type: "oz-close-hosted-auth-sidebar" }, () => {
-        try {
-          void (api.runtime && api.runtime.lastError);
-        } catch (_eDiscard) {
-          // ignore
-        }
-      });
-    } catch (_eSend) {
-      // ignore
-    }
-  }
-
-  /** Chrome Side Panel API or Firefox sidebar (both need settings-page open due to user-activation rules). */
-  function deferHostedSidebarNavigationToExtensionSettingsUi() {
-    try {
-      const ch = typeof chrome !== "undefined" ? chrome : null;
-      if (
-        ch &&
-        typeof ch.sidePanel?.open === "function" &&
-        ch.tabs &&
-        typeof ch.tabs.query === "function"
-      ) {
-        return true;
-      }
-    } catch (_eOpt) {
-      // ignore
-    }
-    try {
-      const br = typeof browser !== "undefined" ? browser : null;
-      if (typeof br?.sidebarAction?.open === "function") {
-        return true;
-      }
-    } catch (_eFf) {
-      // ignore
-    }
-    return false;
-  }
-
-  function openHostedUrlInPopup(hostedUrl) {
-    return new Promise((resolve) => {
-      try {
-        if (!api.windows || !api.windows.create) {
-          resolve(false);
-          return;
-        }
-        api.windows.create(
-          {
-            url: hostedUrl,
-            type: "popup",
-            width: 460,
-            height: 780,
-            focused: true
-          },
-          (created) => {
-            if ((api.runtime && api.runtime.lastError) || !created) {
-              resolve(false);
-              return;
-            }
-            resolve(true);
-          }
-        );
-      } catch (_e) {
-        resolve(false);
-      }
-    });
-  }
-
-  function openHostedUrlInTab(hostedUrl, activeTab = true) {
-    return new Promise((resolve, reject) => {
-      try {
-        if (!api.tabs || !api.tabs.create) {
-          reject(new Error("tabs.create unavailable."));
-          return;
-        }
-        api.tabs.create({ url: hostedUrl, active: activeTab }, () => {
-          if (api.runtime && api.runtime.lastError) {
-            reject(new Error(api.runtime.lastError.message));
-            return;
-          }
-          resolve(true);
-        });
-      } catch (e) {
-        reject(e);
-      }
-    });
-  }
-
-  /**
-   * When the Side Panel fails to open, open the hosted URL stored for the panel flow.
-   */
-  async function openStoredHostedUrlPopupThenTab() {
-    const local = await storageLocalGet({ [SIDE_PANEL_NAV_URL_KEY]: null });
-    const hostedUrl =
-      typeof local[SIDE_PANEL_NAV_URL_KEY] === "string" ? local[SIDE_PANEL_NAV_URL_KEY] : "";
-    if (!hostedUrl) {
-      return { ok: false, error: "Nothing to open." };
-    }
-    const openedPopup = await openHostedUrlInPopup(hostedUrl);
-    if (openedPopup) {
-      await storageLocalRemove([SIDE_PANEL_NAV_URL_KEY]);
-      return { ok: true, window: "popup" };
-    }
-    try {
-      await openHostedUrlInTab(hostedUrl, true);
-      await storageLocalRemove([SIDE_PANEL_NAV_URL_KEY]);
-      return { ok: true, window: "tab" };
-    } catch (_e) {
-      await storageLocalRemove([SIDE_PANEL_NAV_URL_KEY]);
-      return { ok: false, error: "Could not open hosted page in a popup or tab." };
-    }
-  }
-
-  function storageSyncGet(defaults) {
-    return new Promise((resolve) => {
-      try {
-        api.storage.sync.get(defaults, (items) => {
-          resolve(items || defaults);
-        });
-      } catch (e) {
-        resolve(defaults);
-      }
-    });
-  }
-
-  function storageSyncSet(values) {
-    return new Promise((resolve) => {
-      try {
-        api.storage.sync.set(values, () => resolve(true));
-      } catch (e) {
-        resolve(false);
-      }
-    });
-  }
-
-  async function getCloudConfig() {
-    return {
-      authSiteUrl: DEFAULT_AUTH_SITE_URL,
-      apiBaseUrl: DEFAULT_API_BASE_URL
-    };
-  }
-
-  function getFetchErrorMessage(error) {
-    try {
-      return (error && (error.message || String(error))) || "Unknown network error";
-    } catch (_) {
-      return "Unknown network error";
-    }
-  }
-
-  async function fetchAccountProfile(extensionToken) {
-    if (!extensionToken) return null;
-    if (
-      cachedAccountProfile.token === extensionToken &&
-      cachedAccountProfile.profile &&
-      cachedAccountProfile.expiresAt > Date.now()
-    ) {
-      return cachedAccountProfile.profile;
-    }
-    const { apiBaseUrl } = await getCloudConfig();
-
-    try {
-      const response = await fetchJsonWithAuth(
-        `${apiBaseUrl}/auth/me`,
-        extensionToken,
-        { method: "GET" }
-      );
-      const profile = response && response.profile ? response.profile : null;
-      if (!profile) return null;
-      const normalized = {
-        name: String(profile.name || "").trim() || "Account",
-        imageUrl: String(profile.imageUrl || "").trim()
-      };
-      cachedAccountProfile = {
-        token: extensionToken,
-        profile: normalized,
-        expiresAt: Date.now() + ACCOUNT_PROFILE_CACHE_TTL_MS
-      };
-      return normalized;
-    } catch (_) {
-      return null;
-    }
-  }
-
-  function hasMeaningfulLocalConfig(localDoc) {
-    if (!localDoc || !localDoc.values) return false;
-    return SYNCED_KEYS.some((key) => {
-      const current = localDoc.values[key];
-      const defaultValue = SETTINGS_DEFAULTS[key];
-      try {
-        return JSON.stringify(current) !== JSON.stringify(defaultValue);
-      } catch (_) {
-        return current !== defaultValue;
-      }
-    });
-  }
-
-  function docsDifferByValues(localDoc, remoteDoc) {
-    const localValues = (localDoc && localDoc.values) || {};
-    const remoteValues = (remoteDoc && remoteDoc.values) || {};
-    return SYNCED_KEYS.some((key) => {
-      try {
-        return JSON.stringify(localValues[key]) !== JSON.stringify(remoteValues[key]);
-      } catch (_) {
-        return localValues[key] !== remoteValues[key];
-      }
-    });
-  }
-
-  function normalizeSettingsDoc(doc) {
-    const base = doc || {};
-    return {
-      values: {
-        ...SETTINGS_DEFAULTS,
-        ...(base.values || {})
-      },
-      fieldUpdatedAt: {
-        ...(base.fieldUpdatedAt || {})
-      },
-      settingsRevision: Number(base.settingsRevision || 0),
-      updatedAt: Number(base.updatedAt || Date.now())
-    };
-  }
-
-  async function fetchJsonWithAuth(url, token, options = {}) {
-    const res = await fetch(url, {
-      ...options,
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-        ...(options.headers || {})
-      }
-    });
-
-    let payload = null;
-    try {
-      payload = await res.json();
-    } catch (e) {
-      payload = null;
-    }
-
-    if (!res.ok) {
-      const message =
-        (payload && payload.error) ||
-        `Request failed (${res.status})`;
-      throw new Error(message);
-    }
-    return payload || {};
-  }
-
-  async function getAuthStatus() {
-    const items = await storageLocalGet({
-      [AUTH_SESSION_KEY]: null,
-      [PENDING_AUTH_KEY]: null,
-      [CLOUD_SYNC_ENABLED_KEY]: false
-    });
-    const authSession = items[AUTH_SESSION_KEY];
-    const pending = items[PENDING_AUTH_KEY];
-    const now = Date.now();
-    const signedIn = !!(authSession && authSession.token && authSession.expiresAt > now);
-
-    return {
-      ok: true,
-      signedIn,
-      authSession: signedIn ? authSession : null,
-      pendingAuth: pending,
-      cloudSyncEnabled: !!items[CLOUD_SYNC_ENABLED_KEY]
-    };
-  }
-
-  async function openSignInFlow(flowOptions = {}) {
-    const preferTab = flowOptions.preferTab === true;
-    const { authSiteUrl } = await getCloudConfig();
-    const deviceCode = randomHex(16);
-    const pending = {
-      deviceCode,
-      startedAt: Date.now(),
-      expiresAt: Date.now() + 1000 * 60 * 10
-    };
-    await storageLocalSet({ [PENDING_AUTH_KEY]: pending });
-    const url = `${authSiteUrl}/extension-link?device_code=${encodeURIComponent(deviceCode)}`;
-
-    try {
-      if (!preferTab) {
-        if (deferHostedSidebarNavigationToExtensionSettingsUi()) {
-          await storageLocalSet({ [SIDE_PANEL_NAV_URL_KEY]: url });
-          return {
-            ok: true,
-            pending,
-            window: "sidepanel",
-            needsExtensionSidePanelOpen: true
-          };
-        }
-        const openedPopup = await openHostedUrlInPopup(url);
-        if (openedPopup) {
-          return { ok: true, pending, window: "popup" };
-        }
-      }
-      await openHostedUrlInTab(url, true);
-      return { ok: true, pending, window: "tab" };
-    } catch (e) {
-      const msg = preferTab
-        ? "Could not open sign-in tab."
-        : "Could not open sign-in sidebar, window, or tab.";
-      return { ok: false, error: msg };
-    }
-  }
-
-  async function setCloudSyncEnabled(enabled) {
-    const status = await getAuthStatus();
-    if (!status.signedIn) {
-      return { ok: false, error: "Sign in before changing cloud sync." };
-    }
-    await storageLocalSet({ [CLOUD_SYNC_ENABLED_KEY]: !!enabled });
-    return { ok: true, cloudSyncEnabled: !!enabled };
-  }
-
-  async function tryClaimPendingSession() {
-    const local = await storageLocalGet({ [PENDING_AUTH_KEY]: null });
-    const pending = local[PENDING_AUTH_KEY];
-    if (!pending || !pending.deviceCode) {
-      return { ok: false, state: "none" };
-    }
-    if (pending.expiresAt <= Date.now()) {
-      await storageLocalSet({ [PENDING_AUTH_KEY]: null });
-      return { ok: false, state: "expired", error: "Sign-in window expired. Start sign-in again." };
-    }
-
-    const { apiBaseUrl } = await getCloudConfig();
-    try {
-      const res = await fetch(
-        `${apiBaseUrl}/auth/extension-token/claim?device_code=${encodeURIComponent(pending.deviceCode)}`
-      );
-      const data = await res.json();
-      if (!res.ok) {
-        return { ok: false, state: data.state || "error", error: data.error || "Could not claim session." };
-      }
-      if (!data || data.state !== "claimed" || !data.extensionToken) {
-        return { ok: true, state: "pending" };
-      }
-
-      await storageLocalSet({
-        [AUTH_SESSION_KEY]: {
-          token: data.extensionToken,
-          expiresAt: data.expiresAt || Date.now() + 1000 * 60 * 30,
-          issuedAt: Date.now()
-        },
-        [PENDING_AUTH_KEY]: null,
-        [CLOUD_SYNC_ENABLED_KEY]: true
-      });
-      notifyExtensionPagesCloseHostedAuthSidebar();
-      return { ok: true, state: "claimed" };
-    } catch (e) {
-      return { ok: false, state: "error", error: "Network error while claiming sign-in." };
-    }
-  }
-
-  async function openClerkLogoutPopupOrTabBestEffort(hostedLogoutUrl) {
-    if (!hostedLogoutUrl || typeof hostedLogoutUrl !== "string") return;
-    const openedPopup = await openHostedUrlInPopup(hostedLogoutUrl);
-    if (openedPopup) return;
-    try {
-      await openHostedUrlInTab(hostedLogoutUrl, true);
-    } catch (_e) {
-      // Host permissions or tab API unavailable — extension session still cleared locally.
-    }
-  }
-
-  async function signOut(flowOptions = {}) {
-    cachedAccountProfile = {
-      token: "",
-      profile: null,
-      expiresAt: 0
-    };
-    await storageLocalSet({
-      [AUTH_SESSION_KEY]: null,
-      [PENDING_AUTH_KEY]: null,
-      [CLOUD_SYNC_ENABLED_KEY]: false
-    });
-    if (flowOptions && flowOptions.clerkLogout) {
-      const { authSiteUrl } = await getCloudConfig();
-      const base = String(authSiteUrl || "").replace(/\/$/, "");
-      if (!base) {
-        return { ok: true };
-      }
-      const logoutUrl = `${base}/logout`;
-      if (deferHostedSidebarNavigationToExtensionSettingsUi()) {
-        await storageLocalSet({ [SIDE_PANEL_NAV_URL_KEY]: logoutUrl });
-        return { ok: true, needsExtensionSidePanelOpen: true };
-      }
-      await openClerkLogoutPopupOrTabBestEffort(logoutUrl);
-    }
-    return { ok: true };
-  }
-
-  async function getLocalSettingsDoc() {
-    const items = await storageSyncGet({
-      ...SETTINGS_DEFAULTS,
-      [SYNC_META_KEY]: {
-        fieldUpdatedAt: {},
-        settingsRevision: 0,
-        updatedAt: 0
-      }
-    });
-    const localSnip = await storageLocalGet({ ozSnippets: [], ozSnippetsRev: 0 });
-    const values = {};
-    for (const key of SYNCED_KEYS) {
-      if (Object.prototype.hasOwnProperty.call(items, key)) {
-        values[key] = items[key];
-      }
-    }
-    values.ozSnippets = Array.isArray(localSnip.ozSnippets) ? localSnip.ozSnippets : [];
-
-    const syncMeta = items[SYNC_META_KEY] || {};
-    const fieldUpdatedAt = {
-      ...(syncMeta.fieldUpdatedAt || {}),
-      ozSnippets: Math.max(
-        Number((syncMeta.fieldUpdatedAt || {}).ozSnippets || 0),
-        Number(localSnip.ozSnippetsRev || 0)
-      )
-    };
-    return {
-      values,
-      fieldUpdatedAt,
-      settingsRevision: Number(syncMeta.settingsRevision || 0),
-      updatedAt: Number(syncMeta.updatedAt || 0)
-    };
-  }
-
-  function mergeSettingsDocs(localDoc, remoteDoc) {
-    if (!remoteDoc) return localDoc;
-
-    const mergedValues = { ...(remoteDoc.values || {}) };
-    const mergedFieldUpdatedAt = { ...(remoteDoc.fieldUpdatedAt || {}) };
-
-    const keys = new Set([
-      ...Object.keys(localDoc.values || {}),
-      ...Object.keys(remoteDoc.values || {})
-    ]);
-
-    keys.forEach((key) => {
-      const localAt = Number((localDoc.fieldUpdatedAt || {})[key] || 0);
-      const remoteAt = Number((remoteDoc.fieldUpdatedAt || {})[key] || 0);
-      const localHasKey = Object.prototype.hasOwnProperty.call(localDoc.values || {}, key);
-      const remoteHasKey = Object.prototype.hasOwnProperty.call(remoteDoc.values || {}, key);
-
-      // If both sides are missing per-key timestamps, prefer existing remote values
-      // so cloud data can hydrate a freshly linked device.
-      if (localAt === 0 && remoteAt === 0) {
-        if (remoteHasKey) {
-          mergedValues[key] = (remoteDoc.values || {})[key];
-          mergedFieldUpdatedAt[key] = 0;
-        } else if (localHasKey) {
-          mergedValues[key] = (localDoc.values || {})[key];
-          mergedFieldUpdatedAt[key] = 0;
-        }
-        return;
-      }
-
-      if (localAt >= remoteAt) {
-        mergedValues[key] = (localDoc.values || {})[key];
-        mergedFieldUpdatedAt[key] = localAt || Date.now();
-      } else {
-        mergedValues[key] = (remoteDoc.values || {})[key];
-        mergedFieldUpdatedAt[key] = remoteAt;
-      }
-    });
-
-    return {
-      values: mergedValues,
-      fieldUpdatedAt: mergedFieldUpdatedAt,
-      settingsRevision: Math.max(
-        Number(localDoc.settingsRevision || 0),
-        Number(remoteDoc.settingsRevision || 0)
-      ),
-      updatedAt: Date.now()
-    };
-  }
-
-  async function writeMergedSettingsDoc(doc) {
-    const toWrite = {
-      [SYNC_META_KEY]: {
-        fieldUpdatedAt: doc.fieldUpdatedAt || {},
-        settingsRevision: Number(doc.settingsRevision || 0),
-        updatedAt: Number(doc.updatedAt || Date.now())
-      }
-    };
-    for (const key of SYNCED_KEYS) {
-      if (!Object.prototype.hasOwnProperty.call(doc.values || {}, key)) continue;
-      if (key === "ozSnippets") continue;
-      toWrite[key] = doc.values[key];
-    }
-    await storageSyncSet(toWrite);
-
-    if (Object.prototype.hasOwnProperty.call(doc.values || {}, "ozSnippets")) {
-      const rows = doc.values.ozSnippets;
-      const arr = Array.isArray(rows) ? rows : [];
-      const rev = Date.now();
-      await storageLocalSet({ ozSnippets: arr, ozSnippetsRev: rev });
-      writeSyncFromRows(api, arr, rev, () => {});
-    }
-  }
-
-  async function pushLocalToCloud() {
-    const status = await getAuthStatus();
-    if (!status.signedIn || !status.authSession || !status.authSession.token) {
-      return { ok: false, error: "Not signed in." };
-    }
-    if (!status.cloudSyncEnabled) {
-      return { ok: false, error: "Cloud sync is disabled for this install." };
-    }
-    const { apiBaseUrl } = await getCloudConfig();
-    const localDoc = await getLocalSettingsDoc();
-
-    try {
-      await fetchJsonWithAuth(
-        `${apiBaseUrl}/settings`,
-        status.authSession.token,
-        {
-          method: "PUT",
-          body: JSON.stringify({ settings: localDoc })
-        }
-      );
-      return { ok: true, pushedAt: Date.now() };
-    } catch (e) {
-      const primaryError = getFetchErrorMessage(e);
-      if (apiBaseUrl !== DEFAULT_API_BASE_URL) {
-        try {
-          await fetchJsonWithAuth(
-            `${DEFAULT_API_BASE_URL}/settings`,
-            status.authSession.token,
-            {
-              method: "PUT",
-              body: JSON.stringify({ settings: localDoc })
-            }
-          );
-          return {
-            ok: true,
-            pushedAt: Date.now(),
-            warning: `Primary API URL failed (${apiBaseUrl}). Pushed via localhost fallback.`
-          };
-        } catch (fallbackError) {
-          return {
-            ok: false,
-            error: `Push failed for ${apiBaseUrl} (${primaryError}) and localhost fallback (${getFetchErrorMessage(fallbackError)}).`
-          };
-        }
-      }
-      return { ok: false, error: `Push failed at ${apiBaseUrl}: ${primaryError}` };
-    }
-  }
-
-  async function pullCloudToLocal(options = {}) {
-    const status = await getAuthStatus();
-    if (!status.signedIn || !status.authSession || !status.authSession.token) {
-      return { ok: false, error: "Not signed in." };
-    }
-    if (!status.cloudSyncEnabled) {
-      return { ok: false, error: "Cloud sync is disabled for this install." };
-    }
-    const { apiBaseUrl } = await getCloudConfig();
-    const localDoc = await getLocalSettingsDoc();
-    const overwriteLocal = !!options.overwriteLocal;
-
-    try {
-      const remoteGet = await fetchJsonWithAuth(
-        `${apiBaseUrl}/settings`,
-        status.authSession.token,
-        { method: "GET" }
-      );
-      const remoteDoc = remoteGet && remoteGet.settings ? normalizeSettingsDoc(remoteGet.settings) : null;
-
-      if (!remoteDoc) {
-        return { ok: false, error: "No cloud settings found for this account." };
-      }
-
-      if (overwriteLocal) {
-        await writeMergedSettingsDoc(remoteDoc);
-        return { ok: true, pulledAt: Date.now(), mode: "overwrite_local" };
-      }
-
-      if (remoteDoc && hasMeaningfulLocalConfig(localDoc) && docsDifferByValues(localDoc, remoteDoc)) {
-        return {
-          ok: false,
-          requiresConfirmation: true,
-          error:
-            "This browser already has local settings that differ from cloud settings. Confirm overwrite to apply cloud settings to this browser."
-        };
-      }
-
-      await writeMergedSettingsDoc(remoteDoc);
-      return { ok: true, pulledAt: Date.now() };
-    } catch (e) {
-      const primaryError = getFetchErrorMessage(e);
-      if (apiBaseUrl !== DEFAULT_API_BASE_URL) {
-        try {
-          const remoteGet = await fetchJsonWithAuth(
-            `${DEFAULT_API_BASE_URL}/settings`,
-            status.authSession.token,
-            { method: "GET" }
-          );
-          const remoteDoc = remoteGet && remoteGet.settings ? normalizeSettingsDoc(remoteGet.settings) : null;
-
-          if (overwriteLocal) {
-            if (!remoteDoc) {
-              return { ok: false, error: "No cloud settings found for this account." };
-            }
-            await writeMergedSettingsDoc(remoteDoc);
-            return { ok: true, pulledAt: Date.now(), mode: "overwrite_local" };
-          }
-
-          if (remoteDoc && hasMeaningfulLocalConfig(localDoc) && docsDifferByValues(localDoc, remoteDoc)) {
-            return {
-              ok: false,
-              requiresConfirmation: true,
-              error:
-                "This browser already has local settings that differ from cloud settings. Confirm overwrite to apply cloud settings to this browser."
-            };
-          }
-
-          if (!remoteDoc) {
-            return { ok: false, error: "No cloud settings found for this account." };
-          }
-
-          await writeMergedSettingsDoc(remoteDoc);
-          return {
-            ok: true,
-            pulledAt: Date.now(),
-            warning: `Primary API URL failed (${apiBaseUrl}). Pulled via localhost fallback.`
-          };
-        } catch (fallbackError) {
-          return {
-            ok: false,
-            error: `Sync failed for ${apiBaseUrl} (${primaryError}) and localhost fallback (${getFetchErrorMessage(fallbackError)}).`
-          };
-        }
-      }
-      return { ok: false, error: `Sync failed at ${apiBaseUrl}: ${primaryError}` };
-    }
-  }
-
-  try {
-    api.storage.onChanged.addListener(async (changes, areaName) => {
-      if (areaName !== "sync") return;
-      const changedKeys = Object.keys(changes || {}).filter((k) => k !== SYNC_META_KEY);
-      if (changedKeys.length === 0) return;
-
-      const items = await storageSyncGet({
-        [SYNC_META_KEY]: {
-          fieldUpdatedAt: {},
-          settingsRevision: 0,
-          updatedAt: 0
-        }
-      });
-      const previous = items[SYNC_META_KEY] || {};
-      const fieldUpdatedAt = { ...(previous.fieldUpdatedAt || {}) };
-      const now = Date.now();
-      changedKeys.forEach((key) => {
-        if (SYNCED_KEYS.includes(key)) {
-          fieldUpdatedAt[key] = now;
-        }
-      });
-      await storageSyncSet({
-        [SYNC_META_KEY]: {
-          fieldUpdatedAt,
-          settingsRevision: Number(previous.settingsRevision || 0) + 1,
-          updatedAt: now
-        }
-      });
-    });
-  } catch (e) {
-    // best-effort only
+    // ignore
   }
 
   const clickEventSource =
@@ -841,12 +52,6 @@ import { writeSyncFromRows } from "../snippetStorage.ts";
    * The Gemini API key is read from extension storage (key: "geminiApiKey").
    *
    * @param {Object} elementInfo - Object containing element information
-   * @param {string} elementInfo.selector - CSS selector for the element
-   * @param {string} elementInfo.currentDescription - Current description from DOM
-   * @param {string} elementInfo.tagName - HTML tag name
-   * @param {string} elementInfo.ariaLabel - aria-label attribute
-   * @param {string} elementInfo.title - title attribute
-   * @param {string} elementInfo.textContent - Text content of the element
    * @returns {Promise<{ ok: boolean; title?: string; description?: string; error?: string }>}
    */
   async function formatElementDescriptionWithGemini(elementInfo) {
@@ -874,7 +79,6 @@ import { writeSyncFromRows } from "../snippetStorage.ts";
       };
     }
 
-    // Gemma 3 4B IT endpoint
     const endpoint =
       "https://generativelanguage.googleapis.com/v1beta/models/gemma-3-4b-it:generateContent";
 
@@ -930,27 +134,29 @@ import { writeSyncFromRows } from "../snippetStorage.ts";
         return { ok: false, error: "Gemini returned an empty response." };
       }
 
-      // Try to parse JSON from the response
       try {
-        // Extract JSON from markdown code blocks if present
         const jsonMatch = responseText.match(/\{[\s\S]*\}/);
         const jsonText = jsonMatch ? jsonMatch[0] : responseText;
         const parsed = JSON.parse(jsonText);
-        
+
         if (parsed.title && parsed.description) {
           return { ok: true, title: parsed.title.trim(), description: parsed.description.trim() };
         }
       } catch (e) {
-        // If JSON parsing fails, try to extract title and description from text
-        const lines = responseText.split("\n").filter(l => l.trim());
-        const titleLine = lines.find(l => l.toLowerCase().includes("title") || l.match(/^["']/));
-        const descLine = lines.find(l => l.toLowerCase().includes("description") || l.toLowerCase().includes("desc"));
-        
+        const lines = responseText.split("\n").filter((l) => l.trim());
+        const titleLine = lines.find((l) => l.toLowerCase().includes("title") || l.match(/^["']/));
+        const descLine = lines.find(
+          (l) => l.toLowerCase().includes("description") || l.toLowerCase().includes("desc")
+        );
+
         if (titleLine) {
           const titleMatch = titleLine.match(/["']([^"']+)["']/);
           const title = titleMatch ? titleMatch[1] : titleLine.replace(/title:?\s*/i, "").trim();
-          const desc = descLine ? (descLine.match(/["']([^"']+)["']/) || [])[1] || descLine.replace(/description:?\s*/i, "").trim() : title;
-          
+          const desc = descLine
+            ? (descLine.match(/["']([^"']+)["']/) || [])[1] ||
+              descLine.replace(/description:?\s*/i, "").trim()
+            : title;
+
           if (title) {
             return { ok: true, title: title, description: desc || title };
           }
@@ -968,7 +174,6 @@ import { writeSyncFromRows } from "../snippetStorage.ts";
 
   /**
    * Best-effort helper to call Google Gemini to summarize an email body.
-   * The Gemini API key is read from extension storage (key: "geminiApiKey").
    *
    * @param {string} bodyText
    * @returns {Promise<{ ok: boolean; summary?: string; error?: string }>}
@@ -996,10 +201,7 @@ import { writeSyncFromRows } from "../snippetStorage.ts";
     const items = await storageGet();
     const apiKey = (items && items.geminiApiKey) || "";
     if (!apiKey) {
-      return {
-        ok: false,
-        error: "No Gemini API key configured. Open Zero for Outlook options to add one."
-      };
+      return { ok: false, error: "No Gemini API key configured." };
     }
 
     const endpoint =
@@ -1077,11 +279,8 @@ import { writeSyncFromRows } from "../snippetStorage.ts";
 
         if (message.type === "oz-open-options") {
           try {
-            // Store the shortcut ID first so the options page can scroll after opening.
             if (message.shortcutId && api.storage && api.storage.local && api.storage.local.set) {
-              api.storage.local.set({ scrollToShortcutId: message.shortcutId }, () => {
-                // Ignore errors
-              });
+              api.storage.local.set({ scrollToShortcutId: message.shortcutId }, () => {});
             }
 
             const optionsHash =
@@ -1119,68 +318,6 @@ import { writeSyncFromRows } from "../snippetStorage.ts";
           return true;
         }
 
-        if (message.type === "oz-auth-open-signin") {
-          openSignInFlow({ preferTab: !!message.preferTab }).then((result) => {
-            sendResponse(result);
-          });
-          return true;
-        }
-
-        if (message.type === "oz-auth-open-stored-hosted-url") {
-          openStoredHostedUrlPopupThenTab().then((result) => {
-            try {
-              sendResponse(result);
-            } catch (_e) {
-              // ignore
-            }
-          });
-          return true;
-        }
-
-        if (message.type === "oz-set-cloud-sync-enabled") {
-          setCloudSyncEnabled(!!message.enabled).then((result) => sendResponse(result));
-          return true;
-        }
-
-        if (message.type === "oz-auth-get-status") {
-          Promise.resolve()
-            .then(async () => {
-              const claimed = await tryClaimPendingSession();
-              const status = await getAuthStatus();
-              const profile =
-                status && status.signedIn && status.authSession && status.authSession.token
-                  ? await fetchAccountProfile(status.authSession.token)
-                  : null;
-              return {
-                ...status,
-                claimState: claimed.state || "none",
-                claimError: claimed.error || null,
-                profile
-              };
-            })
-            .then((result) => sendResponse(result));
-          return true;
-        }
-
-        if (message.type === "oz-auth-signout") {
-          signOut({ clerkLogout: !!message.clerkLogout }).then((result) =>
-            sendResponse(result)
-          );
-          return true;
-        }
-
-        if (message.type === "oz-sync-now") {
-          pullCloudToLocal({
-            overwriteLocal: !!message.overwriteLocal
-          }).then((result) => sendResponse(result));
-          return true;
-        }
-
-        if (message.type === "oz-sync-push") {
-          pushLocalToCloud().then((result) => sendResponse(result));
-          return true;
-        }
-
         return undefined;
       });
     }
@@ -1188,4 +325,3 @@ import { writeSyncFromRows } from "../snippetStorage.ts";
     // best-effort only
   }
 })();
-
