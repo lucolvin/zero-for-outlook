@@ -1,6 +1,6 @@
 {
   "name": "zero-for-outlook-extension",
-  "version": "0.8.1",
+  "version": "0.8.2",
   "private": true,
   "scripts": {
     "test": "node --test tests/*.test.mjs",

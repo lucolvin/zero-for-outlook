@@ -21,7 +21,7 @@ export default defineConfig({
     name: "Zero for Outlook",
     description:
       "Zero for Outlook adds configurable keyboard shortcuts and extends functionality of Outlook on the web.",
-    version: "0.8.1",
+    version: "0.8.2",
     permissions: ["storage", "tabs"],
     host_permissions: [
       ...outlookMatches,
