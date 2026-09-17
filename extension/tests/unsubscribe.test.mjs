@@ -27,6 +27,7 @@ afterEach(() => {
   delete globalThis.window;
 });
 
+/** Render markup and record direct clicks on its identified elements. */
 function trackClicks(markup) {
   document.body.innerHTML = markup;
   const clicks = [];

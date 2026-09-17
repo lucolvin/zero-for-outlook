@@ -47,6 +47,7 @@ function getCurrentEmailRoot() {
   );
 }
 
+/** Find the highest-confidence unsubscribe control in the current email. */
 function findUnsubscribeLinkInCurrentEmail() {
   try {
     const root = getCurrentEmailRoot();
