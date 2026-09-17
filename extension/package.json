@@ -3,16 +3,18 @@
   "version": "0.8.1",
   "private": true,
   "scripts": {
+    "test": "node --test tests/*.test.mjs",
     "dev": "wxt",
     "build": "wxt build -b chrome --mv3 && wxt build -b firefox --mv3",
     "package": "wxt zip -b chrome --mv3 && wxt zip -b firefox --mv3"
   },
   "devDependencies": {
     "@wxt-dev/module-react": "^1.1.4",
+    "esbuild": "^0.27.7",
+    "linkedom": "^0.18.12",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "wxt": "^0.20.7"
   }
 }
-
 

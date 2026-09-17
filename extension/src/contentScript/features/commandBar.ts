@@ -125,20 +125,22 @@ function findUnsubscribeLinkInCurrentEmail() {
       return href.startsWith("mailto:") && (href.includes("unsubscribe") || href.includes("remove"));
     };
 
-    const candidates = Array.from(
-      root.querySelectorAll("a[href], button, [role='button'], [data-action], [onclick]")
-    );
+    const candidateSelector = "a[href], button, [role='button'], [data-action], [onclick]";
+    const candidates = Array.from(root.querySelectorAll(candidateSelector));
 
     for (const node of candidates) {
       const el = /** @type {HTMLElement} */ (node);
       if (!el) continue;
+      // Message containers can be clickable too, but their text belongs to the
+      // controls inside them. Click the actual link instead of expanding a message.
+      if (el.querySelector(candidateSelector)) continue;
 
       const text = normalize(el.innerText || el.textContent || "");
       const href = normalize(el.getAttribute("href") || "");
       const aria = normalize(el.getAttribute("aria-label") || "");
       const title = normalize(el.getAttribute("title") || "");
       const contextText = getContextText(el);
-      const allText = `${text} ${aria} ${title} ${contextText}`.trim();
+      const allText = `${text} ${aria} ${title}`.trim();
 
       if (!allText && !href) continue;
 
@@ -160,12 +162,12 @@ function findUnsubscribeLinkInCurrentEmail() {
         score = Math.max(score, 92);
       }
 
-      const hasCancelVerb = /\b(cancel|cancell?ation|stop|end|terminate)\b/i.test(contextText);
+      const hasCancelVerb = /\b(cancel|cancell?ation|stop|end|terminate)\b/i.test(allText);
       const hasSubscriptionNoun =
-        /\b(subscription|mailing list|newsletter|emails?|edm)\b/i.test(contextText);
+        /\b(subscription|mailing list|newsletter|emails?|edm)\b/i.test(allText);
       const hasRemovalIntent =
         /\b(unsubscribe|opt[- ]?out|remove(?:d)? from (?:our|this) list|remove me)\b/i.test(
-          contextText
+          allText
         );
 
       if (hasRemovalIntent) {
@@ -176,15 +178,21 @@ function findUnsubscribeLinkInCurrentEmail() {
         score = Math.max(score, 90);
       }
 
-      // Generic labels like "here" are often actionable only via surrounding copy.
-      if (text === "here" || text === "click here") {
-        if (hasRemovalIntent || (hasCancelVerb && hasSubscriptionNoun)) {
-          score = Math.max(score, 90);
+      // Use surrounding copy only for generic links, and rank it below direct
+      // evidence. Otherwise every button or footer link can inherit "unsubscribe".
+      if (el.matches("a[href]") && /^(?:click )?(?:here|this link)$/.test(text)) {
+        const contextHasRemovalIntent =
+          /\b(unsubscribe|opt[- ]?out|remove(?:d)? from (?:our|this) list|remove me)\b/i.test(contextText);
+        const contextHasCancellation =
+          /\b(cancel|cancell?ation|stop|end|terminate)\b/i.test(contextText) &&
+          /\b(subscription|mailing list|newsletter|emails?|edm)\b/i.test(contextText);
+        if (contextHasRemovalIntent || contextHasCancellation) {
+          score = Math.max(score, 50);
         }
       }
 
       // Preference links can be valid but are often less direct than true unsubscribe links.
-      if (lowerIncludes(contextText, "update your preferences")) {
+      if (lowerIncludes(allText, "update your preferences")) {
         score -= 15;
       }
 
@@ -1181,4 +1189,3 @@ export function isElementInCommandOverlay(element) {
   if (!commandOverlay || !element) return false;
   return commandOverlay.contains(element);
 }
-
